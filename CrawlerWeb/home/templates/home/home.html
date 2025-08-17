@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <h1>爬蟲網站</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="{% url 'home' %}" class="nav-link active">首頁</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">爬蟲工具</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">數據分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">關於我們</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <section class="hero-section">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="hero-title">{{ welcome_message }}</h1>
+                    <p class="hero-description">{{ description }}</p>
+                    <div class="hero-buttons">
+                        <button class="btn btn-primary">開始使用</button>
+                        <button class="btn btn-secondary">了解更多</button>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="placeholder-image">
+                        <span>??</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <div class="container">
+                <h2 class="section-title">主要功能</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">?</div>
+                        <h3>智能爬蟲</h3>
+                        <p>強大的網路爬蟲工具，支援多種網站格式</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">?</div>
+                        <h3>數據分析</h3>
+                        <p>完整的數據處理和分析功能</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">?</div>
+                        <h3>高效能</h3>
+                        <p>快速且穩定的爬蟲執行效率</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025爬蟲網站. riverY&osmuntZ版權所有</p>
+        </div>
+    </footer>
+</body>
+</html>

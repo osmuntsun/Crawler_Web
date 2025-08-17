@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人資料 - 爬蟲網站</title>
+    <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'Accounts/css/profile.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h1>個人資料</h1>
+                <p>歡迎回來，{{ user.username }}！</p>
+            </div>
+            
+            <div class="profile-content">
+                <div class="profile-section">
+                    <h3>基本資訊</h3>
+                    <div class="profile-info">
+                        <div class="info-item">
+                            <div class="info-label">用戶名</div>
+                            <div class="info-value">{{ user.username }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">電子郵件</div>
+                            <div class="info-value">{{ user.email|default:"未設定" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">姓名</div>
+                            <div class="info-value">
+                                {% if user.first_name or user.last_name %}
+                                    {{ user.first_name }} {{ user.last_name }}
+                                {% else %}
+                                    未設定
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">手機號碼</div>
+                            <div class="info-value">{{ user.phone|default:"未設定" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-section">
+                    <h3>帳號資訊</h3>
+                    <div class="profile-info">
+                        <div class="info-item">
+                            <div class="info-label">註冊時間</div>
+                            <div class="info-value">{{ user.date_joined|date:"Y年m月d日 H:i" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">最後登入</div>
+                            <div class="info-value">{{ user.last_login|date:"Y年m月d日 H:i" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">帳號狀態</div>
+                            <div class="info-value">
+                                {% if user.is_active %}
+                                    <span style="color: #28a745;">啟用</span>
+                                {% else %}
+                                    <span style="color: #dc3545;">停用</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">管理員權限</div>
+                            <div class="info-value">
+                                {% if user.is_staff %}
+                                    <span style="color: #007bff;">是</span>
+                                {% else %}
+                                    <span style="color: #6c757d;">否</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if user.bio %}
+                <div class="profile-section">
+                    <h3>個人簡介</h3>
+                    <div class="info-item">
+                        <div class="info-value">{{ user.bio }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="profile-actions">
+                    <a href="{% url 'home' %}" class="btn btn-primary">返回首頁</a>
+                    <a href="{% url 'Accounts:logout' %}" class="btn btn-secondary">登出</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

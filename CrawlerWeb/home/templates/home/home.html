@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{% static 'home/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'home/css/messages.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -28,19 +29,46 @@
                     <li class="nav-item">
                         <a href="#" class="nav-link">關於我們</a>
                     </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a href="{% url 'Accounts:profile' %}" class="nav-link">{{ user.username }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'Accounts:logout' %}" class="nav-link">登出</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a href="{% url 'Accounts:login' %}" class="nav-link">登入</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </nav>
     </header>
 
     <main class="main-content">
+        <!-- 顯示消息提示 -->
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message message-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <section class="hero-section">
             <div class="hero-container">
                 <div class="hero-content">
                     <h1 class="hero-title">{{ welcome_message }}</h1>
                     <p class="hero-description">{{ description }}</p>
                     <div class="hero-buttons">
-                        <button class="btn btn-primary">開始使用</button>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'Accounts:profile' %}" class="btn btn-primary">進入系統</a>
+                        {% else %}
+                            <a href="{% url 'Accounts:login' %}" class="btn btn-primary">開始使用</a>
+                        {% endif %}
                         <button class="btn btn-secondary">了解更多</button>
                     </div>
                 </div>

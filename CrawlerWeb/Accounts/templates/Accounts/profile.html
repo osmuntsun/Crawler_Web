@@ -13,6 +13,13 @@
     <div class="profile-container">
         <div class="profile-card">
             <div class="profile-header">
+                <div class="avatar-container">
+                    {% if avatar_url %}
+                        <img src="{{ avatar_url }}" alt="{{ user.username }} 的頭貼" class="avatar-image">
+                    {% else %}
+                        <div class="avatar-placeholder">?</div>
+                    {% endif %}
+                </div>
                 <h1>個人資料</h1>
                 <p>歡迎回來，{{ user.username }}！</p>
             </div>

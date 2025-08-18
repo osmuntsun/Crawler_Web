@@ -121,6 +121,10 @@ STATIC_URL = 'static/'
 # 移除 STATICFILES_DIRS，讓Django使用應用程式的靜態檔案結構
 # STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# 媒體檔案（使用者上傳檔案，如頭貼）
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

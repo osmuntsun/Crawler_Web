@@ -115,11 +115,22 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 
+	// 檢查是否為訪客模式
+	const guestNotice = document.querySelector('.guest-notice');
+	const isGuest = guestNotice && (!guestNotice.style.display || guestNotice.style.display !== 'none');
+
 	// 按鈕點擊處理
 	document.addEventListener('click', function(e) {
 		if (e.target.matches('.btn')) {
 			e.preventDefault();
 			const button = e.target;
+			
+			// 如果是訪客模式且不是登入相關按鈕，顯示提示
+			if (isGuest && !button.closest('.notice-actions') && !button.closest('.nav-menu')) {
+				showNotification('請先登入後再使用此功能', 'warning');
+				return;
+			}
+			
 			const originalText = button.innerHTML;
 			const action = button.textContent.trim();
 

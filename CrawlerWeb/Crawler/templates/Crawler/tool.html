@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>爬蟲工具 - 智能自動化平台</title>
+	<link rel="stylesheet" href="{% static 'Crawler/css/tool.css' %}">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+	<!-- 導航欄 -->
+	<nav class="navbar">
+		<div class="nav-container">
+			<div class="nav-brand">
+				<i class="fas fa-robot"></i>
+				<span>爬蟲工具</span>
+			</div>
+			<div class="nav-menu">
+				<a href="/" class="nav-link"><i class="fas fa-home"></i> 首頁</a>
+				<a href="/accounts/profile/" class="nav-link"><i class="fas fa-user"></i> 個人資料</a>
+				<a href="/admin/" class="nav-link"><i class="fas fa-cog"></i> 管理</a>
+			</div>
+		</div>
+	</nav>
+
+	<!-- 主要內容區域 -->
+	<div class="main-container">
+		<!-- 側邊欄 -->
+		<aside class="sidebar">
+			<div class="sidebar-header">
+				<h3><i class="fas fa-tools"></i> 功能選單</h3>
+			</div>
+			<nav class="sidebar-nav">
+				<button class="sidebar-item active" data-tab="account">
+					<i class="fas fa-user-cog"></i>
+					<span>帳號設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="copy">
+					<i class="fas fa-edit"></i>
+					<span>文案設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="post">
+					<i class="fas fa-share-alt"></i>
+					<span>發文設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="schedule">
+					<i class="fas fa-calendar-alt"></i>
+					<span>排程設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="auto养">
+					<i class="fas fa-heart"></i>
+					<span>自動養號</span>
+				</button>
+				<button class="sidebar-item" data-tab="group-sale">
+					<i class="fas fa-shopping-cart"></i>
+					<span>社團拍賣商品</span>
+				</button>
+			</nav>
+		</aside>
+
+		<!-- 內容區域 -->
+		<main class="content">
+			<!-- 帳號設定 -->
+			<div class="tab-content active" id="tab-account">
+				<div class="content-header">
+					<h2><i class="fas fa-user-cog"></i> 帳號設定</h2>
+					<p>管理您的社群媒體帳號資訊</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-user"></i> 帳號名稱</label>
+								<input type="text" name="username" placeholder="輸入您的帳號名稱">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-lock"></i> 密碼</label>
+								<input type="password" name="password" placeholder="輸入您的密碼">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-envelope"></i> 電子郵件</label>
+								<input type="email" name="email" placeholder="輸入電子郵件">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-mobile-alt"></i> 手機號碼</label>
+								<input type="tel" name="phone" placeholder="輸入手機號碼">
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-save"></i> 儲存設定
+								</button>
+								<button type="button" class="btn btn-secondary">
+									<i class="fas fa-sync"></i> 重新整理
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 文案設定 -->
+			<div class="tab-content" id="tab-copy">
+				<div class="content-header">
+					<h2><i class="fas fa-edit"></i> 文案設定</h2>
+					<p>建立和管理您的發文文案模板</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-file-alt"></i> 文案模板</label>
+								<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板，支援變數如 {product_name}, {price}, {description}"></textarea>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-tags"></i> 標籤</label>
+								<input type="text" name="hashtags" placeholder="輸入標籤，用逗號分隔">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-link"></i> 連結</label>
+								<input type="url" name="link" placeholder="輸入相關連結">
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-save"></i> 儲存模板
+								</button>
+								<button type="button" class="btn btn-info">
+									<i class="fas fa-eye"></i> 預覽
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 發文設定 -->
+			<div class="tab-content" id="tab-post">
+				<div class="content-header">
+					<h2><i class="fas fa-share-alt"></i> 發文設定</h2>
+					<p>設定發文平台和內容</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-globe"></i> 發文平台</label>
+								<select name="platform" class="form-select">
+									<option value="">選擇平台</option>
+									<option value="facebook">Facebook</option>
+									<option value="instagram">Instagram</option>
+									<option value="twitter">Twitter</option>
+									<option value="linkedin">LinkedIn</option>
+									<option value="other">其他</option>
+								</select>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-image"></i> 圖片/影片</label>
+								<div class="file-upload">
+									<input type="file" name="media" multiple accept="image/*,video/*">
+									<div class="file-upload-text">
+										<i class="fas fa-cloud-upload-alt"></i>
+										<span>點擊或拖拽檔案到此處上傳</span>
+									</div>
+								</div>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-clock"></i> 發文時間</label>
+								<input type="datetime-local" name="post_time">
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-paper-plane"></i> 立即發文
+								</button>
+								<button type="button" class="btn btn-warning">
+									<i class="fas fa-clock"></i> 排程發文
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 排程設定 -->
+			<div class="tab-content" id="tab-schedule">
+				<div class="content-header">
+					<h2><i class="fas fa-calendar-alt"></i> 排程設定</h2>
+					<p>設定自動發文的時間和頻率</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-play"></i> 開始時間</label>
+								<input type="datetime-local" name="start_time">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-stopwatch"></i> 發文間隔</label>
+								<div class="interval-input">
+									<input type="number" name="interval_min" min="1" value="30">
+									<select name="interval_unit">
+										<option value="minutes">分鐘</option>
+										<option value="hours">小時</option>
+										<option value="days">天</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-calendar-check"></i> 執行日期</label>
+								<div class="checkbox-group">
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="monday"> 週一
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="tuesday"> 週二
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="wednesday"> 週三
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="thursday"> 週四
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="friday"> 週五
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="saturday"> 週六
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="days" value="sunday"> 週日
+									</label>
+								</div>
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-success">
+									<i class="fas fa-play"></i> 啟動排程
+								</button>
+								<button type="button" class="btn btn-danger">
+									<i class="fas fa-stop"></i> 停止排程
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 自動養號 -->
+			<div class="tab-content" id="tab-auto养">
+				<div class="content-header">
+					<h2><i class="fas fa-heart"></i> 自動養號</h2>
+					<p>自動化互動以提升帳號活躍度</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-chart-line"></i> 每日互動次數</label>
+								<input type="number" name="daily_actions" min="0" value="5" class="form-control">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-comment"></i> 自動留言內容</label>
+								<textarea name="auto_comment" rows="4" placeholder="設定自動留言內容，支援多行"></textarea>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-thumbs-up"></i> 互動類型</label>
+								<div class="checkbox-group">
+									<label class="checkbox-item">
+										<input type="checkbox" name="actions" value="like" checked> 按讚
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="actions" value="comment"> 留言
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="actions" value="share"> 分享
+									</label>
+									<label class="checkbox-item">
+										<input type="checkbox" name="actions" value="follow"> 追蹤
+									</label>
+								</div>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-clock"></i> 互動時間範圍</label>
+								<div class="time-range">
+									<input type="time" name="start_time" value="09:00">
+									<span>至</span>
+									<input type="time" name="end_time" value="18:00">
+								</div>
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-save"></i> 儲存設定
+								</button>
+								<button type="button" class="btn btn-success">
+									<i class="fas fa-play"></i> 開始養號
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 社團拍賣商品 -->
+			<div class="tab-content" id="tab-group-sale">
+				<div class="content-header">
+					<h2><i class="fas fa-shopping-cart"></i> 社團拍賣商品</h2>
+					<p>管理您的商品資訊和庫存</p>
+				</div>
+				<div class="card">
+					<div class="card-body">
+						<form class="form-grid">
+							<div class="form-row">
+								<label><i class="fas fa-box"></i> 商品名稱</label>
+								<input type="text" name="product_name" placeholder="輸入商品名稱">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-tag"></i> 商品分類</label>
+								<select name="category" class="form-select">
+									<option value="">選擇分類</option>
+									<option value="electronics">電子產品</option>
+									<option value="clothing">服飾</option>
+									<option value="books">書籍</option>
+									<option value="home">居家用品</option>
+									<option value="other">其他</option>
+								</select>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-dollar-sign"></i> 價格</label>
+								<input type="number" name="price" min="0" step="1" placeholder="輸入價格">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-warehouse"></i> 庫存數量</label>
+								<input type="number" name="stock" min="0" step="1" placeholder="輸入庫存數量">
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-align-left"></i> 商品描述</label>
+								<textarea name="description" rows="4" placeholder="輸入商品詳細描述"></textarea>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-images"></i> 商品圖片</label>
+								<div class="file-upload">
+									<input type="file" name="product_images" multiple accept="image/*">
+									<div class="file-upload-text">
+										<i class="fas fa-cloud-upload-alt"></i>
+										<span>上傳商品圖片</span>
+									</div>
+								</div>
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-save"></i> 儲存商品
+								</button>
+								<button type="button" class="btn btn-info">
+									<i class="fas fa-eye"></i> 預覽
+								</button>
+								<button type="button" class="btn btn-success">
+									<i class="fas fa-share"></i> 發布到社團
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<!-- 通知區域 -->
+	<div id="notifications" class="notifications"></div>
+
+	<script src="{% static 'Crawler/js/tool.js' %}"></script>
+</body>
+</html>
+
+

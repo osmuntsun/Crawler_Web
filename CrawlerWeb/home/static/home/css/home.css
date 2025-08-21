@@ -1,4 +1,4 @@
-/* ­«¸m©M°òÂ¦¼Ë¦¡ */
+/* ï¿½ï¿½ï¿½mï¿½Mï¿½ï¿½Â¦ï¿½Ë¦ï¿½ */
 * {
     margin: 0;
     padding: 0;
@@ -12,14 +12,14 @@ body {
     background-color: #f8f9fa;
 }
 
-/* ®e¾¹ */
+/* ï¿½eï¿½ï¿½ */
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
-/* ¾É¯èÄæ */
+/* ï¿½É¯ï¿½ï¿½ï¿½ */
 .header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -70,12 +70,12 @@ body {
     transform: translateY(-2px);
 }
 
-/* ¥D­n¤º®e */
+/* ï¿½Dï¿½nï¿½ï¿½ï¿½e */
 .main-content {
     margin-top: 80px;
 }
 
-/* ­^¶¯°Ï°ì */
+/* ï¿½^ï¿½ï¿½ï¿½Ï°ï¿½ */
 .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -170,7 +170,7 @@ body {
     border: 2px solid rgba(255,255,255,0.2);
 }
 
-/* ¥\¯à°Ï°ì */
+/* ï¿½\ï¿½ï¿½Ï°ï¿½ */
 .features-section {
     padding: 5rem 0;
     background: white;
@@ -222,9 +222,28 @@ body {
 .feature-card p {
     color: #666;
     line-height: 1.6;
+    margin-bottom: 1.5rem;
 }
 
-/* ­¶¸} */
+.feature-link {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.feature-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8, #6a4c93);
+}
+
+/* ï¿½ï¿½ï¿½} */
 .footer {
     background: #2c3e50;
     color: white;
@@ -233,7 +252,7 @@ body {
     margin-top: 4rem;
 }
 
-/* ÅTÀ³¦¡³]­p */
+/* ï¿½Tï¿½ï¿½ï¿½ï¿½ï¿½]ï¿½p */
 @media (max-width: 768px) {
     .nav-menu {
         display: none;
@@ -282,7 +301,7 @@ body {
     }
 }
 
-/* °Êµe®ÄªG */
+/* ï¿½Êµeï¿½ÄªG */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -302,7 +321,7 @@ body {
     animation: fadeInUp 0.8s ease-out;
 }
 
-/* ºu°Ê±ø¼Ë¦¡ */
+/* ï¿½uï¿½Ê±ï¿½ï¿½Ë¦ï¿½ */
 ::-webkit-scrollbar {
     width: 8px;
 }

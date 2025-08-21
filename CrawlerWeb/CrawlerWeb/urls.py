@@ -24,6 +24,7 @@ urlpatterns = [
 	path('', home_views.home, name='home'), # 導向首頁
 	path('admin/', admin.site.urls),
 	path('accounts/', include('Accounts.urls')), # 添加Accounts應用URL
+	path('crawler/', include('Crawler.urls')),
 ]
 
 # 僅在開發模式提供媒體檔案服務

@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		"group-sale": document.getElementById('tab-group-sale'),
 	};
 
+	// 從後端注入的可用性旗標
+	const canUseTool = !!(window.CRAWLER_CAN_USE_TOOL);
+
 	// 切換分頁功能
 	function activateTab(tabKey) {
 		// 更新側邊欄狀態
@@ -112,9 +115,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 
-	// 檢查是否為訪客模式
+	// 檢查是否為受限模式（不可使用工具）
 	const guestNotice = document.querySelector('.guest-notice');
-	const isGuest = guestNotice && (!guestNotice.style.display || guestNotice.style.display !== 'none');
+	const isRestricted = !canUseTool; // 未啟用或未登入 -> 受限
 
 	// 按鈕點擊處理
 	document.addEventListener('click', function(e) {
@@ -122,9 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			e.preventDefault();
 			const button = e.target;
 			
-			// 如果是訪客模式且不是登入相關按鈕，顯示提示
-			if (isGuest && !button.closest('.notice-actions') && !button.closest('.nav-menu')) {
-				showNotification('請先登入後再使用此功能', 'warning');
+			// 若受限且不是提示卡/導覽的按鈕，禁止操作
+			if (isRestricted && !button.closest('.notice-actions') && !button.closest('.nav-menu')) {
+				showNotification('目前僅能參觀工具，請先登入並完成啟用', 'warning');
 				return;
 			}
 			
@@ -247,10 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
-	// 初始化完成通知
-	setTimeout(() => {
-		showNotification('爬蟲工具已準備就緒！', 'success');
-	}, 1000);
+	// 僅對可用帳號顯示就緒提示
+	if (canUseTool) {
+		setTimeout(() => {
+			showNotification('爬蟲工具已準備就緒！', 'success');
+		}, 600);
+	}
 
 	// 導出全局函數供HTML使用
 	window.showNotification = showNotification;

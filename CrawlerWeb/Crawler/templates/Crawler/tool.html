@@ -68,23 +68,35 @@
 
 		<!-- 內容區域 -->
 		<main class="content">
-			{% if not is_authenticated %}
-			<!-- 訪客模式提示 -->
+			{% if not can_use_tool %}
+			<!-- 訪客/受限模式提示 -->
 			<div class="guest-notice">
 				<div class="notice-card">
 					<div class="notice-icon">
 						<i class="fas fa-lock"></i>
 					</div>
-					<h2>需要登入才能使用爬蟲工具</h2>
-					<p>您目前以訪客身份瀏覽。要使用完整的爬蟲功能，請先登入您的帳號。</p>
+					<h2>目前僅能參觀工具</h2>
+					<p>
+						{% if not is_authenticated %}
+						您目前以訪客身份瀏覽。要使用完整的爬蟲功能，請先登入您的帳號。
+						{% else %}
+						您的帳號尚未啟用或未完成必要設定（例如網站 Cookie）。完成後即可使用全部功能。
+						{% endif %}
+					</p>
 					<div class="notice-actions">
+						{% if not is_authenticated %}
 						<a href="{% url 'Accounts:login' %}" class="btn btn-primary">
 							<i class="fas fa-sign-in-alt"></i> 立即登入
+						</a>
+						{% else %}
+						<a href="{% url 'Accounts:profile' %}" class="btn btn-primary">
+							<i class="fas fa-user-cog"></i> 前往帳號設定
 						</a>
 						{% if user.is_superuser %}
 						<a href="/admin/" class="btn btn-secondary">
 							<i class="fas fa-cog"></i> 管理後台
 						</a>
+						{% endif %}
 						{% endif %}
 					</div>
 				</div>
@@ -96,17 +108,17 @@
 					<h2><i class="fas fa-user-cog"></i> 帳號設定</h2>
 					<p>管理您的社群媒體帳號資訊</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-user"></i> 帳號名稱</label>
 								<input type="text" name="username" placeholder="輸入您的帳號名稱">
@@ -142,17 +154,17 @@
 					<h2><i class="fas fa-edit"></i> 文案設定</h2>
 					<p>建立和管理您的發文文案模板</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-file-alt"></i> 文案模板</label>
 								<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板，支援變數如 {product_name}, {price}, {description}"></textarea>
@@ -184,17 +196,17 @@
 					<h2><i class="fas fa-share-alt"></i> 發文設定</h2>
 					<p>設定發文平台和內容</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-globe"></i> 發文平台</label>
 								<select name="platform" class="form-select">
@@ -239,17 +251,17 @@
 					<h2><i class="fas fa-calendar-alt"></i> 排程設定</h2>
 					<p>設定自動發文的時間和頻率</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-play"></i> 開始時間</label>
 								<input type="datetime-local" name="start_time">
@@ -310,17 +322,17 @@
 					<h2><i class="fas fa-heart"></i> 自動養號</h2>
 					<p>自動化互動以提升帳號活躍度</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-chart-line"></i> 每日互動次數</label>
 								<input type="number" name="daily_actions" min="0" value="5" class="form-control">
@@ -373,17 +385,17 @@
 					<h2><i class="fas fa-shopping-cart"></i> 社團拍賣商品</h2>
 					<p>管理您的商品資訊和庫存</p>
 				</div>
-				<div class="card {% if not is_authenticated %}disabled{% endif %}">
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
-						{% if not is_authenticated %}
+						{% if not can_use_tool %}
 						<div class="disabled-overlay">
 							<div class="disabled-message">
 								<i class="fas fa-lock"></i>
-								<span>請登入後使用此功能</span>
+								<span>請完成啟用後使用此功能</span>
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not is_authenticated %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-box"></i> 商品名稱</label>
 								<input type="text" name="product_name" placeholder="輸入商品名稱">
@@ -442,6 +454,7 @@
 	<!-- 通知區域 -->
 	<div id="notifications" class="notifications"></div>
 
+	<script>window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};</script>
 	<script src="{% static 'Crawler/js/tool.js' %}"></script>
 </body>
 </html>

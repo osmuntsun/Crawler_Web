@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import Http404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from Accounts.models import WebsiteCookie
 
 
 def tool(request):
@@ -9,9 +10,13 @@ def tool(request):
 	爬蟲工具頁面 - 訪客可以參觀，但需要登入才能使用
 	"""
 	try:
+		can_use_tool = False
+		if request.user.is_authenticated:
+			can_use_tool = WebsiteCookie.objects.filter(user=request.user, is_active=True).exists()
 		context = {
 			'is_authenticated': request.user.is_authenticated,
 			'user': request.user,
+			'can_use_tool': can_use_tool,
 		}
 		return render(request, 'Crawler/tool.html', context)
 	except Exception as e:

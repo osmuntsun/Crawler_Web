@@ -33,6 +33,11 @@
                         <li class="nav-item">
                             <a href="{% url 'Accounts:profile' %}" class="nav-link">{{ user.username }}</a>
                         </li>
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a href="/admin/" class="nav-link">管理</a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a href="{% url 'Accounts:logout' %}" class="nav-link">登出</a>
                         </li>

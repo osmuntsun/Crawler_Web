@@ -13,5 +13,4 @@ def home(request):
         'description': '這是一個功能強大的網路爬蟲平台'
     }
     return render(request, 'home/home.html', context)
-
-print("Me too")
+print("love you")

@@ -27,12 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		const params = new URLSearchParams(location.search);
 		params.set('tab', tabKey);
 		history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
-
-		// 顯示通知
-		showNotification(`已切換到 ${getTabName(tabKey)}`, 'info');
 	}
 
-	// 獲取分頁名稱
+	// 獲取分頁名稱（保留以備後續需要）
 	function getTabName(tabKey) {
 		const tabNames = {
 			account: '帳號設定',

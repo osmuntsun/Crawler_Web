@@ -84,6 +84,20 @@
                                 {% endif %}
                             </div>
                         </div>
+                        <div class="info-item">
+                            <div class="info-label">付費狀態</div>
+                            <div class="info-value">
+                                {% if user.is_premium_active %}
+                                    <span style="color: #28a745;">付費用戶</span>
+                                    {% if user.premium_expires_at %}
+                                        <br><small style="color: #6c757d;">到期時間：{{ user.premium_expires_at|date:"Y年m月d日" }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #dc3545;">免費用戶</span>
+                                    <br><small style="color: #6c757d;">升級後可使用爬蟲工具</small>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

@@ -18,6 +18,8 @@ class User(AbstractUser):
     phone = models.CharField(max_length=15, blank=True, null=True, verbose_name='手機號碼')
     avatar = models.ImageField(upload_to=avatar_upload_to, blank=True, null=True, verbose_name='頭像')
     bio = models.TextField(max_length=500, blank=True, verbose_name='個人簡介')
+    is_premium = models.BooleanField(default=False, verbose_name='付費用戶')
+    premium_expires_at = models.DateTimeField(blank=True, null=True, verbose_name='付費到期時間')
     date_joined = models.DateTimeField(default=timezone.now, verbose_name='註冊時間')
     last_login = models.DateTimeField(auto_now=True, verbose_name='最後登入')
     
@@ -27,6 +29,15 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.username
+    
+    @property
+    def is_premium_active(self):
+        """檢查付費狀態是否有效（包含到期時間檢查）"""
+        if not self.is_premium:
+            return False
+        if self.premium_expires_at and self.premium_expires_at < timezone.now():
+            return False
+        return True
 
 
 class WebsiteCookie(models.Model):

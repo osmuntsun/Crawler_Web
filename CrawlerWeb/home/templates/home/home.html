@@ -70,7 +70,11 @@
                     <p class="hero-description">{{ description }}</p>
                     <div class="hero-buttons">
                         {% if user.is_authenticated %}
-                            <a href="{% url 'crawler_tool' %}" class="btn btn-primary">爬蟲工具</a>
+                            {% if user.is_premium_active %}
+                                <a href="{% url 'crawler_tool' %}" class="btn btn-primary">使用爬蟲工具</a>
+                            {% else %}
+                                <a href="{% url 'crawler_tool' %}" class="btn btn-primary">參觀爬蟲工具</a>
+                            {% endif %}
                             <a href="{% url 'Accounts:profile' %}" class="btn btn-secondary">個人資料</a>
                         {% else %}
                             <a href="{% url 'Accounts:login' %}" class="btn btn-primary">開始使用</a>
@@ -94,7 +98,11 @@
                         <div class="feature-icon">🕷️</div>
                         <h3>智能爬蟲</h3>
                         <p>強大的網路爬蟲工具，支援多種網站格式</p>
-                        <a href="{% url 'crawler_tool' %}" class="feature-link">立即使用</a>
+                        {% if user.is_authenticated and user.is_premium_active %}
+                            <a href="{% url 'crawler_tool' %}" class="feature-link">立即使用</a>
+                        {% else %}
+                            <a href="{% url 'crawler_tool' %}" class="feature-link">參觀工具</a>
+                        {% endif %}
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">📊</div>

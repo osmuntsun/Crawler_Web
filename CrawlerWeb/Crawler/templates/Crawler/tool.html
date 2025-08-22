@@ -69,18 +69,20 @@
 		<!-- 內容區域 -->
 		<main class="content">
 			{% if not can_use_tool %}
-			<!-- 訪客/受限模式提示 -->
+			<!-- 訪客/免費用戶模式提示 -->
 			<div class="guest-notice">
 				<div class="notice-card">
 					<div class="notice-icon">
-						<i class="fas fa-lock"></i>
+						<i class="fas fa-crown"></i>
 					</div>
-					<h2>目前僅能參觀工具</h2>
+					<h2>升級為付費用戶以使用爬蟲功能</h2>
 					<p>
 						{% if not is_authenticated %}
 						您目前以訪客身份瀏覽。要使用完整的爬蟲功能，請先登入您的帳號。
+						{% elif not is_premium %}
+						您目前為免費用戶。爬蟲功能僅限付費用戶使用，請升級您的帳號以享受完整功能。
 						{% else %}
-						您的帳號目前處於停用狀態。請聯繫管理員啟用您的帳號以使用全部功能。
+						您的付費狀態已過期。請續費以繼續使用爬蟲功能。
 						{% endif %}
 					</p>
 					<div class="notice-actions">
@@ -90,7 +92,7 @@
 						</a>
 						{% else %}
 						<a href="{% url 'Accounts:profile' %}" class="btn btn-primary">
-							<i class="fas fa-user-cog"></i> 前往帳號設定
+							<i class="fas fa-crown"></i> 升級帳號
 						</a>
 						{% if user.is_superuser %}
 						<a href="/admin/" class="btn btn-secondary">

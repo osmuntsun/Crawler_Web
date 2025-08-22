@@ -12,7 +12,8 @@ def tool(request):
 	try:
 		can_use_tool = False
 		if request.user.is_authenticated:
-			can_use_tool = WebsiteCookie.objects.filter(user=request.user, is_active=True).exists()
+			# 檢查用戶帳號是否有效（is_active=True）
+			can_use_tool = request.user.is_active
 		context = {
 			'is_authenticated': request.user.is_authenticated,
 			'user': request.user,

@@ -164,11 +164,15 @@
 							</div>
 						</div>
 						{% endif %}
-						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
-							<div class="form-row">
-								<label><i class="fas fa-file-alt"></i> 文案模板</label>
-								<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板，支援變數如 {product_name}, {price}, {description}"></textarea>
-							</div>
+											<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+						<div class="form-row">
+							<label><i class="fas fa-heading"></i> 文案標題</label>
+							<input type="text" name="copy_title" placeholder="輸入文案標題，例如：商品推廣文案、活動宣傳文案等">
+						</div>
+						<div class="form-row">
+							<label><i class="fas fa-file-alt"></i> 文案模板</label>
+							<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板，支援變數如 {product_name}, {price}, {description}"></textarea>
+						</div>
 							<div class="form-row">
 								<label><i class="fas fa-tags"></i> 標籤</label>
 								<input type="text" name="hashtags" placeholder="輸入標籤，用逗號分隔">

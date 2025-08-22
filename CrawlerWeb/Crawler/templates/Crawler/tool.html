@@ -43,6 +43,10 @@
 					<i class="fas fa-user-cog"></i>
 					<span>帳號設定</span>
 				</button>
+				<button class="sidebar-item" data-tab="account-management">
+					<i class="fas fa-users"></i>
+					<span>帳號管理</span>
+				</button>
 				<button class="sidebar-item" data-tab="copy">
 					<i class="fas fa-edit"></i>
 					<span>文案設定</span>
@@ -122,20 +126,33 @@
 						{% endif %}
 						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
-								<label><i class="fas fa-user"></i> 帳號名稱</label>
-								<input type="text" name="username" placeholder="輸入您的帳號名稱">
+								<label><i class="fas fa-globe"></i> 選擇登入的平台</label>
+								<select name="login_platform" class="form-select" required>
+									<option value="">選擇要登入的社群平台</option>
+									<option value="facebook_group">Facebook社團</option>
+									<option value="facebook_page">Facebook粉絲頁</option>
+									<option value="instagram_account">Instagram帳號</option>
+									<option value="discord_server">Discord伺服器</option>
+									<option value="telegram_channel">Telegram頻道</option>
+									<option value="line_group">Line群組</option>
+									<option value="wechat_group">微信群組</option>
+									<option value="forum">論壇</option>
+									<option value="blog">部落格</option>
+									<option value="other">其他</option>
+								</select>
+								<small class="form-help">選擇您要登入的社群平台類型</small>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-envelope"></i> 電子郵件名稱</label>
+								<input type="email" name="email" placeholder="輸入電子郵件名稱">
 							</div>
 							<div class="form-row">
 								<label><i class="fas fa-lock"></i> 密碼</label>
 								<input type="password" name="password" placeholder="輸入您的密碼">
 							</div>
 							<div class="form-row">
-								<label><i class="fas fa-envelope"></i> 電子郵件</label>
-								<input type="email" name="email" placeholder="輸入電子郵件">
-							</div>
-							<div class="form-row">
-								<label><i class="fas fa-mobile-alt"></i> 手機號碼</label>
-								<input type="tel" name="phone" placeholder="輸入手機號碼">
+								<label><i class="fas fa-user"></i> 顯示名稱</label>
+								<input type="text" name="display_name" placeholder="輸入顯示名稱">
 							</div>
 							<div class="form-actions">
 								<button type="button" class="btn btn-primary">
@@ -146,6 +163,98 @@
 								</button>
 							</div>
 						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- 帳號管理 -->
+			<div class="tab-content" id="tab-account-management">
+				<div class="content-header">
+					<h2><i class="fas fa-users"></i> 帳號管理</h2>
+					<p>管理您的社群軟體帳號和Cookie設定</p>
+				</div>
+				<div class="card {% if not can_use_tool %}disabled{% endif %}">
+					<div class="card-body">
+						{% if not can_use_tool %}
+						<div class="disabled-overlay">
+							<div class="disabled-message">
+								<i class="fas fa-lock"></i>
+								<span>請完成啟用後使用此功能</span>
+							</div>
+						</div>
+						{% endif %}
+						
+						<!-- 新增社群軟體帳號 -->
+						<div class="section-header">
+							<h3><i class="fas fa-plus-circle"></i> 新增社群軟體帳號</h3>
+						</div>
+						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+							<div class="form-row">
+								<label><i class="fas fa-globe"></i> 平台選擇</label>
+								<select name="platform" class="form-select" required>
+									<option value="">選擇社群平台</option>
+									<option value="facebook">Facebook</option>
+									<option value="instagram">Instagram</option>
+									<option value="twitter">Twitter</option>
+									<option value="linkedin">LinkedIn</option>
+									<option value="youtube">YouTube</option>
+									<option value="discord">Discord</option>
+									<option value="telegram">Telegram</option>
+									<option value="line">Line</option>
+									<option value="wechat">WeChat</option>
+								</select>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-link"></i> 平台網址</label>
+								<input type="url" name="website_url" placeholder="輸入平台網址" required>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-cookie-bite"></i> Cookie資料</label>
+								<textarea name="cookie_data" rows="4" placeholder="貼上從瀏覽器複製的Cookie資料" required></textarea>
+							</div>
+							<div class="form-row">
+								<label><i class="fas fa-sticky-note"></i> 備註</label>
+								<input type="text" name="notes" placeholder="輸入備註說明（選填）">
+							</div>
+							<div class="form-actions">
+								<button type="button" class="btn btn-primary">
+									<i class="fas fa-save"></i> 儲存帳號
+								</button>
+								<button type="button" class="btn btn-secondary">
+									<i class="fas fa-sync"></i> 重新整理
+								</button>
+							</div>
+						</form>
+
+						<!-- 社群軟體帳號列表 -->
+						<div class="section-header">
+							<h3><i class="fas fa-list"></i> 社群軟體帳號列表</h3>
+						</div>
+						<div class="table-container">
+							<table class="data-table">
+								<thead>
+									<tr>
+										<th><i class="fas fa-globe"></i> 平台</th>
+										<th><i class="fas fa-link"></i> 網址</th>
+										<th><i class="fas fa-cookie-bite"></i> Cookie數量</th>
+										<th><i class="fas fa-clock"></i> 最後更新</th>
+										<th><i class="fas fa-toggle-on"></i> 狀態</th>
+										<th><i class="fas fa-cog"></i> 操作</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr class="no-data">
+										<td colspan="6">
+											<div class="empty-state">
+												<i class="fas fa-inbox"></i>
+												<p>尚未新增任何社群軟體帳號</p>
+												<small>點擊上方表單新增您的第一個帳號</small>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
 			</div>

@@ -83,8 +83,7 @@ class WebsiteCookie(models.Model):
 class Community(models.Model):
     """社團資料庫"""
     COMMUNITY_TYPE_CHOICES = [
-        ('facebook_group', 'Facebook社團'),
-        ('facebook_page', 'Facebook粉絲頁'),
+        ('facebook', 'Facebook'),
         ('instagram_account', 'Instagram帳號'),
         ('discord_server', 'Discord伺服器'),
         ('telegram_channel', 'Telegram頻道'),

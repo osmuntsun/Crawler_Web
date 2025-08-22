@@ -67,6 +67,10 @@
 					<i class="fas fa-shopping-cart"></i>
 					<span>社團拍賣商品</span>
 				</button>
+				<a href="{% url 'facebook_automation' %}" class="sidebar-item facebook-automation-link">
+					<i class="fas fa-facebook"></i>
+					<span>Facebook 自動化</span>
+				</a>
 			</nav>
 		</aside>
 
@@ -129,8 +133,7 @@
 								<label><i class="fas fa-globe"></i> 選擇登入的平台</label>
 								<select name="login_platform" class="form-select" required>
 									<option value="">選擇要登入的社群平台</option>
-									<option value="facebook_group">Facebook社團</option>
-									<option value="facebook_page">Facebook粉絲頁</option>
+									<option value="facebook">Facebook</option>
 									<option value="instagram_account">Instagram帳號</option>
 									<option value="discord_server">Discord伺服器</option>
 									<option value="telegram_channel">Telegram頻道</option>

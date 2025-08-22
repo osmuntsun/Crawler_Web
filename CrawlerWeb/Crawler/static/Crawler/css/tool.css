@@ -152,6 +152,23 @@ body {
 	text-align: center;
 }
 
+/* Facebook 自動化連結樣式 */
+.facebook-automation-link {
+	text-decoration: none;
+	color: #666;
+	transition: all 0.3s ease;
+}
+
+.facebook-automation-link:hover {
+	background: rgba(24, 119, 242, 0.1);
+	color: #1877f2;
+	transform: translateX(5px);
+}
+
+.facebook-automation-link i {
+	color: #1877f2;
+}
+
 /* 內容區域 */
 .content {
 	flex: 1;

@@ -1,0 +1,4 @@
+Django>=5.0.3
+Pillow>=10.0.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0

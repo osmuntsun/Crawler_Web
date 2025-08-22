@@ -74,16 +74,14 @@
                                 {% endif %}
                             </div>
                         </div>
+                        {% if user.is_superuser %}
                         <div class="info-item">
                             <div class="info-label">管理員權限</div>
                             <div class="info-value">
-                                {% if user.is_staff %}
-                                    <span style="color: #007bff;">是</span>
-                                {% else %}
-                                    <span style="color: #6c757d;">否</span>
-                                {% endif %}
+                                <span style="color: #007bff;">超級管理員</span>
                             </div>
                         </div>
+                        {% endif %}
                         <div class="info-item">
                             <div class="info-label">付費狀態</div>
                             <div class="info-value">

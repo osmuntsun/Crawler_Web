@@ -142,7 +142,7 @@ class FacebookAutomationView(View):
 			login_button.click()
 			
 			# 等待登入成功
-			WebDriverWait(driver, 30).until(
+			WebDriverWait(driver, 3000).until(
 				EC.presence_of_element_located((By.XPATH, "//div[@aria-label='帳號控制項和設定']"))
 			)
 			
@@ -441,10 +441,18 @@ class FacebookAutomationView(View):
 			communities = []
 			try:
 				# 嘗試多個可能的 XPath 來找到社團容器
+				# /html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div/div/div[3]
 				possible_xpaths = [
-					'//a[contains(@href, "/groups/") and not(contains(@href, "joins")) and not(contains(@href, "create"))]',
-					'//div[@data-testid="groups_tab"]//a[contains(@href, "/groups/")]',
-					'//div[contains(@class, "groups")]//a[contains(@href, "/groups/")]',
+					# 使用你找到的精確路徑，並排除導航元素
+					'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div/div/div[3]//a[contains(@href, "/groups/") and not(contains(@href, "joins")) and not(contains(@href, "create")) and not(contains(@href, "feed")) and not(contains(@href, "discover"))]',
+					
+					# 更精確的社團連結選擇器，排除導航項目
+					'//a[contains(@href, "/groups/") and not(contains(@href, "joins")) and not(contains(@href, "create")) and not(contains(@href, "feed")) and not(contains(@href, "discover")) and not(contains(@href, "browse"))]',
+					
+					# 基於 aria-label 的選擇器
+					'//a[contains(@href, "/groups/") and @aria-label]',
+					
+					# 通用的社團連結選擇器（作為備用）
 					'//a[contains(@href, "/groups/")]'
 				]
 				
@@ -463,9 +471,19 @@ class FacebookAutomationView(View):
 									'groups' in url and 
 									'joins' not in url and 
 									'create' not in url and
+									'feed' not in url and
+									'discover' not in url and
+									'browse' not in url and
 									len(name) > 0 and
 									not name.startswith('查看') and
-									not name.startswith('加入')):
+									not name.startswith('加入') and
+									name != '探索' and
+									name != '你的動態消息' and
+									name != '動態消息' and
+									name != '瀏覽' and
+									name != '發現' and
+									not name.startswith('查看更多') and
+									not name.startswith('顯示更多')):
 									print(f"找到社團: {name} - {url}")
 									communities.append({
 										'name': name,
@@ -694,6 +712,96 @@ class CommunitiesView(View):
 			
 		except Exception as e:
 			return JsonResponse({'error': f'獲取社團列表失敗: {str(e)}'}, status=500)
+	
+	def post(self, request):
+		"""重新整理用戶的社團列表"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			data = json.loads(request.body)
+			action = data.get('action')
+			
+			if action == 'refresh':
+				# 檢查是否有 Facebook Cookie
+				try:
+					website_cookie = WebsiteCookie.objects.get(
+						user=request.user,
+						website='facebook',
+						is_active=True
+					)
+				except WebsiteCookie.DoesNotExist:
+					return JsonResponse({'error': '請先登入 Facebook 並保存 Cookie'}, status=400)
+				
+				# 使用 FacebookAutomationView 的方法來重新獲取社團
+				facebook_view = FacebookAutomationView()
+				driver = facebook_view._setup_driver()
+				
+				try:
+					# 前往 Facebook 並添加 Cookie
+					driver.get("https://www.facebook.com/")
+					
+					# 添加 Cookie
+					for name, value in website_cookie.cookie_data.items():
+						driver.add_cookie({'name': name, 'value': value})
+					
+					driver.refresh()
+					time.sleep(2)
+					
+					# 獲取最新的社團列表
+					print("開始重新獲取 Facebook 社團...")
+					new_communities = facebook_view._get_facebook_communities(driver, website_cookie.cookie_data)
+					print(f"重新獲取到 {len(new_communities)} 個社團")
+					
+					# 獲取資料庫中現有的社團
+					existing_communities = Community.objects.filter(
+						user=request.user,
+						community_type='facebook'
+					)
+					
+					# 創建現有社團 URL 的集合
+					existing_urls = set(community.url for community in existing_communities)
+					new_urls = set(community['url'] for community in new_communities)
+					
+					# 刪除不再存在的社團
+					urls_to_delete = existing_urls - new_urls
+					deleted_count = 0
+					if urls_to_delete:
+						deleted_communities = Community.objects.filter(
+							user=request.user,
+							community_type='facebook',
+							url__in=urls_to_delete
+						)
+						deleted_count = deleted_communities.count()
+						deleted_communities.delete()
+						print(f"刪除了 {deleted_count} 個不再存在的社團")
+					
+					# 添加新的社團
+					added_count = facebook_view._save_communities_to_db(request.user, new_communities)
+					print(f"新增了 {added_count} 個社團")
+					
+					driver.quit()
+					
+					return JsonResponse({
+						'success': True,
+						'message': f'社團列表已更新！新增 {added_count} 個，刪除 {deleted_count} 個',
+						'added_count': added_count,
+						'deleted_count': deleted_count,
+						'total_count': len(new_communities)
+					})
+					
+				except Exception as e:
+					if driver:
+						driver.quit()
+					raise e
+				
+			else:
+				return JsonResponse({'error': '無效的操作'}, status=400)
+				
+		except json.JSONDecodeError:
+			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+		except Exception as e:
+			return JsonResponse({'error': f'重新整理失敗: {str(e)}'}, status=500)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

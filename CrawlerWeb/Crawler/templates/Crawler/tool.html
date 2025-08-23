@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>爬蟲工具 - 智能自動化平台</title>
 	<link rel="stylesheet" href="{% static 'Crawler/css/tool.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/tool_refresh.css' %}">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -225,8 +226,15 @@
 
 						<!-- 社團列表 -->
 						<div class="section-header">
-							<h3><i class="fab fa-facebook"></i> FB我的社團</h3>
-							<p>顯示您已加入的 Facebook 社團</p>
+							<div style="display: flex; justify-content: space-between; align-items: center;">
+								<div>
+									<h3><i class="fab fa-facebook"></i> FB我的社團</h3>
+									<p>顯示您已加入的 Facebook 社團</p>
+								</div>
+								<button type="button" class="btn btn-info btn-sm" id="refreshCommunitiesBtn">
+									<i class="fas fa-sync-alt"></i> 重新整理
+								</button>
+							</div>
 						</div>
 						<div class="table-container">
 							<table class="data-table">

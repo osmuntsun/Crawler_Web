@@ -221,6 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			postingImageUpload.addEventListener('change', handleImageUpload);
 		}
 
+		// 重新整理社團按鈕
+		const refreshCommunitiesBtn = document.getElementById('refreshCommunitiesBtn');
+		if (refreshCommunitiesBtn) {
+			refreshCommunitiesBtn.addEventListener('click', refreshCommunities);
+		}
+
 		// 初始化頁面數據
 		(async () => {
 			await loadAccountsStatus();
@@ -819,6 +825,49 @@ document.addEventListener('DOMContentLoaded', function() {
 					</td>
 				</tr>
 			`;
+		}
+	}
+
+	// 重新整理社團列表
+	async function refreshCommunities() {
+		const refreshBtn = document.getElementById('refreshCommunitiesBtn');
+		const originalText = refreshBtn.innerHTML;
+		
+		try {
+			// 更新按鈕狀態
+			refreshBtn.disabled = true;
+			refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 重新整理中...';
+			
+			// 獲取 CSRF 令牌
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/communities/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': csrfToken,
+				},
+				body: JSON.stringify({
+					action: 'refresh'
+				})
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				showNotification(result.message, 'success');
+				// 重新載入社團列表
+				await loadCommunities();
+			} else {
+				throw new Error(result.error || '重新整理失敗');
+			}
+		} catch (error) {
+			console.error('重新整理社團失敗:', error);
+			showNotification('重新整理失敗：' + error.message, 'error');
+		} finally {
+			// 恢復按鈕狀態
+			refreshBtn.disabled = false;
+			refreshBtn.innerHTML = originalText;
 		}
 	}
 

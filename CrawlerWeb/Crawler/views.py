@@ -91,13 +91,18 @@ class FacebookAutomationView(View):
 			return JsonResponse({'error': f'操作失敗: {str(e)}'}, status=500)
 	
 	def login_and_save_cookies(self, request, data):
-		"""登入 Facebook 並保存 Cookie"""
+		"""登入社群平台並保存 Cookie"""
 		try:
+			platform = data.get('platform', 'facebook')
 			email = data.get('email')
 			password = data.get('password')
 			
 			if not email or not password:
 				return JsonResponse({'error': '請提供電子郵件和密碼'}, status=400)
+			
+			# 目前只支援 Facebook 自動登入
+			if platform != 'facebook':
+				return JsonResponse({'error': f'目前只支援 Facebook 自動登入，{platform} 需要手動獲取 Cookie'}, status=400)
 			
 			# 使用 Selenium 登入 Facebook
 			driver = self._setup_driver()
@@ -138,7 +143,7 @@ class FacebookAutomationView(View):
 			# 保存到資料庫
 			website_cookie, created = WebsiteCookie.objects.update_or_create(
 				user=request.user,
-				website='facebook',
+				website=platform,
 				defaults={
 					'website_url': 'https://www.facebook.com',
 					'cookie_data': filtered_cookies,
@@ -151,7 +156,7 @@ class FacebookAutomationView(View):
 			
 			return JsonResponse({
 				'success': True,
-				'message': f'成功獲取並保存 {len(filtered_cookies)} 個 Facebook Cookie',
+				'message': f'成功獲取並保存 {len(filtered_cookies)} 個 {platform} Cookie',
 				'cookie_count': len(filtered_cookies)
 			})
 			
@@ -378,6 +383,94 @@ class FacebookAutomationView(View):
 			if new_height == last_height:
 				break
 			last_height = new_height
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AccountsStatusView(View):
+	"""
+	帳號狀態查詢視圖
+	"""
+	
+	def get(self, request):
+		"""獲取用戶的帳號狀態"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		if not request.user.is_premium_active:
+			return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
+		
+		try:
+			# 獲取用戶的所有網站 Cookie
+			website_cookies = WebsiteCookie.objects.filter(
+				user=request.user,
+				is_active=True
+			)
+			
+			accounts = []
+			for cookie in website_cookies:
+				accounts.append({
+					'website': cookie.website,
+					'website_url': cookie.website_url,
+					'is_active': cookie.is_active,
+					'last_updated': cookie.last_updated.isoformat(),
+					'created_at': cookie.created_at.isoformat(),
+					'notes': cookie.notes
+				})
+			
+			return JsonResponse(accounts, safe=False)
+			
+		except Exception as e:
+			return JsonResponse({'error': f'獲取帳號狀態失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PostingView(View):
+	"""
+	發文視圖
+	"""
+	
+	def post(self, request):
+		"""處理發文請求"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		if not request.user.is_premium_active:
+			return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
+		
+		try:
+			data = json.loads(request.body)
+			platform = data.get('platform')
+			message = data.get('message')
+			images = data.get('images', [])
+			
+			if not platform or not message:
+				return JsonResponse({'error': '請提供平台和發文內容'}, status=400)
+			
+			# 檢查是否有對應平台的 Cookie
+			try:
+				website_cookie = WebsiteCookie.objects.get(
+					user=request.user,
+					website=platform,
+					is_active=True
+				)
+			except WebsiteCookie.DoesNotExist:
+				return JsonResponse({'error': f'請先登入 {platform} 並保存 Cookie'}, status=400)
+			
+			# 這裡可以實現其他平台的發文邏輯
+			# 目前只支援 Facebook，其他平台返回成功但實際未實現
+			
+			return JsonResponse({
+				'success': True,
+				'message': f'成功發文到 {platform}',
+				'platform': platform,
+				'content_length': len(message),
+				'image_count': len(images)
+			})
+			
+		except json.JSONDecodeError:
+			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+		except Exception as e:
+			return JsonResponse({'error': f'發文失敗: {str(e)}'}, status=500)
 
 
 

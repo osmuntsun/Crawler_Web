@@ -964,6 +964,12 @@ body {
 	color: #999;
 }
 
+.account-status-card .cookie-count {
+	font-size: 0.8rem;
+	color: #667eea;
+	font-weight: 500;
+}
+
 /* 文案預覽 */
 .copy-preview {
 	background: #f8f9fa;
@@ -1134,5 +1140,17 @@ body {
 .status-badge.status-inactive {
 	background: rgba(220, 53, 69, 0.1);
 	color: #dc3545;
+}
+
+/* 按鈕樣式 */
+.btn-sm {
+	padding: 6px 12px;
+	font-size: 0.85rem;
+	border-radius: 6px;
+}
+
+.btn-danger {
+	background: linear-gradient(135deg, #dc3545, #fd7e14);
+	color: white;
 }
 

@@ -222,10 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 
 		// 初始化頁面數據
-		loadAccountsStatus();
-		loadCommunities();
-		loadCopyTemplates();
-		updatePostingPlatforms();
+		(async () => {
+			await loadAccountsStatus();
+			await loadCommunities();
+			await loadCopyTemplates();
+			await updatePostingPlatforms();
+		})();
+		
+		// 檢查並隱藏已登入的平台選項
+		setTimeout(async () => {
+			await checkAndHideLoggedInPlatforms();
+		}, 1000); // 延遲1秒執行，確保其他數據已載入
 		
 		// 綁定事件監聽器
 		bindEventListeners();
@@ -291,9 +298,23 @@ document.addEventListener('DOMContentLoaded', function() {
 				form.reset();
 				
 				// 重新載入帳號狀態、社團列表和發文平台選項
-				loadAccountsStatus();
-				loadCommunities();
-				updatePostingPlatforms();
+				(async () => {
+					await loadAccountsStatus();
+					await loadCommunities();
+					await updatePostingPlatforms();
+				})();
+				
+				// 如果是 Facebook 登入成功，從選項中移除 Facebook
+				if (data.platform === 'facebook') {
+					const platformSelect = document.querySelector('select[name="login_platform"]');
+					if (platformSelect) {
+						const facebookOption = platformSelect.querySelector('option[value="facebook"]');
+						if (facebookOption) {
+							facebookOption.style.display = 'none';
+							facebookOption.disabled = true;
+						}
+					}
+				}
 			} else {
 				throw new Error(result.error || '登入失敗');
 			}
@@ -332,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		form.reset();
 		
 		// 重新載入文案模板
-		loadCopyTemplates();
+		await loadCopyTemplates();
 	}
 
 	// 處理發文
@@ -575,8 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!accountsStatusDiv) return;
 
 		try {
+			console.log('開始載入帳號狀態...');
 			const response = await fetch('/crawler/api/accounts/status/');
 			const accounts = await response.json();
+			console.log('帳號狀態響應:', accounts);
 
 			let html = '';
 			const platforms = [
@@ -594,6 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			platforms.forEach(platform => {
 				const account = accounts.find(acc => acc.website === platform.key);
 				const isConnected = account && account.is_active;
+				console.log(`平台 ${platform.key}: ${isConnected ? '已連接' : '未連接'}`);
 				
 				html += `
 					<div class="account-status-card ${isConnected ? 'connected' : 'disconnected'}">
@@ -605,34 +629,135 @@ document.addEventListener('DOMContentLoaded', function() {
 							${isConnected ? '已登入' : '未登入'}
 						</div>
 						${isConnected ? `<div class="last-update">最後更新：${new Date(account.last_updated).toLocaleString()}</div>` : ''}
+						${isConnected ? `<div class="cookie-count">Cookie 數量：${account.cookie_count || 0}</div>` : ''}
 					</div>
 				`;
 			});
 
 			accountsStatusDiv.innerHTML = html;
+			
+			// 同時更新帳號列表表格
+			await updateAccountsTable(accounts);
+			
+			// 更新平台選項
+			await checkAndHideLoggedInPlatforms();
 		} catch (error) {
 			console.error('載入帳號狀態失敗:', error);
+			console.error('錯誤詳情:', error.message);
 			accountsStatusDiv.innerHTML = '<p class="text-muted">載入帳號狀態失敗</p>';
+		}
+	}
+
+	// 更新帳號列表表格
+	async function updateAccountsTable(accounts) {
+		console.log('更新帳號列表表格，帳號數量:', accounts.length);
+		const accountsTableBody = document.querySelector('#tab-account-management .data-table tbody');
+		if (!accountsTableBody) {
+			console.log('找不到帳號表格主體元素');
+			return;
+		}
+
+		// 檢查用戶權限
+		let isSuperUser = false;
+		try {
+			const userResponse = await fetch('/crawler/api/user/permissions/');
+			if (userResponse.ok) {
+				const userData = await userResponse.json();
+				isSuperUser = userData.is_superuser || false;
+			}
+		} catch (error) {
+			console.log('無法獲取用戶權限，預設為非超級用戶');
+		}
+
+		if (accounts.length === 0) {
+			accountsTableBody.innerHTML = `
+				<tr class="no-data">
+					<td colspan="6">
+						<div class="empty-state">
+							<i class="fas fa-inbox"></i>
+							<p>尚未新增任何社群軟體帳號</p>
+							<small>點擊上方表單新增您的第一個帳號</small>
+						</div>
+					</td>
+				</tr>
+			`;
+		} else {
+			let html = '';
+			accounts.forEach(account => {
+				const platformName = getPlatformDisplayName(account.website);
+				const cookieCount = account.cookie_count || 0;
+				const statusText = account.is_active ? '啟用' : '停用';
+				const statusClass = account.is_active ? 'status-active' : 'status-inactive';
+				
+				html += `
+					<tr>
+						<td>
+							<span class="platform-badge ${account.website}">
+								<i class="fab fa-${account.website === 'facebook' ? 'facebook' : 'globe'}"></i>
+								${platformName}
+							</span>
+						</td>
+						<td>
+							<a href="${account.website_url}" target="_blank" class="community-link">
+								<i class="fas fa-external-link-alt"></i> ${account.website_url}
+							</a>
+						</td>
+						<td>${cookieCount}</td>
+						<td>${new Date(account.last_updated).toLocaleString()}</td>
+						<td>
+							<span class="status-badge ${statusClass}">
+								${statusText}
+							</span>
+						</td>
+						<td>
+							${isSuperUser ? 
+								`<button class="btn btn-sm btn-danger delete-account-btn" data-platform="${account.website}">
+									<i class="fas fa-trash"></i> 刪除
+								</button>` : 
+								`<small class="text-muted">僅超級管理員可刪除</small>`
+							}
+						</td>
+					</tr>
+				`;
+			});
+			accountsTableBody.innerHTML = html;
+			
+			// 綁定刪除按鈕事件
+			if (isSuperUser) {
+				const deleteButtons = accountsTableBody.querySelectorAll('.delete-account-btn');
+				deleteButtons.forEach(button => {
+					button.addEventListener('click', function() {
+						const platform = this.getAttribute('data-platform');
+						deleteAccount(platform);
+					});
+				});
+			}
 		}
 	}
 
 	// 載入社團列表
 	async function loadCommunities() {
 		const communitiesTableBody = document.getElementById('communitiesTableBody');
-		if (!communitiesTableBody) return;
+		if (!communitiesTableBody) {
+			console.log('找不到社團表格主體元素');
+			return;
+		}
 
 		try {
+			console.log('開始載入社團列表...');
 			const response = await fetch('/crawler/api/communities/');
 			const result = await response.json();
+			console.log('社團列表響應:', result);
 
 			if (response.ok && result.success) {
+				console.log(`找到 ${result.communities.length} 個社團`);
 				if (result.communities.length === 0) {
 					communitiesTableBody.innerHTML = `
 						<tr class="no-data">
 							<td colspan="6">
 								<div class="empty-state">
-									<i class="fas fa-users"></i>
-									<p>尚未加入任何社團</p>
+									<i class="fab fa-facebook"></i>
+									<p>尚未加入任何 Facebook 社團</p>
 									<small>登入 Facebook 後將自動獲取您的社團列表</small>
 								</div>
 							</td>
@@ -656,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
 								</td>
 								<td>
 									<span class="platform-badge ${community.community_type}">
-										<i class="fab fa-${community.community_type === 'facebook' ? 'facebook' : 'globe'}"></i>
+										<i class="fab fa-facebook"></i>
 										${platformName}
 									</span>
 								</td>
@@ -682,12 +807,13 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		} catch (error) {
 			console.error('載入社團列表失敗:', error);
+			console.error('錯誤詳情:', error.message);
 			communitiesTableBody.innerHTML = `
 				<tr class="no-data">
 					<td colspan="6">
 						<div class="empty-state">
-							<i class="fas fa-exclamation-triangle"></i>
-							<p>載入社團列表失敗</p>
+							<i class="fab fa-facebook"></i>
+							<p>載入 Facebook 社團列表失敗</p>
 							<small>${error.message}</small>
 						</div>
 					</td>
@@ -742,6 +868,88 @@ document.addEventListener('DOMContentLoaded', function() {
 			});
 		} catch (error) {
 			console.error('更新發文平台選項失敗:', error);
+		}
+	}
+
+	// 檢查並隱藏已登入的平台選項
+	async function checkAndHideLoggedInPlatforms() {
+		try {
+			console.log('檢查已登入的平台...');
+			const response = await fetch('/crawler/api/accounts/status/');
+			const accounts = await response.json();
+			console.log('已登入的帳號:', accounts);
+			
+			const platformSelect = document.querySelector('select[name="login_platform"]');
+			if (!platformSelect) {
+				console.log('找不到平台選擇元素');
+				return;
+			}
+			
+			accounts.forEach(account => {
+				if (account.is_active) {
+					const option = platformSelect.querySelector(`option[value="${account.website}"]`);
+					if (option) {
+						option.style.display = 'none';
+						option.disabled = true;
+						console.log(`隱藏平台選項: ${account.website}`);
+					} else {
+						console.log(`找不到平台選項: ${account.website}`);
+					}
+				}
+			});
+		} catch (error) {
+			console.error('檢查已登入平台失敗:', error);
+			console.error('錯誤詳情:', error.message);
+		}
+	}
+
+	// 刪除帳號
+	async function deleteAccount(platform) {
+		if (!confirm(`確定要刪除 ${getPlatformDisplayName(platform)} 帳號嗎？`)) {
+			return;
+		}
+
+		try {
+			// 獲取 CSRF 令牌
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/accounts/delete/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': csrfToken,
+				},
+				body: JSON.stringify({
+					platform: platform
+				})
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				showNotification(`${getPlatformDisplayName(platform)} 帳號已刪除`, 'success');
+				(async () => {
+					await loadAccountsStatus();
+					await loadCommunities();
+					await updatePostingPlatforms();
+				})();
+				
+				// 如果是 Facebook，重新顯示選項
+				if (platform === 'facebook') {
+					const platformSelect = document.querySelector('select[name="login_platform"]');
+					if (platformSelect) {
+						const facebookOption = platformSelect.querySelector('option[value="facebook"]');
+						if (facebookOption) {
+							facebookOption.style.display = '';
+							facebookOption.disabled = false;
+						}
+					}
+				}
+			} else {
+				throw new Error(result.error || '刪除失敗');
+			}
+		} catch (error) {
+			showNotification('刪除失敗：' + error.message, 'error');
 		}
 	}
 
@@ -811,6 +1019,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// 導出全局函數供HTML使用
 	window.showNotification = showNotification;
 	window.toggleSidebar = toggleSidebar;
+	window.deleteAccount = deleteAccount;
 });
 
 

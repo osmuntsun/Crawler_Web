@@ -172,9 +172,14 @@ class FacebookAutomationView(View):
 			# 如果是 Facebook，自動獲取並保存社團
 			communities = []
 			if platform == 'facebook':
+				print("開始獲取 Facebook 社團...")
 				communities = self._get_facebook_communities(driver, filtered_cookies)
+				print(f"獲取到 {len(communities)} 個社團")
 				if communities:
-					self._save_communities_to_db(request.user, communities)
+					saved_count = self._save_communities_to_db(request.user, communities)
+					print(f"成功保存 {saved_count} 個社團到資料庫")
+				else:
+					print("沒有獲取到任何社團")
 			
 			driver.quit()
 			
@@ -421,38 +426,54 @@ class FacebookAutomationView(View):
 	def _get_facebook_communities(self, driver, cookies):
 		"""獲取 Facebook 社團列表"""
 		try:
+			print("開始獲取 Facebook 社團...")
 			# 前往社團頁面
 			driver.get("https://www.facebook.com/groups/joins/?nav_source=tab&ordering=viewer_added")
-			time.sleep(3)
+			time.sleep(5)  # 增加等待時間
+			print("已前往社團頁面")
 			
 			# 滾動到底部獲取所有社團
 			self._scroll_to_bottom(driver)
+			time.sleep(2)  # 滾動後再等待一下
+			print("已完成頁面滾動")
 			
 			# 獲取社團列表
 			communities = []
 			try:
 				# 嘗試多個可能的 XPath 來找到社團容器
 				possible_xpaths = [
-					'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div/div/div[3]',
+					'//a[contains(@href, "/groups/") and not(contains(@href, "joins")) and not(contains(@href, "create"))]',
 					'//div[@data-testid="groups_tab"]//a[contains(@href, "/groups/")]',
 					'//div[contains(@class, "groups")]//a[contains(@href, "/groups/")]',
-					'//a[contains(@href, "/groups/") and not(contains(@href, "joins"))]'
+					'//a[contains(@href, "/groups/")]'
 				]
 				
-				for xpath in possible_xpaths:
+				for i, xpath in enumerate(possible_xpaths):
 					try:
+						print(f"嘗試 XPath {i+1}: {xpath}")
 						elements = driver.find_elements(By.XPATH, xpath)
+						print(f"找到 {len(elements)} 個元素")
 						if elements:
 							for element in elements:
 								name = element.text.strip()
 								url = element.get_attribute('href')
-								if name and url and 'groups' in url and 'joins' not in url:
+								print(f"檢查元素: {name} - {url}")
+								# 更嚴格的過濾條件
+								if (name and url and 
+									'groups' in url and 
+									'joins' not in url and 
+									'create' not in url and
+									len(name) > 0 and
+									not name.startswith('查看') and
+									not name.startswith('加入')):
+									print(f"找到社團: {name} - {url}")
 									communities.append({
 										'name': name,
 										'url': url
 									})
 							break  # 如果找到元素，就跳出循環
-					except Exception:
+					except Exception as e:
+						print(f"XPath {i+1} 失敗: {str(e)}")
 						continue
 				
 				# 去重
@@ -467,17 +488,23 @@ class FacebookAutomationView(View):
 				
 			except Exception as e:
 				print(f"獲取社團時發生錯誤: {str(e)}")
+				import traceback
+				traceback.print_exc()
 				return []
 				
 		except Exception as e:
 			print(f"前往社團頁面時發生錯誤: {str(e)}")
+			import traceback
+			traceback.print_exc()
 			return []
 	
 	def _save_communities_to_db(self, user, communities):
 		"""保存社團到資料庫"""
 		try:
+			print(f"開始保存 {len(communities)} 個社團到資料庫")
 			saved_count = 0
-			for community_data in communities:
+			for i, community_data in enumerate(communities):
+				print(f"處理社團 {i+1}: {community_data['name']}")
 				# 檢查是否已存在相同的社團
 				existing_community = Community.objects.filter(
 					user=user,
@@ -496,12 +523,17 @@ class FacebookAutomationView(View):
 						is_public=True
 					)
 					saved_count += 1
+					print(f"成功保存社團: {community_data['name']}")
+				else:
+					print(f"社團已存在: {community_data['name']}")
 			
 			print(f"成功保存 {saved_count} 個新社團到資料庫")
 			return saved_count
 			
 		except Exception as e:
 			print(f"保存社團到資料庫時發生錯誤: {str(e)}")
+			import traceback
+			traceback.print_exc()
 			return 0
 
 
@@ -535,13 +567,88 @@ class AccountsStatusView(View):
 					'is_active': cookie.is_active,
 					'last_updated': cookie.last_updated.isoformat(),
 					'created_at': cookie.created_at.isoformat(),
-					'notes': cookie.notes
+					'notes': cookie.notes,
+					'cookie_count': cookie.get_cookie_count()
 				})
 			
 			return JsonResponse(accounts, safe=False)
 			
 		except Exception as e:
 			return JsonResponse({'error': f'獲取帳號狀態失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UserPermissionsView(View):
+	"""
+	用戶權限查詢視圖
+	"""
+	
+	def get(self, request):
+		"""獲取用戶權限信息"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			return JsonResponse({
+				'is_superuser': request.user.is_superuser,
+				'is_staff': request.user.is_staff,
+				'username': request.user.username,
+				'email': request.user.email
+			})
+		except Exception as e:
+			return JsonResponse({'error': f'獲取權限失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AccountDeleteView(View):
+	"""
+	帳號刪除視圖
+	"""
+	
+	def post(self, request):
+		"""刪除用戶的帳號"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		# 檢查權限：只有超級管理員才能刪除帳號
+		if not request.user.is_superuser:
+			return JsonResponse({'error': '權限不足，只有超級管理員才能刪除帳號'}, status=403)
+		
+		try:
+			data = json.loads(request.body)
+			platform = data.get('platform')
+			
+			if not platform:
+				return JsonResponse({'error': '請提供平台名稱'}, status=400)
+			
+			# 刪除網站 Cookie
+			try:
+				website_cookie = WebsiteCookie.objects.get(
+					user=request.user,
+					website=platform,
+					is_active=True
+				)
+				website_cookie.delete()
+				
+				# 如果是 Facebook，同時刪除相關社團
+				if platform == 'facebook':
+					Community.objects.filter(
+						user=request.user,
+						community_type='facebook'
+					).delete()
+				
+				return JsonResponse({
+					'success': True,
+					'message': f'{platform} 帳號已成功刪除'
+				})
+				
+			except WebsiteCookie.DoesNotExist:
+				return JsonResponse({'error': f'找不到 {platform} 帳號'}, status=404)
+			
+		except json.JSONDecodeError:
+			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+		except Exception as e:
+			return JsonResponse({'error': f'刪除失敗: {str(e)}'}, status=500)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

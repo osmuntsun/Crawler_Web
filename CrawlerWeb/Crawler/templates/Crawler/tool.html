@@ -126,6 +126,7 @@
 						</div>
 						{% endif %}
 						<form id="accountLoginForm" class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+							{% csrf_token %}
 							<div class="form-row">
 								<label><i class="fas fa-globe"></i> 選擇登入的平台</label>
 								<select name="login_platform" class="form-select" required>
@@ -155,6 +156,10 @@
 								<button type="submit" class="btn btn-primary" id="accountLoginBtn">
 									<i class="fas fa-sign-in-alt"></i> 登入並獲取 Cookie
 								</button>
+								<small class="form-help" style="margin-top: 8px; display: block;">
+									<i class="fas fa-info-circle"></i> 
+									Facebook 登入將自動獲取並保存您的社團列表
+								</small>
 							</div>
 						</form>
 						<div id="accountLoginStatus" class="status-message" style="display: none;"></div>
@@ -211,6 +216,37 @@
 												<i class="fas fa-inbox"></i>
 												<p>尚未新增任何社群軟體帳號</p>
 												<small>點擊上方表單新增您的第一個帳號</small>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- 社團列表 -->
+						<div class="section-header">
+							<h3><i class="fas fa-users"></i> 我的社團</h3>
+							<p>顯示您已加入的社群平台社團</p>
+						</div>
+						<div class="table-container">
+							<table class="data-table">
+								<thead>
+									<tr>
+										<th><i class="fas fa-users"></i> 社團名稱</th>
+										<th><i class="fas fa-globe"></i> 平台</th>
+										<th><i class="fas fa-link"></i> 連結</th>
+										<th><i class="fas fa-users"></i> 成員數</th>
+										<th><i class="fas fa-clock"></i> 加入時間</th>
+										<th><i class="fas fa-toggle-on"></i> 狀態</th>
+									</tr>
+								</thead>
+								<tbody id="communitiesTableBody">
+									<tr class="no-data">
+										<td colspan="6">
+											<div class="empty-state">
+												<i class="fas fa-users"></i>
+												<p>尚未加入任何社團</p>
+												<small>登入 Facebook 後將自動獲取您的社團列表</small>
 											</div>
 										</td>
 									</tr>

@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// 初始化頁面數據
 		loadAccountsStatus();
+		loadCommunities();
 		loadCopyTemplates();
 		updatePostingPlatforms();
 		
@@ -248,17 +249,26 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		// 更新按鈕狀態
 		loginBtn.disabled = true;
-		loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+		const platform = formData.get('login_platform');
+		if (platform === 'facebook') {
+			loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中並獲取社團...';
+		} else {
+			loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+		}
 		
 		// 清除之前的狀態
 		statusDiv.style.display = 'none';
 		statusDiv.className = 'status-message';
 
 		try {
-			const response = await fetch('/Crawler/api/facebook/', {
+			// 獲取 CSRF 令牌
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/facebook/', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					'X-CSRFToken': csrfToken,
 				},
 				body: JSON.stringify(data)
 			});
@@ -270,13 +280,19 @@ document.addEventListener('DOMContentLoaded', function() {
 				statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + result.message;
 				statusDiv.style.display = 'block';
 				
-				showNotification(`${data.platform} 登入成功！`, 'success');
+				// 顯示成功通知
+				if (data.platform === 'facebook' && result.communities_count > 0) {
+					showNotification(`${data.platform} 登入成功！已獲取 ${result.communities_count} 個社團`, 'success');
+				} else {
+					showNotification(`${data.platform} 登入成功！`, 'success');
+				}
 				
 				// 清空表單
 				form.reset();
 				
-				// 重新載入帳號狀態和發文平台選項
+				// 重新載入帳號狀態、社團列表和發文平台選項
 				loadAccountsStatus();
+				loadCommunities();
 				updatePostingPlatforms();
 			} else {
 				throw new Error(result.error || '登入失敗');
@@ -358,10 +374,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					throw new Error('請至少選擇一個 Facebook 社團');
 				}
 
-				response = await fetch('/Crawler/api/facebook/', {
+				// 獲取 CSRF 令牌
+				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+				
+				response = await fetch('/crawler/api/facebook/', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
 					},
 					body: JSON.stringify({
 						action: 'post_to_community',
@@ -372,10 +392,14 @@ document.addEventListener('DOMContentLoaded', function() {
 				});
 			} else {
 				// 其他平台的發文邏輯
-				response = await fetch('/Crawler/api/posting/', {
+				// 獲取 CSRF 令牌
+				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+				
+				response = await fetch('/crawler/api/posting/', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
 					},
 					body: JSON.stringify({
 						platform: platform,
@@ -428,10 +452,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		getCommunitiesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 獲取中...';
 
 		try {
-			const response = await fetch('/Crawler/api/facebook/', {
+			// 獲取 CSRF 令牌
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/facebook/', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					'X-CSRFToken': csrfToken,
 				},
 				body: JSON.stringify({
 					action: 'get_communities'
@@ -547,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!accountsStatusDiv) return;
 
 		try {
-			const response = await fetch('/Crawler/api/accounts/status/');
+			const response = await fetch('/crawler/api/accounts/status/');
 			const accounts = await response.json();
 
 			let html = '';
@@ -588,6 +616,86 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
+	// 載入社團列表
+	async function loadCommunities() {
+		const communitiesTableBody = document.getElementById('communitiesTableBody');
+		if (!communitiesTableBody) return;
+
+		try {
+			const response = await fetch('/crawler/api/communities/');
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				if (result.communities.length === 0) {
+					communitiesTableBody.innerHTML = `
+						<tr class="no-data">
+							<td colspan="6">
+								<div class="empty-state">
+									<i class="fas fa-users"></i>
+									<p>尚未加入任何社團</p>
+									<small>登入 Facebook 後將自動獲取您的社團列表</small>
+								</div>
+							</td>
+						</tr>
+					`;
+				} else {
+					let html = '';
+					result.communities.forEach(community => {
+						const platformName = getPlatformDisplayName(community.community_type);
+						const memberCount = community.member_count || '未知';
+						const statusText = community.is_active ? '啟用' : '停用';
+						const statusClass = community.is_active ? 'status-active' : 'status-inactive';
+						
+						html += `
+							<tr>
+								<td>
+									<div class="community-name">
+										<strong>${community.name}</strong>
+										${community.description ? `<br><small class="text-muted">${community.description}</small>` : ''}
+									</div>
+								</td>
+								<td>
+									<span class="platform-badge ${community.community_type}">
+										<i class="fab fa-${community.community_type === 'facebook' ? 'facebook' : 'globe'}"></i>
+										${platformName}
+									</span>
+								</td>
+								<td>
+									<a href="${community.url}" target="_blank" class="community-link">
+										<i class="fas fa-external-link-alt"></i> 查看
+									</a>
+								</td>
+								<td>${memberCount}</td>
+								<td>${new Date(community.created_at).toLocaleDateString()}</td>
+								<td>
+									<span class="status-badge ${statusClass}">
+										${statusText}
+									</span>
+								</td>
+							</tr>
+						`;
+					});
+					communitiesTableBody.innerHTML = html;
+				}
+			} else {
+				throw new Error(result.error || '載入社團列表失敗');
+			}
+		} catch (error) {
+			console.error('載入社團列表失敗:', error);
+			communitiesTableBody.innerHTML = `
+				<tr class="no-data">
+					<td colspan="6">
+						<div class="empty-state">
+							<i class="fas fa-exclamation-triangle"></i>
+							<p>載入社團列表失敗</p>
+							<small>${error.message}</small>
+						</div>
+					</td>
+				</tr>
+			`;
+		}
+	}
+
 	// 載入文案模板
 	async function loadCopyTemplates() {
 		const copyTemplateSelect = document.getElementById('copyTemplate');
@@ -619,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!postingPlatformSelect) return;
 
 		try {
-			const response = await fetch('/Crawler/api/accounts/status/');
+			const response = await fetch('/crawler/api/accounts/status/');
 			const accounts = await response.json();
 			
 			// 清空現有選項

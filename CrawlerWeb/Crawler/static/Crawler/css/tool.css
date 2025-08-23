@@ -996,3 +996,143 @@ body {
 	font-style: italic;
 }
 
+/* 數據表格樣式 */
+.table-container {
+	background: white;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+	margin-top: 20px;
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th {
+	background: #f8f9fa;
+	padding: 15px 12px;
+	text-align: left;
+	font-weight: 600;
+	color: #333;
+	border-bottom: 2px solid #e1e5e9;
+}
+
+.data-table td {
+	padding: 12px;
+	border-bottom: 1px solid #e1e5e9;
+	vertical-align: top;
+}
+
+.data-table tr:hover {
+	background: #f8f9fa;
+}
+
+.data-table .no-data td {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.empty-state {
+	text-align: center;
+	color: #999;
+}
+
+.empty-state i {
+	font-size: 3rem;
+	margin-bottom: 15px;
+	opacity: 0.5;
+}
+
+.empty-state p {
+	font-size: 1.1rem;
+	margin-bottom: 8px;
+}
+
+.empty-state small {
+	font-size: 0.9rem;
+}
+
+/* 社團相關樣式 */
+.community-name strong {
+	color: #333;
+	font-size: 1rem;
+}
+
+.community-name small {
+	color: #666;
+	font-size: 0.85rem;
+}
+
+.platform-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.platform-badge.facebook {
+	background: rgba(24, 119, 242, 0.1);
+	color: #1877f2;
+}
+
+.platform-badge.instagram_account {
+	background: rgba(225, 48, 108, 0.1);
+	color: #e1306c;
+}
+
+.platform-badge.discord_server {
+	background: rgba(114, 137, 218, 0.1);
+	color: #7289da;
+}
+
+.platform-badge.telegram_channel {
+	background: rgba(0, 136, 204, 0.1);
+	color: #0088cc;
+}
+
+.platform-badge.line_group {
+	background: rgba(0, 195, 0, 0.1);
+	color: #00c300;
+}
+
+.platform-badge.wechat_group {
+	background: rgba(7, 193, 96, 0.1);
+	color: #07c160;
+}
+
+.community-link {
+	color: #667eea;
+	text-decoration: none;
+	font-size: 0.9rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.community-link:hover {
+	color: #5a6fd8;
+	text-decoration: underline;
+}
+
+.status-badge {
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.status-badge.status-active {
+	background: rgba(40, 167, 69, 0.1);
+	color: #28a745;
+}
+
+.status-badge.status-inactive {
+	background: rgba(220, 53, 69, 0.1);
+	color: #dc3545;
+}
+

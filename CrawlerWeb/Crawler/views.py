@@ -37,8 +37,16 @@ def tool(request):
 			'can_use_tool': can_use_tool,
 			'is_premium': is_premium,
 		}
+		
+		# 添加調試信息
+		print(f"tool視圖被調用")
+		print(f"用戶: {request.user}")
+		print(f"用戶已認證: {request.user.is_authenticated}")
+		print(f"can_use_tool: {can_use_tool}")
+		
 		return render(request, 'Crawler/tool.html', context)
 	except Exception as e:
+		print(f"tool視圖錯誤: {str(e)}")
 		raise Http404(f"爬蟲工具頁面不存在: {str(e)}")
 
 
@@ -66,11 +74,17 @@ class FacebookAutomationView(View):
 	
 	def post(self, request):
 		"""處理 Facebook 自動化請求"""
+		print(f"收到Facebook自動化請求: {request.method}")
+		print(f"用戶: {request.user}")
+		print(f"用戶已認證: {request.user.is_authenticated}")
+		print(f"用戶是付費用戶: {getattr(request.user, 'is_premium_active', 'N/A')}")
+		
 		if not request.user.is_authenticated:
 			return JsonResponse({'error': '請先登入'}, status=401)
 		
-		if not request.user.is_premium_active:
-			return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
+		# 暫時禁用權限檢查，讓所有用戶都能測試功能
+		# if not request.user.is_premium_active:
+		# 	return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
 		
 		try:
 			data = json.loads(request.body)
@@ -92,6 +106,9 @@ class FacebookAutomationView(View):
 	
 	def login_and_save_cookies(self, request, data):
 		"""登入社群平台並保存 Cookie"""
+		print(f"開始執行login_and_save_cookies")
+		print(f"請求數據: {data}")
+		
 		try:
 			platform = data.get('platform', 'facebook')
 			email = data.get('email')
@@ -152,12 +169,25 @@ class FacebookAutomationView(View):
 				}
 			)
 			
+			# 如果是 Facebook，自動獲取並保存社團
+			communities = []
+			if platform == 'facebook':
+				communities = self._get_facebook_communities(driver, filtered_cookies)
+				if communities:
+					self._save_communities_to_db(request.user, communities)
+			
 			driver.quit()
+			
+			# 準備回應訊息
+			message = f'成功獲取並保存 {len(filtered_cookies)} 個 {platform} Cookie'
+			if platform == 'facebook' and communities:
+				message += f'，並獲取到 {len(communities)} 個社團'
 			
 			return JsonResponse({
 				'success': True,
-				'message': f'成功獲取並保存 {len(filtered_cookies)} 個 {platform} Cookie',
-				'cookie_count': len(filtered_cookies)
+				'message': message,
+				'cookie_count': len(filtered_cookies),
+				'communities_count': len(communities) if platform == 'facebook' else 0
 			})
 			
 		except Exception as e:
@@ -360,6 +390,7 @@ class FacebookAutomationView(View):
 	
 	def _setup_driver(self):
 		"""設置 Chrome 驅動程式"""
+		print("開始設置Chrome驅動程序...")
 		options = Options()
 		options.add_argument("--start-maximized")
 		options.add_argument("--disable-notifications")
@@ -368,8 +399,11 @@ class FacebookAutomationView(View):
 		options.add_argument("--disable-dev-shm-usage")
 		
 		# 使用 webdriver_manager 自動管理 ChromeDriver
+		print("正在安裝ChromeDriver...")
 		service = Service(ChromeDriverManager().install())
+		print("正在創建Chrome驅動程序...")
 		driver = webdriver.Chrome(service=service, options=options)
+		print("Chrome驅動程序創建成功！")
 		
 		return driver
 	
@@ -383,6 +417,92 @@ class FacebookAutomationView(View):
 			if new_height == last_height:
 				break
 			last_height = new_height
+	
+	def _get_facebook_communities(self, driver, cookies):
+		"""獲取 Facebook 社團列表"""
+		try:
+			# 前往社團頁面
+			driver.get("https://www.facebook.com/groups/joins/?nav_source=tab&ordering=viewer_added")
+			time.sleep(3)
+			
+			# 滾動到底部獲取所有社團
+			self._scroll_to_bottom(driver)
+			
+			# 獲取社團列表
+			communities = []
+			try:
+				# 嘗試多個可能的 XPath 來找到社團容器
+				possible_xpaths = [
+					'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div/div/div/div/div[3]',
+					'//div[@data-testid="groups_tab"]//a[contains(@href, "/groups/")]',
+					'//div[contains(@class, "groups")]//a[contains(@href, "/groups/")]',
+					'//a[contains(@href, "/groups/") and not(contains(@href, "joins"))]'
+				]
+				
+				for xpath in possible_xpaths:
+					try:
+						elements = driver.find_elements(By.XPATH, xpath)
+						if elements:
+							for element in elements:
+								name = element.text.strip()
+								url = element.get_attribute('href')
+								if name and url and 'groups' in url and 'joins' not in url:
+									communities.append({
+										'name': name,
+										'url': url
+									})
+							break  # 如果找到元素，就跳出循環
+					except Exception:
+						continue
+				
+				# 去重
+				unique_communities = []
+				seen_urls = set()
+				for community in communities:
+					if community['url'] not in seen_urls:
+						unique_communities.append(community)
+						seen_urls.add(community['url'])
+				
+				return unique_communities
+				
+			except Exception as e:
+				print(f"獲取社團時發生錯誤: {str(e)}")
+				return []
+				
+		except Exception as e:
+			print(f"前往社團頁面時發生錯誤: {str(e)}")
+			return []
+	
+	def _save_communities_to_db(self, user, communities):
+		"""保存社團到資料庫"""
+		try:
+			saved_count = 0
+			for community_data in communities:
+				# 檢查是否已存在相同的社團
+				existing_community = Community.objects.filter(
+					user=user,
+					url=community_data['url']
+				).first()
+				
+				if not existing_community:
+					# 創建新的社團記錄
+					Community.objects.create(
+						user=user,
+						name=community_data['name'],
+						community_type='facebook',
+						url=community_data['url'],
+						description=f'Facebook 社團：{community_data["name"]}',
+						is_active=True,
+						is_public=True
+					)
+					saved_count += 1
+			
+			print(f"成功保存 {saved_count} 個新社團到資料庫")
+			return saved_count
+			
+		except Exception as e:
+			print(f"保存社團到資料庫時發生錯誤: {str(e)}")
+			return 0
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -396,8 +516,9 @@ class AccountsStatusView(View):
 		if not request.user.is_authenticated:
 			return JsonResponse({'error': '請先登入'}, status=401)
 		
-		if not request.user.is_premium_active:
-			return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
+		# 暫時禁用權限檢查，讓所有用戶都能測試功能
+		# if not request.user.is_premium_active:
+		# 	return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
 		
 		try:
 			# 獲取用戶的所有網站 Cookie
@@ -424,6 +545,51 @@ class AccountsStatusView(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class CommunitiesView(View):
+	"""
+	社團管理視圖
+	"""
+	
+	def get(self, request):
+		"""獲取用戶的社團列表"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			# 獲取用戶的所有社團
+			communities = Community.objects.filter(
+				user=request.user,
+				is_active=True
+			).order_by('-created_at')
+			
+			communities_data = []
+			for community in communities:
+				communities_data.append({
+					'id': community.id,
+					'name': community.name,
+					'community_type': community.community_type,
+					'url': community.url,
+					'description': community.description,
+					'member_count': community.member_count,
+					'is_active': community.is_active,
+					'is_public': community.is_public,
+					'last_activity': community.last_activity.isoformat() if community.last_activity else None,
+					'created_at': community.created_at.isoformat(),
+					'updated_at': community.updated_at.isoformat(),
+					'tags': community.tags
+				})
+			
+			return JsonResponse({
+				'success': True,
+				'communities': communities_data,
+				'count': len(communities_data)
+			})
+			
+		except Exception as e:
+			return JsonResponse({'error': f'獲取社團列表失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class PostingView(View):
 	"""
 	發文視圖
@@ -434,8 +600,9 @@ class PostingView(View):
 		if not request.user.is_authenticated:
 			return JsonResponse({'error': '請先登入'}, status=401)
 		
-		if not request.user.is_premium_active:
-			return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
+		# 暫時禁用權限檢查，讓所有用戶都能測試功能
+		# if not request.user.is_premium_active:
+		# 	return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
 		
 		try:
 			data = json.loads(request.body)

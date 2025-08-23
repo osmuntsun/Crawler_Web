@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
-from Accounts.models import WebsiteCookie, Community
+from Accounts.models import WebsiteCookie, Community, PostTemplate, PostTemplateImage
 import json
 import time
 import os
@@ -853,6 +853,149 @@ class PostingView(View):
 			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
 		except Exception as e:
 			return JsonResponse({'error': f'發文失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PostTemplateView(View):
+	"""
+	貼文模板管理視圖
+	"""
+	
+	def get(self, request):
+		"""獲取用戶的貼文模板列表"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			# 獲取用戶的所有模板
+			templates = PostTemplate.objects.filter(
+				user=request.user,
+				is_active=True
+			).order_by('-updated_at')
+			
+			templates_data = []
+			for template in templates:
+				# 獲取模板的圖片
+				images = template.images.all().order_by('order')
+				images_data = []
+				for image in images:
+					images_data.append({
+						'id': image.id,
+						'url': image.image.url,
+						'order': image.order,
+						'alt_text': image.alt_text
+					})
+				
+				templates_data.append({
+					'id': template.id,
+					'title': template.title,
+					'content': template.content,
+					'hashtags': template.hashtags,
+					'images': images_data,
+					'image_count': len(images_data),
+					'created_at': template.created_at.isoformat(),
+					'updated_at': template.updated_at.isoformat()
+				})
+			
+			return JsonResponse({
+				'success': True,
+				'templates': templates_data,
+				'count': len(templates_data)
+			})
+			
+		except Exception as e:
+			return JsonResponse({'error': f'獲取模板列表失敗: {str(e)}'}, status=500)
+	
+	def post(self, request):
+		"""創建或更新貼文模板"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			# 處理 multipart/form-data
+			title = request.POST.get('title')
+			content = request.POST.get('content')
+			hashtags = request.POST.get('hashtags', '')
+			template_id = request.POST.get('template_id')  # 如果有 ID 則更新，否則創建
+			
+			if not title or not content:
+				return JsonResponse({'error': '請提供模板標題和內容'}, status=400)
+			
+			# 創建或更新模板
+			if template_id:
+				try:
+					template = PostTemplate.objects.get(id=template_id, user=request.user)
+					template.title = title
+					template.content = content
+					template.hashtags = hashtags
+					template.save()
+					action = '更新'
+				except PostTemplate.DoesNotExist:
+					return JsonResponse({'error': '找不到指定的模板'}, status=404)
+			else:
+				template = PostTemplate.objects.create(
+					user=request.user,
+					title=title,
+					content=content,
+					hashtags=hashtags
+				)
+				action = '創建'
+			
+			# 處理圖片上傳
+			images = request.FILES.getlist('images')
+			image_orders = request.POST.getlist('image_orders')
+			
+			# 如果是更新模板，先刪除舊圖片
+			if template_id:
+				template.images.all().delete()
+			
+			# 上傳新圖片
+			for i, image_file in enumerate(images):
+				order = int(image_orders[i]) if i < len(image_orders) else i
+				PostTemplateImage.objects.create(
+					template=template,
+					image=image_file,
+					order=order
+				)
+			
+			return JsonResponse({
+				'success': True,
+				'message': f'模板{action}成功',
+				'template_id': template.id,
+				'image_count': len(images)
+			})
+			
+		except Exception as e:
+			return JsonResponse({'error': f'{action}模板失敗: {str(e)}'}, status=500)
+	
+	def delete(self, request):
+		"""刪除貼文模板"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			data = json.loads(request.body)
+			template_id = data.get('template_id')
+			
+			if not template_id:
+				return JsonResponse({'error': '請提供模板ID'}, status=400)
+			
+			try:
+				template = PostTemplate.objects.get(id=template_id, user=request.user)
+				template.delete()
+				
+				return JsonResponse({
+					'success': True,
+					'message': '模板已刪除'
+				})
+				
+			except PostTemplate.DoesNotExist:
+				return JsonResponse({'error': '找不到指定的模板'}, status=404)
+			
+		except json.JSONDecodeError:
+			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+		except Exception as e:
+			return JsonResponse({'error': f'刪除模板失敗: {str(e)}'}, status=500)
 
 
 

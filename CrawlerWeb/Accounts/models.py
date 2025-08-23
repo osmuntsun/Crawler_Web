@@ -12,6 +12,13 @@ def avatar_upload_to(instance, filename):
     return f"avatars/{uuid.uuid4().hex}{safe_ext}"
 
 
+def template_image_upload_to(instance, filename):
+    """貼文模板圖片上傳路徑"""
+    _, ext = os.path.splitext(filename)
+    safe_ext = (ext or '').lower()
+    return f"templates/{instance.template.user.id}/{uuid.uuid4().hex}{safe_ext}"
+
+
 class User(AbstractUser):
     """自定義用戶模型"""
     email = models.EmailField(unique=True, verbose_name='電子郵件')
@@ -130,3 +137,49 @@ class Community(models.Model):
         from django.utils import timezone
         self.last_activity = timezone.now()
         self.save(update_fields=['last_activity'])
+
+
+class PostTemplate(models.Model):
+    """貼文模板資料庫"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='post_templates')
+    title = models.CharField(max_length=200, verbose_name='模板標題')
+    content = models.TextField(verbose_name='文案內容')
+    hashtags = models.TextField(blank=True, verbose_name='標籤')
+    is_active = models.BooleanField(default=True, verbose_name='是否啟用')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
+    
+    class Meta:
+        verbose_name = '貼文模板'
+        verbose_name_plural = '貼文模板'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    def get_image_count(self):
+        """取得圖片數量"""
+        return self.images.count()
+
+
+class PostTemplateImage(models.Model):
+    """貼文模板圖片"""
+    template = models.ForeignKey(PostTemplate, on_delete=models.CASCADE, verbose_name='模板', related_name='images')
+    image = models.ImageField(upload_to=template_image_upload_to, verbose_name='圖片')
+    order = models.PositiveIntegerField(default=0, verbose_name='排序')
+    alt_text = models.CharField(max_length=200, blank=True, verbose_name='替代文字')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
+    
+    class Meta:
+        verbose_name = '模板圖片'
+        verbose_name_plural = '模板圖片'
+        ordering = ['order', 'created_at']
+        indexes = [
+            models.Index(fields=['template', 'order']),
+        ]
+    
+    def __str__(self):
+        return f"{self.template.title} - 圖片 {self.order + 1}"

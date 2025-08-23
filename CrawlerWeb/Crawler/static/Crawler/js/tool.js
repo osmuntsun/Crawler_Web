@@ -227,11 +227,36 @@ document.addEventListener('DOMContentLoaded', function() {
 			refreshCommunitiesBtn.addEventListener('click', refreshCommunities);
 		}
 
+		// 模板圖片上傳
+		const templateImageUpload = document.getElementById('templateImageUpload');
+		const imageUploadArea = document.getElementById('imageUploadArea');
+		if (templateImageUpload && imageUploadArea) {
+			templateImageUpload.addEventListener('change', handleTemplateImageUpload);
+			
+			// 拖拽上傳
+			imageUploadArea.addEventListener('dragover', handleDragOver);
+			imageUploadArea.addEventListener('dragleave', handleDragLeave);
+			imageUploadArea.addEventListener('drop', handleDrop);
+		}
+
+		// 儲存模板按鈕
+		const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+		if (saveTemplateBtn) {
+			saveTemplateBtn.addEventListener('click', handleSaveTemplate);
+		}
+
+		// 預覽模板按鈕
+		const previewTemplateBtn = document.getElementById('previewTemplateBtn');
+		if (previewTemplateBtn) {
+			previewTemplateBtn.addEventListener('click', handlePreviewTemplate);
+		}
+
 		// 初始化頁面數據
 		(async () => {
 			await loadAccountsStatus();
 			await loadCommunities();
 			await loadCopyTemplates();
+			await loadPostTemplates();
 			await updatePostingPlatforms();
 		})();
 		
@@ -1065,10 +1090,398 @@ document.addEventListener('DOMContentLoaded', function() {
 		initCrawlerTools();
 	}
 
+	// 全局變量
+	let templateImages = [];
+	let draggedImageIndex = null;
+
+	// 處理模板圖片上傳
+	function handleTemplateImageUpload(e) {
+		const files = Array.from(e.target.files);
+		processImages(files);
+	}
+
+	// 處理拖拽相關事件
+	function handleDragOver(e) {
+		e.preventDefault();
+		e.currentTarget.classList.add('dragover');
+	}
+
+	function handleDragLeave(e) {
+		e.currentTarget.classList.remove('dragover');
+	}
+
+	function handleDrop(e) {
+		e.preventDefault();
+		e.currentTarget.classList.remove('dragover');
+		const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+		processImages(files);
+	}
+
+	// 處理圖片
+	function processImages(files) {
+		files.forEach(file => {
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				templateImages.push({
+					file: file,
+					url: e.target.result,
+					order: templateImages.length
+				});
+				updateImageSorting();
+			};
+			reader.readAsDataURL(file);
+		});
+	}
+
+	// 更新圖片排序區域
+	function updateImageSorting() {
+		const container = document.getElementById('imageSortingContainer');
+		const row = document.getElementById('imageSortingRow');
+		
+		if (templateImages.length > 0) {
+			row.style.display = 'block';
+			
+			let html = '';
+			templateImages.forEach((image, index) => {
+				html += `
+					<div class="sortable-image" draggable="true" data-index="${index}">
+						<img src="${image.url}" alt="模板圖片 ${index + 1}">
+						<div class="image-order">${index + 1}</div>
+						<div class="remove-image" onclick="removeImage(${index})">
+							<i class="fas fa-times"></i>
+						</div>
+					</div>
+				`;
+			});
+			container.innerHTML = html;
+			
+			// 添加拖拽事件
+			const sortableImages = container.querySelectorAll('.sortable-image');
+			sortableImages.forEach(image => {
+				image.addEventListener('dragstart', handleImageDragStart);
+				image.addEventListener('dragover', handleImageDragOver);
+				image.addEventListener('drop', handleImageDrop);
+				image.addEventListener('dragend', handleImageDragEnd);
+			});
+		} else {
+			row.style.display = 'none';
+		}
+	}
+
+	// 圖片拖拽排序事件
+	function handleImageDragStart(e) {
+		draggedImageIndex = parseInt(e.currentTarget.dataset.index);
+		e.currentTarget.classList.add('dragging');
+	}
+
+	function handleImageDragOver(e) {
+		e.preventDefault();
+	}
+
+	function handleImageDrop(e) {
+		e.preventDefault();
+		const targetIndex = parseInt(e.currentTarget.dataset.index);
+		
+		if (draggedImageIndex !== null && draggedImageIndex !== targetIndex) {
+			// 重新排序圖片
+			const draggedImage = templateImages[draggedImageIndex];
+			templateImages.splice(draggedImageIndex, 1);
+			templateImages.splice(targetIndex, 0, draggedImage);
+			
+			// 更新順序
+			templateImages.forEach((image, index) => {
+				image.order = index;
+			});
+			
+			updateImageSorting();
+		}
+	}
+
+	function handleImageDragEnd(e) {
+		e.currentTarget.classList.remove('dragging');
+		draggedImageIndex = null;
+	}
+
+	// 移除圖片
+	function removeImage(index) {
+		templateImages.splice(index, 1);
+		templateImages.forEach((image, i) => {
+			image.order = i;
+		});
+		updateImageSorting();
+	}
+
+	// 儲存模板
+	async function handleSaveTemplate() {
+		const titleInput = document.querySelector('input[name="copy_title"]');
+		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+		const hashtagsInput = document.querySelector('input[name="hashtags"]');
+		const saveBtn = document.getElementById('saveTemplateBtn');
+		
+		const title = titleInput.value.trim();
+		const content = contentTextarea.value.trim();
+		const hashtags = hashtagsInput.value.trim();
+		
+		if (!title || !content) {
+			showNotification('請填寫模板標題和內容', 'warning');
+			return;
+		}
+		
+		const originalText = saveBtn.innerHTML;
+		saveBtn.disabled = true;
+		saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 儲存中...';
+		
+		try {
+			const formData = new FormData();
+			formData.append('title', title);
+			formData.append('content', content);
+			formData.append('hashtags', hashtags);
+			
+			// 添加圖片和順序
+			templateImages.forEach((image, index) => {
+				formData.append('images', image.file);
+				formData.append('image_orders', image.order);
+			});
+			
+			// 獲取 CSRF 令牌
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/templates/', {
+				method: 'POST',
+				headers: {
+					'X-CSRFToken': csrfToken,
+				},
+				body: formData
+			});
+			
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				showNotification(result.message, 'success');
+				
+				// 清空表單
+				titleInput.value = '';
+				contentTextarea.value = '';
+				hashtagsInput.value = '';
+				templateImages = [];
+				updateImageSorting();
+				
+				// 重新載入模板列表
+				await loadPostTemplates();
+			} else {
+				throw new Error(result.error || '儲存失敗');
+			}
+		} catch (error) {
+			console.error('儲存模板失敗:', error);
+			showNotification('儲存失敗：' + error.message, 'error');
+		} finally {
+			saveBtn.disabled = false;
+			saveBtn.innerHTML = originalText;
+		}
+	}
+
+	// 預覽模板
+	function handlePreviewTemplate() {
+		const title = document.querySelector('input[name="copy_title"]').value.trim();
+		const content = document.querySelector('textarea[name="copy_template"]').value.trim();
+		const hashtags = document.querySelector('input[name="hashtags"]').value.trim();
+		
+		if (!title || !content) {
+			showNotification('請填寫模板標題和內容才能預覽', 'warning');
+			return;
+		}
+		
+		// 創建預覽窗口
+		let previewHtml = `
+			<div style="max-width: 500px;">
+				<h3 style="margin-bottom: 15px; color: #2d3748;">${title}</h3>
+				<div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; white-space: pre-wrap; line-height: 1.6;">${content}</div>
+		`;
+		
+		if (templateImages.length > 0) {
+			previewHtml += `
+				<div style="margin-bottom: 15px;">
+					<strong style="color: #4a5568;">圖片 (${templateImages.length} 張)：</strong>
+					<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+			`;
+			templateImages.forEach((image, index) => {
+				previewHtml += `
+					<div style="position: relative;">
+						<img src="${image.url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0;">
+						<div style="position: absolute; top: -8px; left: -8px; background: #667eea; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold;">${index + 1}</div>
+					</div>
+				`;
+			});
+			previewHtml += `</div></div>`;
+		}
+		
+		if (hashtags) {
+			previewHtml += `<div style="color: #667eea; font-size: 0.9em;"><strong>標籤：</strong> ${hashtags}</div>`;
+		}
+		
+		previewHtml += `</div>`;
+		
+		// 顯示預覽（這裡可以用模態窗口或其他方式）
+		const previewWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
+		previewWindow.document.write(`
+			<html>
+				<head>
+					<title>模板預覽 - ${title}</title>
+					<style>
+						body { font-family: Arial, sans-serif; padding: 20px; background: #f7fafc; }
+						.preview-container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+					</style>
+				</head>
+				<body>
+					<div class="preview-container">
+						${previewHtml}
+					</div>
+				</body>
+			</html>
+		`);
+	}
+
+	// 載入貼文模板列表
+	async function loadPostTemplates() {
+		const templatesList = document.getElementById('templatesList');
+		if (!templatesList) return;
+		
+		try {
+			const response = await fetch('/crawler/api/templates/');
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				if (result.templates.length === 0) {
+					templatesList.innerHTML = `
+						<div class="empty-templates">
+							<i class="fas fa-bookmark"></i>
+							<p>尚未儲存任何模板</p>
+							<small>建立您的第一個文案模板</small>
+						</div>
+					`;
+				} else {
+					let html = '';
+					result.templates.forEach(template => {
+						const createdDate = new Date(template.created_at).toLocaleDateString();
+						const imageCount = template.image_count;
+						
+						html += `
+							<div class="template-card" data-template-id="${template.id}">
+								<div class="template-card-header">
+									<div>
+										<h4 class="template-title">${template.title}</h4>
+										<div class="template-meta">
+											<span><i class="fas fa-calendar"></i> ${createdDate}</span>
+											<span><i class="fas fa-images"></i> ${imageCount} 張圖片</span>
+										</div>
+									</div>
+									<div class="template-actions">
+										<button class="btn btn-sm btn-info" onclick="useTemplate(${template.id})">
+											<i class="fas fa-copy"></i> 使用
+										</button>
+										<button class="btn btn-sm btn-warning" onclick="editTemplate(${template.id})">
+											<i class="fas fa-edit"></i> 編輯
+										</button>
+										<button class="btn btn-sm btn-danger" onclick="deleteTemplate(${template.id})">
+											<i class="fas fa-trash"></i> 刪除
+										</button>
+									</div>
+								</div>
+								<div class="template-content">${template.content}</div>
+						`;
+						
+						if (template.images.length > 0) {
+							html += `
+								<div class="template-images">
+							`;
+							template.images.forEach(image => {
+								html += `
+									<div class="template-image-thumb">
+										<img src="${image.url}" alt="模板圖片">
+										<div class="thumb-order">${image.order + 1}</div>
+									</div>
+								`;
+							});
+							html += `</div>`;
+						}
+						
+						if (template.hashtags) {
+							html += `<div class="template-hashtags"><i class="fas fa-tags"></i> ${template.hashtags}</div>`;
+						}
+						
+						html += `</div>`;
+					});
+					templatesList.innerHTML = html;
+				}
+			} else {
+				throw new Error(result.error || '載入模板列表失敗');
+			}
+		} catch (error) {
+			console.error('載入模板列表失敗:', error);
+			templatesList.innerHTML = `
+				<div class="empty-templates">
+					<i class="fas fa-exclamation-triangle"></i>
+					<p>載入模板列表失敗</p>
+					<small>${error.message}</small>
+				</div>
+			`;
+		}
+	}
+
+	// 使用模板
+	function useTemplate(templateId) {
+		// 這個函數可以將模板內容填入發文表單
+		showNotification('使用模板功能將在後續版本中實現', 'info');
+	}
+
+	// 編輯模板
+	function editTemplate(templateId) {
+		// 這個函數可以將模板內容填入編輯表單
+		showNotification('編輯模板功能將在後續版本中實現', 'info');
+	}
+
+	// 刪除模板
+	async function deleteTemplate(templateId) {
+		if (!confirm('確定要刪除這個模板嗎？此操作無法復原。')) {
+			return;
+		}
+		
+		try {
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+			
+			const response = await fetch('/crawler/api/templates/', {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': csrfToken,
+				},
+				body: JSON.stringify({
+					template_id: templateId
+				})
+			});
+			
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				showNotification(result.message, 'success');
+				await loadPostTemplates();
+			} else {
+				throw new Error(result.error || '刪除失敗');
+			}
+		} catch (error) {
+			console.error('刪除模板失敗:', error);
+			showNotification('刪除失敗：' + error.message, 'error');
+		}
+	}
+
 	// 導出全局函數供HTML使用
 	window.showNotification = showNotification;
 	window.toggleSidebar = toggleSidebar;
 	window.deleteAccount = deleteAccount;
+	window.removeImage = removeImage;
+	window.useTemplate = useTemplate;
+	window.editTemplate = editTemplate;
+	window.deleteTemplate = deleteTemplate;
 });
 
 

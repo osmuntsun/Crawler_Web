@@ -12,6 +12,7 @@ urlpatterns = [
 	path('api/user/permissions/', views.UserPermissionsView.as_view(), name='user_permissions'),
 	path('api/communities/', views.CommunitiesView.as_view(), name='communities_api'),
 	path('api/posting/', views.PostingView.as_view(), name='posting'),
+	path('api/templates/', views.PostTemplateView.as_view(), name='post_templates'),
 ]
 
 

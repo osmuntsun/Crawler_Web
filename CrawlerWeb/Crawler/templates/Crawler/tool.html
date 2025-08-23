@@ -67,10 +67,7 @@
 					<i class="fas fa-shopping-cart"></i>
 					<span>社團拍賣商品</span>
 				</button>
-				<a href="{% url 'facebook_automation' %}" class="sidebar-item facebook-automation-link">
-					<i class="fas fa-facebook"></i>
-					<span>Facebook 自動化</span>
-				</a>
+
 			</nav>
 		</aside>
 
@@ -312,7 +309,7 @@
 			<div class="tab-content" id="tab-post">
 				<div class="content-header">
 					<h2><i class="fas fa-share-alt"></i> 發文設定</h2>
-					<p>設定發文平台和內容</p>
+					<p>設定發文平台、內容和自動化功能</p>
 				</div>
 				<div class="card {% if not can_use_tool %}disabled{% endif %}">
 					<div class="card-body">
@@ -324,12 +321,81 @@
 							</div>
 						</div>
 						{% endif %}
+						
+						<!-- Facebook 自動化發文 -->
+						<div class="section-header">
+							<h3><i class="fas fa-facebook"></i> Facebook 自動化發文</h3>
+							<p>使用您的 Facebook 帳號自動發文到多個社團</p>
+						</div>
+						
+						<!-- Facebook 帳號登入 -->
+						<div class="facebook-login-section">
+							<h4><i class="fas fa-sign-in-alt"></i> 帳號登入</h4>
+							<form id="facebookLoginForm" class="form-grid">
+								<div class="form-row">
+									<label><i class="fas fa-envelope"></i> Facebook 電子郵件</label>
+									<input type="email" name="fb_email" placeholder="輸入您的 Facebook 電子郵件" required>
+								</div>
+								<div class="form-row">
+									<label><i class="fas fa-lock"></i> Facebook 密碼</label>
+									<input type="password" name="fb_password" placeholder="輸入您的 Facebook 密碼" required>
+								</div>
+								<div class="form-actions">
+									<button type="submit" class="btn btn-primary" id="fbLoginBtn">
+										<i class="fas fa-sign-in-alt"></i> 登入並保存 Cookie
+									</button>
+								</div>
+							</form>
+							<div id="fbLoginStatus" class="status-message" style="display: none;"></div>
+						</div>
+						
+						<!-- 社團選擇和發文 -->
+						<div class="facebook-posting-section">
+							<h4><i class="fas fa-edit"></i> 社團發文</h4>
+							<form id="facebookPostingForm" class="form-grid">
+								<div class="form-row">
+									<label><i class="fas fa-users"></i> 選擇社團（可多選）</label>
+									<div id="communitiesList" class="communities-list">
+										<p class="text-muted">請先登入 Facebook 並獲取社團列表</p>
+									</div>
+									<button type="button" class="btn btn-info" id="getCommunitiesBtn">
+										<i class="fas fa-sync"></i> 獲取社團列表
+									</button>
+								</div>
+								<div class="form-row">
+									<label><i class="fas fa-edit"></i> 發文內容</label>
+									<textarea name="fb_message" rows="6" placeholder="輸入您要發佈的內容..." required></textarea>
+								</div>
+								<div class="form-row">
+									<label><i class="fas fa-image"></i> 上傳圖片（可多選）</label>
+									<div class="file-upload">
+										<input type="file" name="fb_images" multiple accept="image/*" id="fbImageUpload">
+										<div class="file-upload-text">
+											<i class="fas fa-cloud-upload-alt"></i>
+											<span>點擊或拖拽圖片檔案到此處上傳</span>
+										</div>
+									</div>
+									<div id="imagePreview" class="image-preview"></div>
+								</div>
+								<div class="form-actions">
+									<button type="submit" class="btn btn-success" id="fbPostBtn">
+										<i class="fas fa-paper-plane"></i> 發佈到選中社團
+									</button>
+								</div>
+							</form>
+							<div id="fbPostingStatus" class="status-message" style="display: none;"></div>
+						</div>
+						
+						<!-- 一般發文設定 -->
+						<div class="section-header">
+							<h3><i class="fas fa-globe"></i> 一般發文設定</h3>
+							<p>設定其他平台的發文選項</p>
+						</div>
 						<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
 							<div class="form-row">
 								<label><i class="fas fa-globe"></i> 發文平台</label>
 								<select name="platform" class="form-select">
 									<option value="">選擇平台</option>
-									<option value="facebook">Facebook</option>
 									<option value="instagram">Instagram</option>
 									<option value="twitter">Twitter</option>
 									<option value="linkedin">LinkedIn</option>

@@ -55,20 +55,7 @@ def tool_authenticated(request):
 	return render(request, 'Crawler/tool_authenticated.html')
 
 
-@login_required(login_url='/accounts/login/')
-def facebook_automation(request):
-	"""
-	Facebook 自動化工具頁面 - 檢查付費權限
-	"""
-	# 檢查是否為付費用戶
-	if not request.user.is_premium_active:
-		messages.warning(request, 'Facebook 自動化功能僅限付費用戶使用，請升級您的帳號。')
-		return redirect('Accounts:profile')
-	
-	context = {
-		'user': request.user,
-	}
-	return render(request, 'Crawler/facebook_automation.html', context)
+
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -237,12 +224,13 @@ class FacebookAutomationView(View):
 			return JsonResponse({'error': f'獲取社團失敗: {str(e)}'}, status=500)
 	
 	def post_to_community(self, request, data):
-		"""在指定社團發文"""
+		"""在指定社團發文（支援多選社團和圖片上傳）"""
 		try:
-			community_url = data.get('community_url')
+			community_urls = data.get('community_urls', [])
 			message = data.get('message')
+			image_paths = data.get('image_paths', [])
 			
-			if not community_url or not message:
+			if not community_urls or not message:
 				return JsonResponse({'error': '請提供社團連結和發文內容'}, status=400)
 			
 			# 檢查是否有 Facebook Cookie
@@ -266,54 +254,98 @@ class FacebookAutomationView(View):
 			driver.refresh()
 			time.sleep(2)
 			
-			# 前往社團並發文
-			driver.get(community_url)
-			driver.refresh()
+			success_count = 0
+			failed_count = 0
+			results = []
 			
-			# 等待發文按鈕出現
-			WebDriverWait(driver, 30).until(
-				EC.presence_of_element_located((
-					By.XPATH, 
-					'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-				))
-			)
-			
-			# 點擊發文按鈕
-			post_button = driver.find_element(
-				By.XPATH,
-				'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-			)
-			post_button.click()
-			
-			# 等待發文表單出現
-			WebDriverWait(driver, 30).until(
-				EC.presence_of_element_located((
-					By.XPATH,
-					'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
-				))
-			)
-			
-			# 輸入發文內容
-			post_input = driver.find_element(
-				By.XPATH,
-				'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
-			)
-			post_input.send_keys(message)
-			
-			time.sleep(1)
-			
-			# 點擊發文按鈕
-			submit_button = driver.find_element(
-				By.XPATH,
-				'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[3]/div[1]/div/div'
-			)
-			submit_button.click()
+			# 遍歷所有選中的社團進行發文
+			for community_url in community_urls:
+				try:
+					# 前往社團並發文
+					driver.get(community_url)
+					driver.refresh()
+					
+					# 等待發文按鈕出現
+					WebDriverWait(driver, 30).until(
+						EC.presence_of_element_located((
+							By.XPATH, 
+							'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
+						))
+					)
+					
+					# 點擊發文按鈕
+					post_button = driver.find_element(
+						By.XPATH,
+						'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
+					)
+					post_button.click()
+					
+					# 等待發文表單出現
+					WebDriverWait(driver, 30).until(
+						EC.presence_of_element_located((
+							By.XPATH,
+							'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
+						))
+					)
+					
+					# 輸入發文內容
+					post_input = driver.find_element(
+						By.XPATH,
+						'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
+					)
+					post_input.send_keys(message)
+					
+					time.sleep(1)
+					
+					# 上傳圖片（如果有的話）
+					if image_paths:
+						try:
+							post_img = driver.find_element(
+								By.XPATH,
+								'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+							)
+							for img in image_paths:
+								post_img.send_keys(img)
+								time.sleep(0.5)  # 可視情況加等待
+						except Exception as img_error:
+							# 如果圖片上傳失敗，繼續執行
+							pass
+					
+					time.sleep(1)
+					
+					# 點擊發文按鈕
+					submit_button = driver.find_element(
+						By.XPATH,
+						'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[3]/div[1]/div/div'
+					)
+					submit_button.click()
+					
+					success_count += 1
+					results.append({
+						'url': community_url,
+						'status': 'success',
+						'message': '發文成功'
+					})
+					
+					# 等待一下再發下一個
+					time.sleep(3)
+					
+				except Exception as e:
+					failed_count += 1
+					results.append({
+						'url': community_url,
+						'status': 'failed',
+						'message': str(e)
+					})
 			
 			driver.quit()
 			
 			return JsonResponse({
 				'success': True,
-				'message': '發文成功！'
+				'message': f'發文完成！成功：{success_count} 個，失敗：{failed_count} 個',
+				'success_count': success_count,
+				'failed_count': failed_count,
+				'results': results
 			})
 			
 		except Exception as e:

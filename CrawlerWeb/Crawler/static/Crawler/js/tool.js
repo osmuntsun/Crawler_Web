@@ -257,6 +257,312 @@ document.addEventListener('DOMContentLoaded', function() {
 		}, 600);
 	}
 
+	// Facebook 自動化功能
+	function initFacebookAutomation() {
+		// Facebook 登入表單處理
+		const facebookLoginForm = document.getElementById('facebookLoginForm');
+		if (facebookLoginForm) {
+			facebookLoginForm.addEventListener('submit', handleFacebookLogin);
+		}
+
+		// 獲取社團列表按鈕
+		const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
+		if (getCommunitiesBtn) {
+			getCommunitiesBtn.addEventListener('click', getFacebookCommunities);
+		}
+
+		// Facebook 發文表單處理
+		const facebookPostingForm = document.getElementById('facebookPostingForm');
+		if (facebookPostingForm) {
+			facebookPostingForm.addEventListener('submit', handleFacebookPosting);
+		}
+
+		// 圖片上傳處理
+		const fbImageUpload = document.getElementById('fbImageUpload');
+		if (fbImageUpload) {
+			fbImageUpload.addEventListener('change', handleImageUpload);
+		}
+	}
+
+	// 處理 Facebook 登入
+	async function handleFacebookLogin(e) {
+		e.preventDefault();
+		
+		const form = e.target;
+		const formData = new FormData(form);
+		const data = {
+			action: 'login_and_save_cookies',
+			email: formData.get('fb_email'),
+			password: formData.get('fb_password')
+		};
+
+		const loginBtn = document.getElementById('fbLoginBtn');
+		const statusDiv = document.getElementById('fbLoginStatus');
+		
+		// 更新按鈕狀態
+		loginBtn.disabled = true;
+		loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+		
+		// 清除之前的狀態
+		statusDiv.style.display = 'none';
+		statusDiv.className = 'status-message';
+
+		try {
+			const response = await fetch('/Crawler/api/facebook/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(data)
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				statusDiv.className = 'status-message success';
+				statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + result.message;
+				statusDiv.style.display = 'block';
+				
+				showNotification('Facebook 登入成功！', 'success');
+				
+				// 清空表單
+				form.reset();
+				
+				// 啟用獲取社團列表按鈕
+				const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
+				if (getCommunitiesBtn) {
+					getCommunitiesBtn.disabled = false;
+				}
+			} else {
+				throw new Error(result.error || '登入失敗');
+			}
+		} catch (error) {
+			statusDiv.className = 'status-message error';
+			statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + error.message;
+			statusDiv.style.display = 'block';
+			
+			showNotification('Facebook 登入失敗：' + error.message, 'error');
+		} finally {
+			// 恢復按鈕狀態
+			loginBtn.disabled = false;
+			loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登入並保存 Cookie';
+		}
+	}
+
+	// 獲取 Facebook 社團列表
+	async function getFacebookCommunities() {
+		const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
+		const communitiesList = document.getElementById('communitiesList');
+		
+		// 更新按鈕狀態
+		getCommunitiesBtn.disabled = true;
+		getCommunitiesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 獲取中...';
+
+		try {
+			const response = await fetch('/Crawler/api/facebook/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					action: 'get_communities'
+				})
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				displayCommunities(result.communities);
+				showNotification(`成功獲取 ${result.communities.length} 個社團`, 'success');
+			} else {
+				throw new Error(result.error || '獲取社團失敗');
+			}
+		} catch (error) {
+			communitiesList.innerHTML = `
+				<div class="status-message error">
+					<i class="fas fa-exclamation-circle"></i> 獲取社團失敗：${error.message}
+				</div>
+			`;
+			showNotification('獲取社團失敗：' + error.message, 'error');
+		} finally {
+			// 恢復按鈕狀態
+			getCommunitiesBtn.disabled = false;
+			getCommunitiesBtn.innerHTML = '<i class="fas fa-sync"></i> 獲取社團列表';
+		}
+	}
+
+	// 顯示社團列表
+	function displayCommunities(communities) {
+		const communitiesList = document.getElementById('communitiesList');
+		
+		if (!communities || communities.length === 0) {
+			communitiesList.innerHTML = '<p class="text-muted">沒有找到社團</p>';
+			return;
+		}
+
+		let html = '<div class="communities-container">';
+		communities.forEach((community, index) => {
+			html += `
+				<div class="community-item">
+					<input type="checkbox" class="community-checkbox" 
+						   id="community_${index}" value="${community.url}" 
+						   data-name="${community.name}">
+					<div class="community-info">
+						<h5>${community.name}</h5>
+						<p>${community.url}</p>
+					</div>
+				</div>
+			`;
+		});
+		html += '</div>';
+		
+		communitiesList.innerHTML = html;
+	}
+
+	// 處理圖片上傳
+	function handleImageUpload(e) {
+		const files = Array.from(e.target.files);
+		const imagePreview = document.getElementById('imagePreview');
+		
+		if (files.length === 0) {
+			imagePreview.innerHTML = '';
+			return;
+		}
+
+		let html = '';
+		files.forEach((file, index) => {
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				const imgElement = document.querySelector(`#preview_${index} img`);
+				if (imgElement) {
+					imgElement.src = e.target.result;
+				}
+			};
+			reader.readAsDataURL(file);
+
+			html += `
+				<div class="image-preview-item" id="preview_${index}">
+					<img src="" alt="預覽圖片" style="display: none;">
+					<div class="image-loading">
+						<i class="fas fa-spinner fa-spin"></i>
+					</div>
+					<button type="button" class="remove-image" onclick="removeImage(${index})">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+			`;
+		});
+		
+		imagePreview.innerHTML = html;
+	}
+
+	// 移除圖片預覽
+	window.removeImage = function(index) {
+		const previewItem = document.getElementById(`preview_${index}`);
+		if (previewItem) {
+			previewItem.remove();
+		}
+		
+		// 重新設置 input 的 files
+		const fbImageUpload = document.getElementById('fbImageUpload');
+		const dt = new DataTransfer();
+		const files = Array.from(fbImageUpload.files);
+		files.splice(index, 1);
+		files.forEach(file => dt.items.add(file));
+		fbImageUpload.files = dt.files;
+	};
+
+	// 處理 Facebook 發文
+	async function handleFacebookPosting(e) {
+		e.preventDefault();
+		
+		const form = e.target;
+		const formData = new FormData(form);
+		
+		// 獲取選中的社團
+		const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
+			.map(checkbox => checkbox.value);
+		
+		if (selectedCommunities.length === 0) {
+			showNotification('請至少選擇一個社團', 'warning');
+			return;
+		}
+
+		const message = formData.get('fb_message');
+		if (!message.trim()) {
+			showNotification('請輸入發文內容', 'warning');
+			return;
+		}
+
+		// 獲取圖片檔案
+		const imageFiles = Array.from(formData.getAll('fb_images'));
+		const imagePaths = imageFiles.map(file => file.path || file.name);
+
+		const postBtn = document.getElementById('fbPostBtn');
+		const statusDiv = document.getElementById('fbPostingStatus');
+		
+		// 更新按鈕狀態
+		postBtn.disabled = true;
+		postBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發文中...';
+		
+		// 清除之前的狀態
+		statusDiv.style.display = 'none';
+		statusDiv.className = 'status-message';
+
+		try {
+			const response = await fetch('/Crawler/api/facebook/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					action: 'post_to_community',
+					community_urls: selectedCommunities,
+					message: message,
+					image_paths: imagePaths
+				})
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				statusDiv.className = 'status-message success';
+				statusDiv.innerHTML = `
+					<i class="fas fa-check-circle"></i> ${result.message}
+					<br><small>成功：${result.success_count} 個，失敗：${result.failed_count} 個</small>
+				`;
+				statusDiv.style.display = 'block';
+				
+				showNotification(result.message, 'success');
+				
+				// 清空表單
+				form.reset();
+				document.getElementById('imagePreview').innerHTML = '';
+				
+				// 取消選中所有社團
+				document.querySelectorAll('.community-checkbox:checked')
+					.forEach(checkbox => checkbox.checked = false);
+			} else {
+				throw new Error(result.error || '發文失敗');
+			}
+		} catch (error) {
+			statusDiv.className = 'status-message error';
+			statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + error.message;
+			statusDiv.style.display = 'block';
+			
+			showNotification('發文失敗：' + error.message, 'error');
+		} finally {
+			// 恢復按鈕狀態
+			postBtn.disabled = false;
+			postBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 發佈到選中社團';
+		}
+	}
+
+	// 初始化 Facebook 自動化功能
+	if (canUseTool) {
+		initFacebookAutomation();
+	}
+
 	// 導出全局函數供HTML使用
 	window.showNotification = showNotification;
 	window.toggleSidebar = toggleSidebar;

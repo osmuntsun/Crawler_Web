@@ -6,7 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.conf import settings
-from Accounts.models import WebsiteCookie, Community, PostTemplate, PostTemplateImage
+from Accounts.models import WebsiteCookie
+from .models import Community, PostTemplate, PostTemplateImage
 import json
 import time
 import os

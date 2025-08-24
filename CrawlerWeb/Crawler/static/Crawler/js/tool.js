@@ -260,7 +260,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// 標籤篩選器
 		const hashtagFilter = document.getElementById('hashtagFilter');
 		if (hashtagFilter) {
+			console.log('標籤篩選器元素找到，綁定事件監聽器');
 			hashtagFilter.addEventListener('change', handleHashtagFilter);
+		} else {
+			console.error('找不到標籤篩選器元素');
 		}
 
 		// 為表單輸入框添加事件監聽器，檢查內容變化
@@ -1449,6 +1452,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		const templatesList = document.getElementById('templatesList');
 		if (!templatesList) return;
 		
+		// 保存當前選中的標籤
+		const hashtagFilter = document.getElementById('hashtagFilter');
+		const currentSelectedHashtag = hashtagFilter ? hashtagFilter.value : 'all';
+		
 		try {
 			const response = await fetch('/crawler/api/templates/');
 			const result = await response.json();
@@ -1456,6 +1463,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (response.ok && result.success) {
 				// 更新標籤篩選器選項
 				updateHashtagFilterOptions(result.templates);
+				
+				// 恢復之前選中的標籤
+				if (hashtagFilter && currentSelectedHashtag !== 'all') {
+					hashtagFilter.value = currentSelectedHashtag;
+					console.log('恢復選中的標籤:', currentSelectedHashtag);
+				}
 				
 				// 應用當前篩選
 				const filteredTemplates = filterTemplatesByHashtag(result.templates);
@@ -1543,16 +1556,25 @@ document.addEventListener('DOMContentLoaded', function() {
 	// 更新標籤篩選器選項
 	function updateHashtagFilterOptions(templates) {
 		const hashtagFilter = document.getElementById('hashtagFilter');
-		if (!hashtagFilter) return;
+		if (!hashtagFilter) {
+			console.error('找不到標籤篩選器元素');
+			return;
+		}
+		
+		console.log('更新標籤篩選器選項，模板數量:', templates.length);
 		
 		// 收集所有標籤
 		const allHashtags = new Set();
-		templates.forEach(template => {
+		templates.forEach((template, index) => {
+			console.log(`模板 ${index}: hashtags = "${template.hashtags}"`);
 			if (template.hashtags) {
 				const hashtags = template.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+				console.log(`  解析後的標籤:`, hashtags);
 				hashtags.forEach(tag => allHashtags.add(tag));
 			}
 		});
+		
+		console.log('收集到的所有標籤:', Array.from(allHashtags));
 		
 		// 更新選項
 		let options = '<option value="all">所有標籤</option>';
@@ -1561,25 +1583,55 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		
 		hashtagFilter.innerHTML = options;
+		console.log('標籤篩選器選項已更新');
+		console.log('生成的HTML選項:', options);
+		
+		// 驗證選項是否正確設置
+		console.log('選項數量:', hashtagFilter.options.length);
+		for (let i = 0; i < hashtagFilter.options.length; i++) {
+			const option = hashtagFilter.options[i];
+			console.log(`選項 ${i}: value="${option.value}", text="${option.text}"`);
+		}
 	}
 
 	// 根據標籤篩選模板
 	function filterTemplatesByHashtag(templates) {
 		const hashtagFilter = document.getElementById('hashtagFilter');
-		if (!hashtagFilter) return templates;
+		if (!hashtagFilter) {
+			console.error('找不到標籤篩選器元素');
+			return templates;
+		}
 		
 		const selectedHashtag = hashtagFilter.value;
-		if (selectedHashtag === 'all') return templates;
+		console.log('當前選中的標籤:', selectedHashtag);
 		
-		return templates.filter(template => {
-			if (!template.hashtags) return false;
+		if (selectedHashtag === 'all') {
+			console.log('選擇了"所有標籤"，返回所有模板');
+			return templates;
+		}
+		
+		const filteredTemplates = templates.filter(template => {
+			if (!template.hashtags) {
+				console.log(`模板 "${template.title}" 沒有標籤，過濾掉`);
+				return false;
+			}
 			const hashtags = template.hashtags.split(',').map(tag => tag.trim());
-			return hashtags.includes(selectedHashtag);
+			console.log(`模板 "${template.title}" 的標籤:`, hashtags);
+			const isMatch = hashtags.includes(selectedHashtag);
+			console.log(`標籤 "${selectedHashtag}" 匹配結果:`, isMatch);
+			return isMatch;
 		});
+		
+		console.log(`篩選結果: ${filteredTemplates.length} 個模板符合標籤 "${selectedHashtag}"`);
+		return filteredTemplates;
 	}
 
 	// 處理標籤篩選器變更
 	function handleHashtagFilter() {
+		const hashtagFilter = document.getElementById('hashtagFilter');
+		console.log('標籤篩選器變更事件觸發');
+		console.log('當前選中的值:', hashtagFilter.value);
+		console.log('當前選中的選項:', hashtagFilter.options[hashtagFilter.selectedIndex]?.text);
 		loadPostTemplates();
 	}
 

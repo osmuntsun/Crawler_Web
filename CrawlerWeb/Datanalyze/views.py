@@ -4,8 +4,7 @@ from django.http import JsonResponse
 from django.db.models import Avg, Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
-from Accounts.models import SocialMediaPost
-from .models import DataAnalysisCache
+from Accounts.models import SocialMediaPost, DataAnalysisCache
 import json
 
 # Create your views here.

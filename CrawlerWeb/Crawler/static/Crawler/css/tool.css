@@ -1580,3 +1580,113 @@ body {
 	}
 }
 
+/* 發文方式選擇樣式 */
+.posting-method-selection {
+	display: flex;
+	gap: 20px;
+	margin-bottom: 30px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.method-option {
+	flex: 1;
+	position: relative;
+}
+
+.method-option input[type="radio"] {
+	display: none;
+}
+
+.method-label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 2px solid rgba(102, 126, 234, 0.3);
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-align: center;
+}
+
+.method-label:hover {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(102, 126, 234, 0.5);
+	transform: translateY(-2px);
+}
+
+.method-option input[type="radio"]:checked + .method-label {
+	background: rgba(102, 126, 234, 0.15);
+	border-color: #667eea;
+	box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.method-label i {
+	font-size: 2rem;
+	color: #667eea;
+	margin-bottom: 8px;
+}
+
+.method-label span {
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #333;
+}
+
+.method-label small {
+	font-size: 0.85rem;
+	color: #666;
+	line-height: 1.4;
+}
+
+/* 排程設定選項樣式 */
+.scheduling-options {
+	margin-top: 20px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+	animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.posting-method-selection {
+		flex-direction: column;
+		gap: 15px;
+		padding: 15px;
+	}
+	
+	.method-label {
+		padding: 15px;
+	}
+	
+	.method-label i {
+		font-size: 1.5rem;
+	}
+	
+	.method-label span {
+		font-size: 1rem;
+	}
+	
+	.method-label small {
+		font-size: 0.8rem;
+	}
+}
+

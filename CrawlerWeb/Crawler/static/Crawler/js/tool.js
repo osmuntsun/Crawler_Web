@@ -613,6 +613,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			fillConfirmationSummary();
 		}
 		
+		// 如果是第二步，重新初始化發文方式選擇
+		if (step === 2) {
+			reinitializePostingMethodSelection();
+		}
+		
 		// 顯示步驟切換通知
 		const stepNames = ['選擇文案', '排程設定', '確認發布'];
 		showNotification(`已切換到步驟 ${step}: ${stepNames[step - 1]}`, 'info');
@@ -735,22 +740,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 收集步驟2數據
 	function collectStep2Data() {
-		const startTime = document.getElementById('scheduleStartTime').value;
-		const intervalMin = document.querySelector('input[name="interval_min"]').value;
-		const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
-		const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
-			.map(checkbox => checkbox.value);
+		const postingMethod = document.querySelector('input[name="posting_method"]:checked').value;
+		
+		if (postingMethod === 'immediate') {
+			// 立即發文，只需要收集額外圖片
+			const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
+			
+			postingData.step2 = {
+				method: 'immediate',
+				imageFiles
+			};
+			
+			console.log('立即發文模式，步驟2數據收集完成:', postingData.step2);
+		} else {
+			// 排程發文，收集所有排程設定
+			const startTime = document.getElementById('scheduleStartTime').value;
+			const intervalMin = document.querySelector('input[name="interval_min"]').value;
+			const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+			const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
+				.map(checkbox => checkbox.value);
 
-		postingData.schedule = {
-			startTime: startTime,
-			intervalMin: intervalMin,
-			intervalUnit: intervalUnit,
-			selectedDays: selectedDays
-		};
-
-		// 收集圖片文件
-		const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
-		postingData.imageFiles = imageFiles;
+			// 收集圖片文件
+			const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
+			
+			postingData.step2 = {
+				method: 'scheduled',
+				startTime,
+				intervalMin,
+				intervalUnit,
+				selectedDays,
+				imageFiles
+			};
+			
+			console.log('排程發文模式，步驟2數據收集完成:', postingData.step2);
+		}
 	}
 
 	// 填充確認摘要
@@ -764,14 +787,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			'無';
 		document.getElementById('confirmContent').textContent = contentPreview;
 		
-		// 排程設定
-		const schedule = postingData.schedule;
-		const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
-		document.getElementById('confirmSchedule').textContent = scheduleText;
+		// 發文方式
+		if (postingData.step2 && postingData.step2.method === 'immediate') {
+			document.getElementById('confirmSchedule').textContent = '立即發文';
+		} else if (postingData.step2 && postingData.step2.method === 'scheduled') {
+			const schedule = postingData.step2;
+			const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
+			document.getElementById('confirmSchedule').textContent = scheduleText;
+		} else {
+			document.getElementById('confirmSchedule').textContent = '未設定';
+		}
 		
 		// 圖片數量
-		const totalImages = (postingData.templateImages ? postingData.templateImages.length : 0) + 
-			(postingData.imageFiles ? postingData.imageFiles.length : 0);
+		const templateImagesCount = (postingData.templateImages ? postingData.templateImages.length : 0);
+		const additionalImagesCount = (postingData.step2 && postingData.step2.imageFiles ? postingData.step2.imageFiles.length : 0);
+		const totalImages = templateImagesCount + additionalImagesCount;
 		document.getElementById('confirmImages').textContent = `${totalImages} 張圖片`;
 	}
 
@@ -2653,6 +2683,57 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.deleteTemplate = deleteTemplate;
 	window.useTemplateForPosting = useTemplateForPosting;
 	window.handleClearTemplate = handleClearTemplate;
+
+	// 發文方式選擇功能
+	function initializePostingMethodSelection() {
+		const immediatePosting = document.getElementById('immediate_posting');
+		const scheduledPosting = document.getElementById('scheduled_posting');
+		const schedulingOptions = document.getElementById('schedulingOptions');
+		
+		if (!immediatePosting || !scheduledPosting || !schedulingOptions) {
+			console.log('發文方式選擇元素未找到');
+			return;
+		}
+		
+		// 監聽發文方式變更
+		immediatePosting.addEventListener('change', function() {
+			if (this.checked) {
+				schedulingOptions.style.display = 'none';
+				console.log('選擇立即發文，隱藏排程設定');
+			}
+		});
+		
+		scheduledPosting.addEventListener('change', function() {
+			if (this.checked) {
+				schedulingOptions.style.display = 'block';
+				console.log('選擇排程發文，顯示排程設定');
+			}
+		});
+		
+		// 初始化狀態
+		if (immediatePosting.checked) {
+			schedulingOptions.style.display = 'none';
+		} else if (scheduledPosting.checked) {
+			schedulingOptions.style.display = 'block';
+		}
+		
+		console.log('發文方式選擇功能初始化完成');
+	}
+	
+	// 在頁面載入完成後初始化發文方式選擇
+	document.addEventListener('DOMContentLoaded', function() {
+		// 延遲初始化，確保所有元素都已載入
+		setTimeout(() => {
+			initializePostingMethodSelection();
+		}, 100);
+	});
+	
+	// 在步驟切換時重新初始化發文方式選擇
+	function reinitializePostingMethodSelection() {
+		setTimeout(() => {
+			initializePostingMethodSelection();
+		}, 50);
+	}
 });
 
 

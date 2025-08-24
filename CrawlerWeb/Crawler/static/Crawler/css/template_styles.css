@@ -194,6 +194,24 @@
 	font-size: 0.85em;
 }
 
+/* 清空模板按鈕樣式 */
+#clearTemplateBtn {
+	background: #f59e0b;
+	border-color: #f59e0b;
+	color: white;
+	transition: all 0.2s ease;
+}
+
+#clearTemplateBtn:hover {
+	background: #d97706;
+	border-color: #d97706;
+	transform: translateY(-1px);
+}
+
+#clearTemplateBtn:active {
+	transform: translateY(0);
+}
+
 .template-content {
 	background: #f8fafc;
 	padding: 15px;

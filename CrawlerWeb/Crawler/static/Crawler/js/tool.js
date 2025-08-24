@@ -251,10 +251,31 @@ document.addEventListener('DOMContentLoaded', function() {
 			previewTemplateBtn.addEventListener('click', handlePreviewTemplate);
 		}
 
+		// 清空模板按鈕
+		const clearTemplateBtn = document.getElementById('clearTemplateBtn');
+		if (clearTemplateBtn) {
+			clearTemplateBtn.addEventListener('click', handleClearTemplate);
+		}
+
 		// 標籤篩選器
 		const hashtagFilter = document.getElementById('hashtagFilter');
 		if (hashtagFilter) {
 			hashtagFilter.addEventListener('change', handleHashtagFilter);
+		}
+
+		// 為表單輸入框添加事件監聽器，檢查內容變化
+		const titleInput = document.querySelector('input[name="copy_title"]');
+		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+		const hashtagsInput = document.querySelector('input[name="hashtags"]');
+		
+		if (titleInput) {
+			titleInput.addEventListener('input', checkFormEmptyAndUpdateButtons);
+		}
+		if (contentTextarea) {
+			contentTextarea.addEventListener('input', checkFormEmptyAndUpdateButtons);
+		}
+		if (hashtagsInput) {
+			hashtagsInput.addEventListener('input', checkFormEmptyAndUpdateButtons);
 		}
 
 		// 初始化頁面數據
@@ -1172,6 +1193,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		} else {
 			row.style.display = 'none';
 		}
+		
+		// 檢查表單狀態並更新按鈕
+		checkFormEmptyAndUpdateButtons();
 	}
 
 	// 圖片拖拽排序事件
@@ -1200,6 +1224,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			});
 			
 			updateImageSorting();
+			
+			// 檢查表單狀態並更新按鈕
+			checkFormEmptyAndUpdateButtons();
 		}
 	}
 
@@ -1215,6 +1242,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			image.order = i;
 		});
 		updateImageSorting();
+		
+		// 檢查表單狀態並更新按鈕
+		checkFormEmptyAndUpdateButtons();
 	}
 
 	// 儲存模板
@@ -1295,6 +1325,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				
 				// 重新載入模板列表
 				await loadPostTemplates();
+				
+				// 檢查表單狀態並更新按鈕
+				checkFormEmptyAndUpdateButtons();
 			} else {
 				throw new Error(result.error || '儲存失敗');
 			}
@@ -1584,6 +1617,86 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
+	// 檢查表單是否為空並更新按鈕狀態
+	function checkFormEmptyAndUpdateButtons() {
+		const titleInput = document.querySelector('input[name="copy_title"]');
+		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+		const hashtagsInput = document.querySelector('input[name="hashtags"]');
+		
+		const isFormEmpty = (!titleInput || titleInput.value.trim() === '') &&
+							(!contentTextarea || contentTextarea.value.trim() === '') &&
+							(!hashtagsInput || hashtagsInput.value.trim() === '') &&
+							templateImages.length === 0;
+		
+		// 獲取清空按鈕
+		const clearBtn = document.getElementById('clearTemplateBtn');
+		
+		// 如果表單為空，重置為新建模式並隱藏清空按鈕
+		if (isFormEmpty) {
+			const saveBtn = document.getElementById('saveTemplateBtn');
+			if (saveBtn) {
+				saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
+				delete saveBtn.dataset.editMode;
+				delete saveBtn.dataset.templateId;
+			}
+			
+			if (clearBtn) {
+				clearBtn.style.display = 'none';
+			}
+		} else {
+			// 如果表單有內容，顯示清空按鈕
+			if (clearBtn) {
+				clearBtn.style.display = 'inline-block';
+			}
+		}
+	}
+
+	// 清空模板
+	function handleClearTemplate() {
+		if (confirm('確定要清空所有內容嗎？此操作無法復原。')) {
+			// 清空標題
+			const titleInput = document.querySelector('input[name="copy_title"]');
+			if (titleInput) {
+				titleInput.value = '';
+			}
+			
+			// 清空內容
+			const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+			if (contentTextarea) {
+				contentTextarea.value = '';
+			}
+			
+			// 清空標籤
+			const hashtagsInput = document.querySelector('input[name="hashtags"]');
+			if (hashtagsInput) {
+				hashtagsInput.value = '';
+			}
+			
+			// 清空圖片
+			templateImages = [];
+			updateImageSorting();
+			
+			// 重置儲存按鈕狀態
+			const saveBtn = document.getElementById('saveTemplateBtn');
+			if (saveBtn) {
+				saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
+				delete saveBtn.dataset.editMode;
+				delete saveBtn.dataset.templateId;
+			}
+			
+			// 隱藏清空模板按鈕
+			const clearBtn = document.getElementById('clearTemplateBtn');
+			if (clearBtn) {
+				clearBtn.style.display = 'none';
+			}
+			
+			// 檢查表單是否為空，如果是則重置按鈕狀態
+			checkFormEmptyAndUpdateButtons();
+			
+			showNotification('模板內容已清空', 'success');
+		}
+	}
+
 	// 使用模板發文
 	function useTemplateForPosting(templateId) {
 		// 關閉預覽窗口
@@ -1617,11 +1730,16 @@ document.addEventListener('DOMContentLoaded', function() {
 				// 將內容填入表單頂部
 				fillTemplateForm(template);
 				
-				// 滾動到表單頂部
-				document.querySelector('.form-grid').scrollIntoView({ 
-					behavior: 'smooth', 
-					block: 'start' 
-				});
+				// 滾動到最上面的"文案標題"
+				const titleInput = document.querySelector('input[name="copy_title"]');
+				if (titleInput) {
+					titleInput.scrollIntoView({ 
+						behavior: 'smooth', 
+						block: 'start' 
+					});
+					// 聚焦到標題輸入框
+					titleInput.focus();
+				}
 				
 				showNotification('模板已載入到編輯表單，請修改後點擊儲存模板', 'info');
 			} else {
@@ -1688,6 +1806,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			saveBtn.dataset.editMode = 'true';
 			saveBtn.dataset.templateId = template.id;
 		}
+
+		// 顯示清空模板按鈕
+		const clearBtn = document.getElementById('clearTemplateBtn');
+		if (clearBtn) {
+			clearBtn.style.display = 'inline-block';
+		}
 	}
 
 	// 刪除模板
@@ -1734,6 +1858,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.editTemplate = editTemplate;
 	window.deleteTemplate = deleteTemplate;
 	window.useTemplateForPosting = useTemplateForPosting;
+	window.handleClearTemplate = handleClearTemplate;
 });
 
 

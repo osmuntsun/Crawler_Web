@@ -489,11 +489,11 @@
 							<!-- 排程設定選項（預設隱藏） -->
 							<div id="schedulingOptions" class="scheduling-options" style="display: none;">
 								<div class="form-grid">
-									<div class="form-row">
-										<label><i class="fas fa-play"></i> 開始時間</label>
-										<input type="datetime-local" name="schedule_start_time" id="scheduleStartTime" class="form-input" required>
-										<small class="form-help">設定發文開始的時間</small>
-									</div>
+																	<div class="form-row">
+									<label><i class="fas fa-play"></i> 開始時間</label>
+									<input type="datetime-local" name="schedule_start_time" id="scheduleStartTime" class="form-input" required step="60">
+									<small class="form-help">設定發文開始的時間（只能選擇當前時間之後）</small>
+								</div>
 									
 									<div class="form-row">
 										<label><i class="fas fa-clock"></i> 發文間隔</label>
@@ -543,16 +543,25 @@
 										<small class="form-help">選擇要執行自動發文的日期</small>
 									</div>
 									
-									<div class="form-row">
-										<label><i class="fas fa-images"></i> 額外圖片（可選）</label>
-										<input type="file" name="posting_images" id="postingImageUpload" class="form-input" multiple accept="image/*">
-										<small class="form-help">可以上傳額外的圖片，與模板圖片一起發布</small>
+																	<!-- 額外圖片功能已移除 -->
+								
+								<!-- 排程實驗功能 -->
+								<div class="form-row">
+									<label><i class="fas fa-flask"></i> 排程實驗</label>
+									<div class="schedule-test-section">
+										<button type="button" class="btn btn-info" id="testScheduleBtn">
+											<i class="fas fa-play"></i> 測試排程設定
+										</button>
+										<div id="scheduleTestResult" class="schedule-test-result" style="display: none;">
+											<div class="test-result-header">
+												<i class="fas fa-info-circle"></i>
+												<span>排程測試結果</span>
+											</div>
+											<div id="testResultContent" class="test-result-content"></div>
+										</div>
 									</div>
-									
-									<div class="form-row" id="imagePreviewRow" style="display: none;">
-										<label><i class="fas fa-eye"></i> 圖片預覽</label>
-										<div id="imagePreview" class="image-preview-grid"></div>
-									</div>
+									<small class="form-help">點擊測試按鈕來驗證排程設定是否正確</small>
+								</div>
 									
 									<div class="form-actions">
 										<button type="button" class="btn btn-secondary" id="prevStepBtn">

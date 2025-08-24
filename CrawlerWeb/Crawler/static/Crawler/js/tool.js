@@ -1170,10 +1170,13 @@ document.addEventListener('DOMContentLoaded', function() {
 			
 			let html = '';
 			templateImages.forEach((image, index) => {
+				const isCopied = image.isCopied;
+				const copyIndicator = isCopied ? '<div class="copy-indicator">複製</div>' : '';
 				html += `
-					<div class="sortable-image" draggable="true" data-index="${index}">
+					<div class="sortable-image ${isCopied ? 'copied-image' : ''}" draggable="true" data-index="${index}">
 						<img src="${image.url}" alt="模板圖片 ${index + 1}">
 						<div class="image-order">${index + 1}</div>
+						${copyIndicator}
 						<div class="remove-image" onclick="removeImage(${index})">
 							<i class="fas fa-times"></i>
 						</div>
@@ -1288,6 +1291,10 @@ document.addEventListener('DOMContentLoaded', function() {
 					// 對於現有圖片，我們需要標記它們
 					formData.append('existing_images', image.originalId);
 					formData.append('image_orders', image.order);
+				} else if (image.isCopied) {
+					// 如果是複製的圖片，跳過（因為沒有實際的File對象）
+					// 用戶需要重新上傳圖片
+					console.log('跳過複製的圖片，需要重新上傳:', image.originalUrl);
 				} else {
 					// 新上傳的圖片
 					formData.append('images', image.file);
@@ -1712,9 +1719,79 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	// 複製模板
-	function copyTemplate(templateId) {
-		// 這個函數將複製模板內容到發文表單
-		showNotification('複製功能將在後續版本中實現', 'info');
+	async function copyTemplate(templateId) {
+		try {
+			// 顯示複製中狀態
+			showNotification('正在複製模板...', 'info');
+			
+			// 獲取模板詳情
+			const response = await fetch(`/crawler/api/templates/?template_id=${templateId}`);
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				const template = result.template;
+				
+				// 準備複製的數據
+				const formData = new FormData();
+				formData.append('title', `${template.title}(2)`);
+				formData.append('content', template.content);
+				formData.append('hashtags', template.hashtags || '');
+				
+				// 複製圖片（只複製圖片URL，不複製實際文件）
+				if (template.images && template.images.length > 0) {
+					template.images.forEach((image, index) => {
+						// 將圖片URL保存到資料庫，這樣可以顯示圖片
+						// 但不會佔用額外的存儲空間
+						formData.append('image_urls', image.url);
+						formData.append('image_orders', index);
+					});
+				}
+				
+				// 獲取 CSRF 令牌
+				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+				
+				// 發送複製請求
+				const copyResponse = await fetch('/crawler/api/templates/', {
+					method: 'POST',
+					headers: {
+						'X-CSRFToken': csrfToken,
+					},
+					body: formData
+				});
+				
+				const copyResult = await copyResponse.json();
+				
+				if (copyResponse.ok && copyResult.success) {
+					showNotification('模板複製成功！', 'success');
+					
+					// 重新載入模板列表以顯示新複製的模板
+					await loadPostTemplates();
+					
+					// 滾動到新複製的模板位置
+					setTimeout(() => {
+						const newTemplateCard = document.querySelector(`[data-template-id="${copyResult.template_id}"]`);
+						if (newTemplateCard) {
+							newTemplateCard.scrollIntoView({ 
+								behavior: 'smooth', 
+								block: 'center' 
+							});
+							// 添加高亮效果
+							newTemplateCard.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+							setTimeout(() => {
+								newTemplateCard.style.boxShadow = '';
+							}, 2000);
+						}
+					}, 500);
+				} else {
+					throw new Error(copyResult.error || '複製失敗');
+				}
+			} else {
+				throw new Error(result.error || '獲取模板失敗');
+			}
+		} catch (error) {
+			console.error('複製模板失敗:', error);
+			showNotification('複製失敗：' + error.message, 'error');
+		}
 	}
 
 	// 編輯模板

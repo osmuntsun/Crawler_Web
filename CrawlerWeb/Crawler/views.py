@@ -881,9 +881,19 @@ class PostTemplateView(View):
 					images = template.images.all().order_by('order')
 					images_data = []
 					for image in images:
+						# 檢查圖片是否有實際文件
+						if image.image and hasattr(image.image, 'url'):
+							image_url = image.image.url
+						elif image.alt_text and (image.alt_text.startswith('http') or image.alt_text.startswith('/media/')):
+							# 如果是複製的圖片，使用alt_text中的URL
+							image_url = image.alt_text
+						else:
+							# 如果既沒有圖片文件也沒有URL，跳過
+							continue
+						
 						images_data.append({
 							'id': image.id,
-							'url': image.image.url,
+							'url': image_url,
 							'order': image.order,
 							'alt_text': image.alt_text
 						})
@@ -917,11 +927,26 @@ class PostTemplateView(View):
 			for template in templates:
 				# 獲取模板的圖片
 				images = template.images.all().order_by('order')
+				print(f"模板 {template.id} 的圖片數量: {images.count()}")  # 調試信息
 				images_data = []
 				for image in images:
+					print(f"處理圖片: id={image.id}, image={image.image}, alt_text={image.alt_text}")  # 調試信息
+					# 檢查圖片是否有實際文件
+					if image.image and hasattr(image.image, 'url'):
+						image_url = image.image.url
+						print(f"使用原創圖片URL: {image_url}")  # 調試信息
+					elif image.alt_text and (image.alt_text.startswith('http') or image.alt_text.startswith('/media/')):
+						# 如果是複製的圖片，使用alt_text中的URL
+						image_url = image.alt_text
+						print(f"使用複製圖片URL: {image_url}")  # 調試信息
+					else:
+						# 如果既沒有圖片文件也沒有URL，跳過
+						print(f"跳過無效圖片: {image.id}")  # 調試信息
+						continue
+					
 					images_data.append({
 						'id': image.id,
-						'url': image.image.url,
+						'url': image_url,
 						'order': image.order,
 						'alt_text': image.alt_text
 					})
@@ -1014,11 +1039,30 @@ class PostTemplateView(View):
 					order=order
 				)
 			
+			# 處理圖片URL複製（用於複製功能）
+			image_urls = request.POST.getlist('image_urls')
+			if image_urls:
+				print(f"複製圖片URLs: {image_urls}")  # 調試信息
+				for i, image_url in enumerate(image_urls):
+					# 簡化順序處理，直接使用索引作為順序
+					order = i
+					print(f"創建複製圖片記錄: URL={image_url}, order={order}")  # 調試信息
+					# 創建圖片記錄，將URL保存到alt_text字段中
+					PostTemplateImage.objects.create(
+						template=template,
+						image='',  # 空圖片字段
+						order=order,
+						alt_text=image_url  # 將URL保存到alt_text字段
+					)
+			
+			# 計算總圖片數量（包括新上傳的和複製的）
+			total_image_count = len(images) + len(image_urls) if image_urls else len(images)
+			
 			return JsonResponse({
 				'success': True,
 				'message': f'模板{action}成功',
 				'template_id': template.id,
-				'image_count': len(images)
+				'image_count': total_image_count
 			})
 			
 		except Exception as e:

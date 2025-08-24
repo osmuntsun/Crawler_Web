@@ -166,20 +166,20 @@ class PostTemplate(models.Model):
 
 
 class PostTemplateImage(models.Model):
-    """貼文模板圖片"""
-    template = models.ForeignKey(PostTemplate, on_delete=models.CASCADE, verbose_name='模板', related_name='images')
-    image = models.ImageField(upload_to=template_image_upload_to, verbose_name='圖片')
-    order = models.PositiveIntegerField(default=0, verbose_name='排序')
-    alt_text = models.CharField(max_length=200, blank=True, verbose_name='替代文字')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
-    
-    class Meta:
-        verbose_name = '模板圖片'
-        verbose_name_plural = '模板圖片'
-        ordering = ['order', 'created_at']
-        indexes = [
-            models.Index(fields=['template', 'order']),
-        ]
-    
-    def __str__(self):
-        return f"{self.template.title} - 圖片 {self.order + 1}"
+	"""貼文模板圖片"""
+	template = models.ForeignKey(PostTemplate, on_delete=models.CASCADE, verbose_name='模板', related_name='images')
+	image = models.ImageField(upload_to=template_image_upload_to, verbose_name='圖片', blank=True, null=True)
+	order = models.PositiveIntegerField(default=0, verbose_name='排序')
+	alt_text = models.CharField(max_length=200, blank=True, verbose_name='替代文字')
+	created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
+	
+	class Meta:
+		verbose_name = '模板圖片'
+		verbose_name_plural = '模板圖片'
+		ordering = ['order', 'created_at']
+		indexes = [
+			models.Index(fields=['template', 'order']),
+		]
+	
+	def __str__(self):
+		return f"{self.template.title} - 圖片 {self.order + 1}"

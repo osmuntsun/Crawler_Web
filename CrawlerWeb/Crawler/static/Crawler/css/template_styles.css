@@ -135,6 +135,30 @@
 	transform: scale(1.1);
 }
 
+/* 複製圖片樣式 */
+.sortable-image.copied-image {
+	border: 2px dashed #f59e0b;
+	opacity: 0.8;
+}
+
+.sortable-image.copied-image:hover {
+	border-color: #d97706;
+	opacity: 1;
+}
+
+.copy-indicator {
+	position: absolute;
+	bottom: 5px;
+	left: 5px;
+	background: rgba(245, 158, 11, 0.9);
+	color: white;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 0.7em;
+	font-weight: bold;
+	z-index: 2;
+}
+
 /* 已儲存的模板列表樣式 */
 .saved-templates-section {
 	margin-top: 40px;

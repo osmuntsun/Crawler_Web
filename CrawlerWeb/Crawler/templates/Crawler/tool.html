@@ -289,7 +289,7 @@
 						</div>
 						<div class="form-row">
 							<label><i class="fas fa-file-alt"></i> 文案模板</label>
-							<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板，支援變數如 {product_name}, {price}, {description}"></textarea>
+							<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板"></textarea>
 						</div>
 						
 						<div class="form-row">
@@ -405,24 +405,20 @@
 							<!-- Facebook 社團選擇（僅在選擇 Facebook 時顯示） -->
 							<div class="form-row" id="facebookCommunitiesRow" style="display: none;">
 								<label><i class="fas fa-users"></i> 選擇 Facebook 社團（可多選）</label>
+								<div class="communities-controls">
+									<button type="button" class="btn btn-sm btn-outline-primary" id="selectAllCommunitiesBtn">
+										<i class="fas fa-check-square"></i> 全選
+									</button>
+									<button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllCommunitiesBtn">
+										<i class="fas fa-square"></i> 取消全選
+									</button>
+								</div>
 								<div id="communitiesList" class="communities-list">
 									<p class="text-muted">請先登入 Facebook 並獲取社團列表</p>
 								</div>
 								<button type="button" class="btn btn-info" id="getCommunitiesBtn">
 									<i class="fas fa-sync"></i> 獲取社團列表
 								</button>
-							</div>
-							
-							<div class="form-row">
-								<label><i class="fas fa-image"></i> 上傳圖片（可多選）</label>
-								<div class="file-upload">
-									<input type="file" name="posting_images" multiple accept="image/*" id="postingImageUpload">
-									<div class="file-upload-text">
-										<i class="fas fa-cloud-upload-alt"></i>
-										<span>點擊或拖拽圖片檔案到此處上傳</span>
-									</div>
-								</div>
-								<div id="imagePreview" class="image-preview"></div>
 							</div>
 							
 							<div class="form-actions">

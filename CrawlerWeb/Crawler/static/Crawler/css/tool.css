@@ -975,11 +975,144 @@ body {
 	background: #f8f9fa;
 	border: 2px solid #e1e5e9;
 	border-radius: 12px;
-	padding: 20px;
-	min-height: 120px;
+	padding: 12px 16px;
+	min-height: 80px;
+	max-height: none;
+	overflow-y: visible;
 	white-space: pre-wrap;
 	font-family: inherit;
-	line-height: 1.6;
+	line-height: 1.5;
+	font-size: 0.95em;
+	margin-bottom: 4px;
+}
+
+/* Facebook 社團選項的顯示/隱藏過渡效果 */
+#facebookCommunitiesRow {
+	transition: all 0.3s ease;
+	overflow: hidden;
+}
+
+#facebookCommunitiesRow.hidden {
+	opacity: 0;
+	max-height: 0;
+	padding: 0;
+	margin: 0;
+	border: none;
+}
+
+#facebookCommunitiesRow.visible {
+	opacity: 1;
+	max-height: 500px;
+}
+
+/* Facebook 社團選項的優化佈局 */
+.communities-controls {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.communities-list {
+	max-height: 200px;
+	overflow-y: auto;
+	border: 1px solid #e1e5e9;
+	border-radius: 8px;
+	padding: 12px;
+	background: #f8f9fa;
+}
+
+.communities-list::-webkit-scrollbar {
+	width: 8px;
+}
+
+.communities-list::-webkit-scrollbar-track {
+	background: #f1f1f1;
+	border-radius: 4px;
+}
+
+.communities-list::-webkit-scrollbar-thumb {
+	background: #c1c1c1;
+	border-radius: 4px;
+}
+
+.communities-list::-webkit-scrollbar-thumb:hover {
+	background: #a8a8a8;
+}
+
+/* Firefox 滾動條樣式 */
+.communities-list {
+	scrollbar-width: thin;
+	scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* 社團選項的多行佈局 */
+.community-checkbox-group {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 8px;
+	max-height: none;
+	overflow: visible;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.community-checkbox-group {
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		gap: 6px;
+	}
+	
+	.community-checkbox-item {
+		padding: 4px 6px;
+	}
+	
+	.community-checkbox-item label {
+		font-size: 0.85em;
+	}
+}
+
+@media (max-width: 480px) {
+	.community-checkbox-group {
+		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+		gap: 4px;
+	}
+	
+	.communities-list {
+		max-height: 150px;
+		padding: 8px;
+	}
+}
+
+.community-checkbox-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 8px;
+	background: white;
+	border: 1px solid #e1e5e9;
+	border-radius: 6px;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.community-checkbox-item:hover {
+	background: #f8f9fa;
+	border-color: #667eea;
+}
+
+.community-checkbox-item input[type="checkbox"] {
+	margin: 0;
+	flex-shrink: 0;
+}
+
+.community-checkbox-item label {
+	margin: 0;
+	font-size: 0.9em;
+	color: #4a5568;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
 }
 
 .copy-preview.preview-active {
@@ -991,7 +1124,31 @@ body {
 	color: #999;
 	font-style: italic;
 	text-align: center;
-	margin-top: 40px;
+	margin-top: 20px;
+}
+
+/* 文案預覽文字處理 */
+.copy-preview {
+	word-break: break-word;
+	text-indent: 0 !important;
+	text-align: left;
+}
+
+.copy-preview * {
+	white-space: pre-wrap !important;
+	text-indent: 0 !important;
+}
+
+/* 強制移除文字開頭的空白 */
+.copy-preview::first-line {
+	text-indent: 0 !important;
+}
+
+/* 處理空白字符顯示 */
+.copy-preview {
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 /* 表單幫助文字 */

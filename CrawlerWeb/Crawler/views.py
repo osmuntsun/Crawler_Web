@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.conf import settings
 from Accounts.models import WebsiteCookie, Community, PostTemplate, PostTemplateImage
 import json
 import time
@@ -87,8 +88,17 @@ class FacebookAutomationView(View):
 		# 	return JsonResponse({'error': '此功能僅限付費用戶使用'}, status=403)
 		
 		try:
+			# 添加調試信息
+			print(f"請求內容類型: {request.content_type}")
+			print(f"請求方法: {request.method}")
+			print(f"請求體長度: {len(request.body) if request.body else 0}")
+			print(f"請求體內容: {request.body[:500] if request.body else 'None'}")  # 只顯示前500個字符
+			
 			data = json.loads(request.body)
 			action = data.get('action')
+			
+			print(f"解析後的數據: {data}")
+			print(f"操作類型: {action}")
 			
 			if action == 'login_and_save_cookies':
 				return self.login_and_save_cookies(request, data)
@@ -339,17 +349,57 @@ class FacebookAutomationView(View):
 					
 					# 上傳圖片（如果有的話）
 					if image_paths:
+						print(f"準備上傳 {len(image_paths)} 張圖片")
 						try:
+							# 查找圖片上傳按鈕
 							post_img = driver.find_element(
 								By.XPATH,
 								'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
 							)
-							for img in image_paths:
-								post_img.send_keys(img)
-								time.sleep(0.5)  # 可視情況加等待
+							print("成功找到圖片上傳按鈕")
+							
+							# 處理每張圖片
+							for i, img_path in enumerate(image_paths):
+								try:
+									print(f"處理第 {i+1} 張圖片: {img_path}")
+									
+									# 轉換圖片路徑為絕對路徑
+									if img_path.startswith('/media/'):
+										# 相對路徑，轉換為絕對路徑
+										
+										# 移除開頭的 /media/
+										relative_path = img_path.replace('/media/', '')
+										# 轉換為 Windows 路徑分隔符
+										relative_path = relative_path.replace('/', os.sep)
+										# 構建絕對路徑
+										absolute_path = os.path.join(settings.BASE_DIR, 'media', relative_path)
+										
+										print(f"轉換路徑: {img_path} -> {absolute_path}")
+										
+										# 檢查文件是否存在
+										if os.path.exists(absolute_path):
+											print(f"圖片文件存在，大小: {os.path.getsize(absolute_path)} bytes")
+											# 上傳圖片
+											post_img.send_keys(absolute_path)
+											print(f"成功發送圖片路徑: {absolute_path}")
+											time.sleep(0.5)
+										else:
+											print(f"圖片文件不存在: {absolute_path}")
+											continue
+									else:
+										# 已經是絕對路徑，直接使用
+										print(f"使用絕對路徑: {img_path}")
+										post_img.send_keys(img_path)
+										print(f"成功發送圖片路徑: {img_path}")
+										time.sleep(0.5)
+										
+								except Exception as single_img_error:
+									print(f"上傳第 {i+1} 張圖片失敗: {str(single_img_error)}")
+									continue
+									
 						except Exception as img_error:
-							# 如果圖片上傳失敗，繼續執行
-							pass
+							print(f"圖片上傳過程發生錯誤: {str(img_error)}")
+							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
 					
 					time.sleep(1)
 					
@@ -402,6 +452,10 @@ class FacebookAutomationView(View):
 		options.add_argument("--disable-gpu")
 		options.add_argument("--no-sandbox")
 		options.add_argument("--disable-dev-shm-usage")
+		# 抑制 Chrome 日誌輸出
+		options.add_argument("--log-level=3")  # 只顯示致命錯誤
+		options.add_argument("--silent")
+		options.add_experimental_option('excludeSwitches', ['enable-logging'])
 		
 		# 使用 webdriver_manager 自動管理 ChromeDriver
 		print("正在安裝ChromeDriver...")

@@ -247,6 +247,8 @@
 	max-height: 100px;
 	overflow: hidden;
 	position: relative;
+	white-space: normal;
+	text-indent: 0;
 }
 
 .template-content.expanded {
@@ -443,22 +445,12 @@
 	font-size: 1.4em;
 	font-weight: 600;
 	color: #2d3748;
-	margin-bottom: 16px;
-	padding-bottom: 12px;
+	margin-bottom: 8px;
+	padding-bottom: 8px;
 	border-bottom: 2px solid #e2e8f0;
 }
 
-.preview-content {
-	background: #f8fafc;
-	padding: 20px;
-	border-radius: 12px;
-	margin-bottom: 20px;
-	font-size: 1em;
-	line-height: 1.7;
-	color: #4a5568;
-	white-space: pre-wrap;
-	border-left: 4px solid #667eea;
-}
+/* 此樣式已被下方的新樣式覆蓋 */
 
 .preview-images {
 	margin-bottom: 20px;
@@ -595,11 +587,215 @@
 	}
 	
 	.preview-images-grid {
-		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-		gap: 12px;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 2px;
 	}
 	
 	.preview-image-item img {
-		height: 100px;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
+}
+
+/* 文案預覽樣式 */
+.template-preview {
+	background: none;
+	border: none;
+	border-radius: 0;
+	padding: 0;
+	box-shadow: none;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* 圖片網格設定 */
+:root {
+	--preview-image-gap: 4px;
+}
+
+.preview-title {
+	font-size: 1.1em;
+	font-weight: 600;
+	color: #2d3748;
+	margin: 0 0 8px 0;
+	padding-bottom: 0;
+	border-bottom: none;
+	background: none;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.preview-title i {
+	color: #667eea;
+	margin-right: 8px;
+}
+
+.preview-content {
+	font-size: 0.95em;
+	line-height: 1.4;
+	color: #4a5568;
+	margin: 0;
+	white-space: pre-wrap !important;
+	background: none;
+	border: none;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+	text-indent: 0 !important;
+	display: block;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	text-align: left !important;
+	max-height: none;
+	overflow-y: visible;
+}
+
+.preview-content::before,
+.preview-content::after {
+	content: none !important;
+}
+
+/* 為 preview-content 中的 <a> 標籤添加樣式 */
+.preview-content a {
+	display: inline-block;
+	color: #667eea;
+	text-decoration: none;
+	padding: 2px 4px;
+	margin: 1px 0;
+	border-radius: 4px;
+	background-color: rgba(102, 126, 234, 0.1);
+	transition: all 0.2s ease;
+}
+
+.preview-content a:hover {
+	background-color: rgba(102, 126, 234, 0.2);
+	color: #5a6fd8;
+	transform: translateY(-1px);
+}
+
+.preview-images {
+	margin: 0;
+	padding: 0;
+	margin-top: 4px;
+}
+
+.preview-images-title {
+	font-size: 0.9em;
+	font-weight: 600;
+	color: #2d3748;
+	margin: 0 0 4px 0;
+	background: none;
+	border: none;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.preview-images-title i {
+	color: #667eea;
+	margin-right: 8px;
+}
+
+.preview-images-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: var(--preview-image-gap);
+	padding: 0;
+	margin: 0;
+}
+
+.preview-image-item {
+	position: relative;
+	border-radius: 0;
+	overflow: hidden;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+	line-height: 0;
+	aspect-ratio: 1;
+	min-width: 0;
+}
+
+.preview-image-item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+}
+
+.preview-image-order {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: rgba(102, 126, 234, 0.9);
+	color: white;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.8em;
+	font-weight: bold;
+}
+
+.preview-hashtags {
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	padding: 10px 15px;
+	border-radius: 8px;
+	font-size: 0.9em;
+	text-align: center;
+}
+
+.preview-hashtags i {
+	margin-right: 8px;
+}
+
+/* Facebook 社團控制按鈕樣式 */
+.communities-controls {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+.communities-controls .btn {
+	padding: 8px 16px;
+	font-size: 0.9em;
+	border-radius: 6px;
+	transition: all 0.2s ease;
+}
+
+.communities-controls .btn:hover {
+	transform: translateY(-1px);
+}
+
+.communities-controls .btn-outline-primary {
+	border-color: #667eea;
+	color: #667eea;
+}
+
+.communities-controls .btn-outline-primary:hover {
+	background: #667eea;
+	color: white;
+}
+
+.communities-controls .btn-outline-secondary {
+	border-color: #718096;
+	color: #718096;
+}
+
+.communities-controls .btn-outline-secondary:hover {
+	background: #718096;
+	color: white;
 }

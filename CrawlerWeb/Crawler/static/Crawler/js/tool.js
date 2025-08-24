@@ -266,6 +266,24 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.error('找不到標籤篩選器元素');
 		}
 
+		// 文案模板選擇器
+		const copyTemplateSelect = document.getElementById('copyTemplate');
+		if (copyTemplateSelect) {
+			console.log('文案模板選擇器元素找到，綁定事件監聽器');
+			copyTemplateSelect.addEventListener('change', handleCopyTemplateChange);
+		} else {
+			console.error('找不到文案模板選擇器元素');
+		}
+
+		// 發文平台選擇器
+		const postingPlatformSelect = document.getElementById('postingPlatform');
+		if (postingPlatformSelect) {
+			console.log('發文平台選擇器元素找到，綁定事件監聽器');
+			postingPlatformSelect.addEventListener('change', handlePostingPlatformChange);
+		} else {
+			console.error('找不到發文平台選擇器元素');
+		}
+
 		// 為表單輸入框添加事件監聽器，檢查內容變化
 		const titleInput = document.querySelector('input[name="copy_title"]');
 		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
@@ -287,7 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			await loadCommunities();
 			await loadCopyTemplates();
 			await loadPostTemplates();
-			await updatePostingPlatforms();
+			await updatePostingPlatforms(); // 這會自動檢查Facebook登入狀態並載入社團
+			await updateCopyTemplateOptions(); // 更新文案模板選項
 		})();
 		
 		// 檢查並隱藏已登入的平台選項
@@ -428,8 +447,52 @@ document.addEventListener('DOMContentLoaded', function() {
 		const copyTemplate = formData.get('copy_template');
 		const imageFiles = Array.from(formData.getAll('posting_images'));
 
-		if (!platform || !copyTemplate) {
-			showNotification('請選擇社群平台和文案模板', 'warning');
+		// 獲取選取的文案內容
+		let messageContent = '';
+		
+		if (copyTemplate) {
+			// 從選中的選項中獲取模板數據
+			const copyTemplateSelect = document.getElementById('copyTemplate');
+			const selectedOption = copyTemplateSelect.options[copyTemplateSelect.selectedIndex];
+			
+			console.log('選取的模板ID:', copyTemplate);
+			console.log('選中的選項:', selectedOption);
+			
+			if (selectedOption && selectedOption.dataset.template) {
+				const template = JSON.parse(selectedOption.dataset.template);
+				console.log('選取的模板:', template);
+				
+				// 使用通用函數處理文字內容
+				messageContent = processTemplateContent(template.content);
+				console.log('原始模板內容:', template.content);
+				console.log('處理後的文案內容:', messageContent);
+				
+				// 獲取模板中的圖片
+				if (template.images && template.images.length > 0) {
+					console.log('模板包含圖片:', template.images);
+					// 將模板圖片添加到 imageFiles 中
+					template.images.forEach((image, index) => {
+						// 創建一個模擬的 File 對象，包含圖片的 URL 和名稱
+						const mockFile = {
+							name: image.name || `template_image_${index + 1}.jpg`,
+							url: image.url,
+							path: image.url, // 添加 path 屬性
+							type: 'image/jpeg',
+							size: 0,
+							lastModified: Date.now()
+						};
+						imageFiles.push(mockFile);
+					});
+					console.log('處理後的圖片文件:', imageFiles);
+				}
+			} else {
+				showNotification('找不到選取的文案模板', 'warning');
+				return;
+			}
+		}
+
+		if (!platform || !messageContent || messageContent.trim() === '') {
+			showNotification('請選擇社群平台和有效的文案內容', 'warning');
 			return;
 		}
 
@@ -459,18 +522,28 @@ document.addEventListener('DOMContentLoaded', function() {
 				// 獲取 CSRF 令牌
 				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 				
+				// 創建 JSON 數據來發送
+				const postData = {
+					action: 'post_to_community',
+					community_urls: selectedCommunities,
+					message: messageContent,
+					image_paths: imageFiles
+						.map(file => file.url || file.path)
+						.filter(path => path && path.trim() !== '') // 過濾掉空值
+				};
+				
+				// 添加調試日誌
+				console.log('準備發送的數據:', postData);
+				console.log('圖片路徑數組:', postData.image_paths);
+				console.log('JSON 字符串:', JSON.stringify(postData));
+				
 				response = await fetch('/crawler/api/facebook/', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						'X-CSRFToken': csrfToken,
 					},
-					body: JSON.stringify({
-						action: 'post_to_community',
-						community_urls: selectedCommunities,
-						message: copyTemplate,
-						image_paths: imageFiles.map(file => file.path || file.name)
-					})
+					body: JSON.stringify(postData)
 				});
 			} else {
 				// 其他平台的發文邏輯
@@ -485,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					},
 					body: JSON.stringify({
 						platform: platform,
-						message: copyTemplate,
+						message: messageContent,
 						images: imageFiles.map(file => file.path || file.name)
 					})
 				});
@@ -502,12 +575,25 @@ document.addEventListener('DOMContentLoaded', function() {
 				
 				// 清空表單
 				form.reset();
-				document.getElementById('imagePreview').innerHTML = '';
-				document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
-				document.getElementById('copyPreview').classList.remove('preview-active');
+				
+				// 安全地清空圖片預覽
+				const imagePreview = document.getElementById('imagePreview');
+				if (imagePreview) {
+					imagePreview.innerHTML = '';
+				}
+				
+				// 安全地清空文案預覽
+				const copyPreview = document.getElementById('copyPreview');
+				if (copyPreview) {
+					copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+					copyPreview.classList.remove('preview-active');
+				}
 				
 				// 隱藏 Facebook 社團選擇
-				document.getElementById('facebookCommunitiesRow').style.display = 'none';
+				const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
+				if (facebookCommunitiesRow) {
+					facebookCommunitiesRow.style.display = 'none';
+				}
 			} else {
 				throw new Error(result.error || '發文失敗');
 			}
@@ -579,23 +665,50 @@ document.addEventListener('DOMContentLoaded', function() {
 			return;
 		}
 
-		let html = '<div class="communities-container">';
+		// 使用新的多行佈局，只顯示社團名稱
+		let html = '<div class="community-checkbox-group">';
 		communities.forEach((community, index) => {
 			html += `
-				<div class="community-item">
+				<div class="community-checkbox-item">
 					<input type="checkbox" class="community-checkbox" 
 						   id="community_${index}" value="${community.url}" 
 						   data-name="${community.name}">
-					<div class="community-info">
-						<h5>${community.name}</h5>
-						<p>${community.url}</p>
-					</div>
+					<label for="community_${index}" title="${community.name}">${community.name}</label>
 				</div>
 			`;
 		});
 		html += '</div>';
 		
 		communitiesList.innerHTML = html;
+		
+		// 綁定全選和取消全選按鈕事件
+		const selectAllBtn = document.getElementById('selectAllCommunitiesBtn');
+		const deselectAllBtn = document.getElementById('deselectAllCommunitiesBtn');
+		
+		if (selectAllBtn) {
+			selectAllBtn.addEventListener('click', selectAllCommunities);
+		}
+		if (deselectAllBtn) {
+			deselectAllBtn.addEventListener('click', deselectAllCommunities);
+		}
+	}
+
+	// 全選 Facebook 社團
+	function selectAllCommunities() {
+		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
+		checkboxes.forEach(checkbox => {
+			checkbox.checked = true;
+		});
+		console.log(`已全選 ${checkboxes.length} 個 Facebook 社團`);
+	}
+
+	// 取消全選 Facebook 社團
+	function deselectAllCommunities() {
+		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
+		checkboxes.forEach(checkbox => {
+			checkbox.checked = false;
+		});
+		console.log(`已取消全選 ${checkboxes.length} 個 Facebook 社團`);
 	}
 
 	// 處理圖片上傳
@@ -615,12 +728,23 @@ document.addEventListener('DOMContentLoaded', function() {
 				const imgElement = document.querySelector(`#preview_${index} img`);
 				if (imgElement) {
 					imgElement.src = e.target.result;
+					// 隱藏載入動畫，顯示圖片
+					const loadingDiv = document.querySelector(`#preview_${index} .image-loading`);
+					if (loadingDiv) {
+						loadingDiv.style.display = 'none';
+					}
+					imgElement.style.display = 'block';
 				}
 			};
 			reader.readAsDataURL(file);
 
 			html += `
-				<div class="image-preview-item" id="preview_${index}">
+				<div class="image-preview-item" id="preview_${index}" data-file="${JSON.stringify({
+					name: file.name,
+					size: file.size,
+					type: file.type,
+					lastModified: file.lastModified
+				})}">
 					<img src="" alt="預覽圖片" style="display: none;">
 					<div class="image-loading">
 						<i class="fas fa-spinner fa-spin"></i>
@@ -954,6 +1078,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// 更新發文平台選項
 	async function updatePostingPlatforms() {
 		const postingPlatformSelect = document.getElementById('postingPlatform');
+		const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
+		
 		if (!postingPlatformSelect) return;
 
 		try {
@@ -970,6 +1096,19 @@ document.addEventListener('DOMContentLoaded', function() {
 				option.textContent = getPlatformDisplayName(account.website);
 				postingPlatformSelect.appendChild(option);
 			});
+			
+			// 檢查是否有 Facebook 帳號登入
+			const hasFacebook = accounts.some(account => 
+				account.website === 'facebook' && account.is_active
+			);
+			
+			if (hasFacebook && facebookCommunitiesRow) {
+				facebookCommunitiesRow.style.display = 'block';
+				// 自動載入 Facebook 社團
+				await loadFacebookCommunitiesFromDatabase();
+			} else if (facebookCommunitiesRow) {
+				facebookCommunitiesRow.style.display = 'none';
+			}
 		} catch (error) {
 			console.error('更新發文平台選項失敗:', error);
 		}
@@ -1004,6 +1143,55 @@ document.addEventListener('DOMContentLoaded', function() {
 		} catch (error) {
 			console.error('檢查已登入平台失敗:', error);
 			console.error('錯誤詳情:', error.message);
+		}
+	}
+
+	// 處理發文平台選擇變更
+	function handlePostingPlatformChange() {
+		const postingPlatformSelect = document.getElementById('postingPlatform');
+		const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
+		
+		if (!postingPlatformSelect || !facebookCommunitiesRow) return;
+		
+		const selectedPlatform = postingPlatformSelect.value;
+		
+		if (selectedPlatform === 'facebook') {
+			facebookCommunitiesRow.style.display = 'block';
+			// 如果還沒有載入社團，則自動載入
+			const communitiesList = document.getElementById('communitiesList');
+			if (communitiesList && communitiesList.innerHTML.includes('請先登入 Facebook')) {
+				loadFacebookCommunitiesFromDatabase();
+			}
+		} else {
+			facebookCommunitiesRow.style.display = 'none';
+		}
+	}
+
+	// 從資料庫載入已儲存的 Facebook 社團
+	async function loadFacebookCommunitiesFromDatabase() {
+		const communitiesList = document.getElementById('communitiesList');
+		
+		try {
+			const response = await fetch('/crawler/api/communities/');
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				const facebookCommunities = result.communities.filter(community => 
+					community.community_type === 'facebook'
+				);
+				
+				if (facebookCommunities.length > 0) {
+					displayCommunities(facebookCommunities);
+					console.log(`自動載入 ${facebookCommunities.length} 個 Facebook 社團`);
+				} else {
+					communitiesList.innerHTML = '<p class="text-muted">尚未獲取到 Facebook 社團，請點擊下方按鈕獲取</p>';
+				}
+			} else {
+				communitiesList.innerHTML = '<p class="text-muted">載入社團列表失敗，請點擊下方按鈕重新獲取</p>';
+			}
+		} catch (error) {
+			console.error('載入 Facebook 社團失敗:', error);
+			communitiesList.innerHTML = '<p class="text-muted">載入社團列表失敗，請點擊下方按鈕重新獲取</p>';
 		}
 	}
 
@@ -1086,7 +1274,9 @@ document.addEventListener('DOMContentLoaded', function() {
 					const template = templates.find(t => t.id === this.value);
 					
 					if (template) {
-						copyPreview.textContent = template.template;
+						// 使用通用函數處理文字內容
+						const finalContent = processTemplateContent(template.template);
+						copyPreview.textContent = finalContent;
 						copyPreview.classList.add('preview-active');
 					}
 				} else {
@@ -1101,12 +1291,39 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (postingPlatformSelect) {
 			postingPlatformSelect.addEventListener('change', function() {
 				const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
-				if (this.value === 'facebook') {
-					facebookCommunitiesRow.style.display = 'block';
-				} else {
-					facebookCommunitiesRow.style.display = 'none';
+				if (facebookCommunitiesRow) {
+					if (this.value === 'facebook') {
+						// 顯示 Facebook 社團選項
+						facebookCommunitiesRow.classList.remove('hidden');
+						facebookCommunitiesRow.classList.add('visible');
+						facebookCommunitiesRow.style.display = 'block';
+					} else {
+						// 隱藏 Facebook 社團選項
+						facebookCommunitiesRow.classList.remove('visible');
+						facebookCommunitiesRow.classList.add('hidden');
+						// 延遲隱藏，讓過渡效果完成
+						setTimeout(() => {
+							if (!facebookCommunitiesRow.classList.contains('visible')) {
+								facebookCommunitiesRow.style.display = 'none';
+							}
+						}, 300);
+					}
 				}
 			});
+			
+			// 初始化時也要檢查一次
+			const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
+			if (facebookCommunitiesRow) {
+				if (postingPlatformSelect.value === 'facebook') {
+					facebookCommunitiesRow.classList.remove('hidden');
+					facebookCommunitiesRow.classList.add('visible');
+					facebookCommunitiesRow.style.display = 'block';
+				} else {
+					facebookCommunitiesRow.classList.remove('visible');
+					facebookCommunitiesRow.classList.add('hidden');
+					facebookCommunitiesRow.style.display = 'none';
+				}
+			}
 		}
 	}
 
@@ -1123,6 +1340,20 @@ document.addEventListener('DOMContentLoaded', function() {
 	// 全局變量
 	let templateImages = [];
 	let draggedImageIndex = null;
+
+	// 通用函數：清理文字並在第一個字元前加上換行符號
+	function processTemplateContent(content) {
+		if (!content) return '';
+		
+		// 清理文字前後的空白，保留中間的原始格式
+		const cleanContent = content
+			.replace(/^[\s\t\n\r]+/, '')     // 移除開頭的所有空白字符（包括製表符）
+			.replace(/[\s\t\n\r]+$/, '')     // 移除結尾的所有空白字符（包括製表符）
+			.trim();                          // 最後再次清理前後空白
+		
+		// 在第一個字元前加上換行符號
+		return cleanContent ?  "\n" + cleanContent : cleanContent;
+	}
 
 	// 處理模板圖片上傳
 	function handleTemplateImageUpload(e) {
@@ -1512,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', function() {
 										</button>
 									</div>
 								</div>
-								<div class="template-content">${template.content}</div>
+								<div class="template-content">${template.content.trim()}</div>
 						`;
 						
 						if (template.images.length > 0) {
@@ -1635,6 +1866,88 @@ document.addEventListener('DOMContentLoaded', function() {
 		loadPostTemplates();
 	}
 
+	// 更新文案模板選項
+	async function updateCopyTemplateOptions() {
+		const copyTemplateSelect = document.getElementById('copyTemplate');
+		if (!copyTemplateSelect) return;
+		
+		try {
+			const response = await fetch('/crawler/api/templates/');
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				// 清空現有選項
+				copyTemplateSelect.innerHTML = '<option value="">選擇要使用的文案模板</option>';
+				
+				// 添加模板選項
+				result.templates.forEach(template => {
+					const option = document.createElement('option');
+					option.value = template.id;
+					option.textContent = template.title;
+					option.dataset.template = JSON.stringify(template);
+					copyTemplateSelect.appendChild(option);
+				});
+				
+				console.log(`已載入 ${result.templates.length} 個文案模板選項`);
+			}
+		} catch (error) {
+			console.error('載入文案模板選項失敗:', error);
+		}
+	}
+
+	// 處理文案模板選擇變更
+	function handleCopyTemplateChange() {
+		const copyTemplateSelect = document.getElementById('copyTemplate');
+		const copyPreview = document.getElementById('copyPreview');
+		
+		if (!copyTemplateSelect || !copyPreview) return;
+		
+		const selectedTemplateId = copyTemplateSelect.value;
+		if (!selectedTemplateId) {
+			copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+			return;
+		}
+		
+		// 獲取選中的模板數據
+		const selectedOption = copyTemplateSelect.options[copyTemplateSelect.selectedIndex];
+		const template = JSON.parse(selectedOption.dataset.template);
+		
+		// 顯示模板預覽（只顯示內容和圖片，不顯示標題和圖片數量）
+		// 使用通用函數處理文字內容
+		const finalContent = processTemplateContent(template.content);
+		let previewHTML = `
+			<div class="template-preview">
+				<div class="preview-content">
+					${finalContent}
+				</div>
+		`;
+		
+		// 添加圖片預覽（不顯示標題和數量）
+		if (template.images && template.images.length > 0) {
+			previewHTML += `
+				<div class="preview-images">
+					<div class="preview-images-grid">
+			`;
+			
+			template.images.forEach((image, index) => {
+				previewHTML += `
+					<div class="preview-image-item">
+						<img src="${image.url}" alt="圖片 ${index + 1}" onerror="this.style.display='none'">
+						<div class="preview-image-order">${index + 1}</div>
+					</div>
+				`;
+			});
+			
+			previewHTML += `
+					</div>
+				</div>
+			`;
+		}
+		
+		previewHTML += '</div>';
+		copyPreview.innerHTML = previewHTML;
+	}
+
 	// 預覽模板
 	async function previewTemplate(templateId) {
 		try {
@@ -1670,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					</div>
 					<div class="template-preview-body">
 						<div class="preview-title">${template.title}</div>
-						<div class="preview-content">${template.content}</div>
+						<div class="preview-content">${template.content.trim()}</div>
 						${template.images && template.images.length > 0 ? `
 							<div class="preview-images">
 								<div class="preview-images-title">圖片預覽 (${template.images.length} 張)</div>
@@ -1822,7 +2135,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				// 準備複製的數據
 				const formData = new FormData();
 				formData.append('title', `${template.title}(2)`);
-				formData.append('content', template.content);
+				// 徹底清理所有類型的空白字符（包括製表符、空格、換行等）
+				// 使用通用函數處理文字內容
+				const finalContent = processTemplateContent(template.content);
+				formData.append('content', finalContent);
 				formData.append('hashtags', template.hashtags || '');
 				
 				// 複製圖片（只複製圖片URL，不複製實際文件）
@@ -1927,7 +2243,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// 填充內容
 		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
 		if (contentTextarea) {
-			contentTextarea.value = template.content;
+			// 徹底清理所有類型的空白字符（包括製表符、空格、換行等）
+			// 使用通用函數處理文字內容
+			const finalContent = processTemplateContent(template.content);
+			contentTextarea.value = finalContent;
 		}
 		
 		// 填充標籤

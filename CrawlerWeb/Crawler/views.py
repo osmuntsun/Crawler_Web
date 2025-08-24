@@ -1082,6 +1082,20 @@ class PostTemplateView(View):
 			
 			try:
 				template = PostTemplate.objects.get(id=template_id, user=request.user)
+				
+				# 先刪除所有相關的圖片文件
+				for image in template.images.all():
+					if image.image and hasattr(image.image, 'path'):
+						try:
+							import os
+							# 刪除文件系統中的圖片文件
+							if os.path.exists(image.image.path):
+								os.remove(image.image.path)
+								print(f"已刪除圖片文件: {image.image.path}")
+						except Exception as e:
+							print(f"刪除圖片文件失敗: {e}")
+				
+				# 刪除模板（會自動刪除相關的圖片記錄）
 				template.delete()
 				
 				return JsonResponse({

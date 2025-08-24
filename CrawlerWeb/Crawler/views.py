@@ -862,12 +862,52 @@ class PostTemplateView(View):
 	"""
 	
 	def get(self, request):
-		"""獲取用戶的貼文模板列表"""
+		"""獲取用戶的貼文模板列表或單個模板"""
 		if not request.user.is_authenticated:
 			return JsonResponse({'error': '請先登入'}, status=401)
 		
 		try:
-			# 獲取用戶的所有模板
+			# 檢查是否請求單個模板
+			template_id = request.GET.get('template_id')
+			if template_id:
+				try:
+					template = PostTemplate.objects.get(
+						id=template_id,
+						user=request.user,
+						is_active=True
+					)
+					
+					# 獲取模板的圖片
+					images = template.images.all().order_by('order')
+					images_data = []
+					for image in images:
+						images_data.append({
+							'id': image.id,
+							'url': image.image.url,
+							'order': image.order,
+							'alt_text': image.alt_text
+						})
+					
+					template_data = {
+						'id': template.id,
+						'title': template.title,
+						'content': template.content,
+						'hashtags': template.hashtags,
+						'images': images_data,
+						'image_count': len(images_data),
+						'created_at': template.created_at.isoformat(),
+						'updated_at': template.updated_at.isoformat()
+					}
+					
+					return JsonResponse({
+						'success': True,
+						'template': template_data
+					})
+					
+				except PostTemplate.DoesNotExist:
+					return JsonResponse({'error': '找不到指定的模板'}, status=404)
+			
+			# 獲取所有模板
 			templates = PostTemplate.objects.filter(
 				user=request.user,
 				is_active=True
@@ -941,17 +981,33 @@ class PostTemplateView(View):
 				)
 				action = '創建'
 			
-			# 處理圖片上傳
+			# 處理圖片上傳和現有圖片
 			images = request.FILES.getlist('images')
+			existing_images = request.POST.getlist('existing_images')
 			image_orders = request.POST.getlist('image_orders')
 			
-			# 如果是更新模板，先刪除舊圖片
+			# 如果是更新模板，處理現有圖片和新圖片
 			if template_id:
-				template.images.all().delete()
+				# 先刪除不在現有圖片列表中的舊圖片
+				if existing_images:
+					template.images.exclude(id__in=existing_images).delete()
+				else:
+					template.images.all().delete()
+				
+				# 更新現有圖片的順序
+				for i, image_id in enumerate(existing_images):
+					try:
+						image = PostTemplateImage.objects.get(id=image_id, template=template)
+						order = int(image_orders[i]) if i < len(image_orders) else i
+						image.order = order
+						image.save()
+					except PostTemplateImage.DoesNotExist:
+						continue
 			
 			# 上傳新圖片
+			start_order = len(existing_images) if existing_images else 0
 			for i, image_file in enumerate(images):
-				order = int(image_orders[i]) if i < len(image_orders) else i
+				order = int(image_orders[start_order + i]) if (start_order + i) < len(image_orders) else (start_order + i)
 				PostTemplateImage.objects.create(
 					template=template,
 					image=image_file,

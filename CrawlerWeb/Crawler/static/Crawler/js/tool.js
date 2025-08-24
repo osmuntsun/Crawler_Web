@@ -251,6 +251,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			previewTemplateBtn.addEventListener('click', handlePreviewTemplate);
 		}
 
+		// 標籤篩選器
+		const hashtagFilter = document.getElementById('hashtagFilter');
+		if (hashtagFilter) {
+			hashtagFilter.addEventListener('change', handleHashtagFilter);
+		}
+
 		// 初始化頁面數據
 		(async () => {
 			await loadAccountsStatus();
@@ -1237,10 +1243,26 @@ document.addEventListener('DOMContentLoaded', function() {
 			formData.append('content', content);
 			formData.append('hashtags', hashtags);
 			
+			// 檢查是否為編輯模式
+			const isEditMode = saveBtn.dataset.editMode === 'true';
+			const templateId = saveBtn.dataset.templateId;
+			
+			if (isEditMode && templateId) {
+				formData.append('template_id', templateId);
+			}
+			
 			// 添加圖片和順序
 			templateImages.forEach((image, index) => {
-				formData.append('images', image.file);
-				formData.append('image_orders', image.order);
+				// 如果是現有圖片，需要特殊處理
+				if (image.isExisting) {
+					// 對於現有圖片，我們需要標記它們
+					formData.append('existing_images', image.originalId);
+					formData.append('image_orders', image.order);
+				} else {
+					// 新上傳的圖片
+					formData.append('images', image.file);
+					formData.append('image_orders', image.order);
+				}
 			});
 			
 			// 獲取 CSRF 令牌
@@ -1265,6 +1287,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				hashtagsInput.value = '';
 				templateImages = [];
 				updateImageSorting();
+				
+				// 重置儲存按鈕
+				saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
+				delete saveBtn.dataset.editMode;
+				delete saveBtn.dataset.templateId;
 				
 				// 重新載入模板列表
 				await loadPostTemplates();
@@ -1351,17 +1378,23 @@ document.addEventListener('DOMContentLoaded', function() {
 			const result = await response.json();
 			
 			if (response.ok && result.success) {
-				if (result.templates.length === 0) {
+				// 更新標籤篩選器選項
+				updateHashtagFilterOptions(result.templates);
+				
+				// 應用當前篩選
+				const filteredTemplates = filterTemplatesByHashtag(result.templates);
+				
+				if (filteredTemplates.length === 0) {
 					templatesList.innerHTML = `
 						<div class="empty-templates">
 							<i class="fas fa-bookmark"></i>
-							<p>尚未儲存任何模板</p>
-							<small>建立您的第一個文案模板</small>
+							<p>沒有找到符合篩選條件的模板</p>
+							<small>嘗試選擇其他標籤或清除篩選</small>
 						</div>
 					`;
 				} else {
 					let html = '';
-					result.templates.forEach(template => {
+					filteredTemplates.forEach(template => {
 						const createdDate = new Date(template.created_at).toLocaleDateString();
 						const imageCount = template.image_count;
 						
@@ -1376,8 +1409,11 @@ document.addEventListener('DOMContentLoaded', function() {
 										</div>
 									</div>
 									<div class="template-actions">
-										<button class="btn btn-sm btn-info" onclick="useTemplate(${template.id})">
-											<i class="fas fa-copy"></i> 使用
+										<button class="btn btn-sm btn-info" onclick="previewTemplate(${template.id})">
+											<i class="fas fa-eye"></i> 預覽
+										</button>
+										<button class="btn btn-sm btn-success" onclick="copyTemplate(${template.id})">
+											<i class="fas fa-copy"></i> 複製
 										</button>
 										<button class="btn btn-sm btn-warning" onclick="editTemplate(${template.id})">
 											<i class="fas fa-edit"></i> 編輯
@@ -1428,16 +1464,230 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
-	// 使用模板
-	function useTemplate(templateId) {
-		// 這個函數可以將模板內容填入發文表單
-		showNotification('使用模板功能將在後續版本中實現', 'info');
+	// 更新標籤篩選器選項
+	function updateHashtagFilterOptions(templates) {
+		const hashtagFilter = document.getElementById('hashtagFilter');
+		if (!hashtagFilter) return;
+		
+		// 收集所有標籤
+		const allHashtags = new Set();
+		templates.forEach(template => {
+			if (template.hashtags) {
+				const hashtags = template.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+				hashtags.forEach(tag => allHashtags.add(tag));
+			}
+		});
+		
+		// 更新選項
+		let options = '<option value="all">所有標籤</option>';
+		Array.from(allHashtags).sort().forEach(hashtag => {
+			options += `<option value="${hashtag}">${hashtag}</option>`;
+		});
+		
+		hashtagFilter.innerHTML = options;
+	}
+
+	// 根據標籤篩選模板
+	function filterTemplatesByHashtag(templates) {
+		const hashtagFilter = document.getElementById('hashtagFilter');
+		if (!hashtagFilter) return templates;
+		
+		const selectedHashtag = hashtagFilter.value;
+		if (selectedHashtag === 'all') return templates;
+		
+		return templates.filter(template => {
+			if (!template.hashtags) return false;
+			const hashtags = template.hashtags.split(',').map(tag => tag.trim());
+			return hashtags.includes(selectedHashtag);
+		});
+	}
+
+	// 處理標籤篩選器變更
+	function handleHashtagFilter() {
+		loadPostTemplates();
+	}
+
+	// 預覽模板
+	async function previewTemplate(templateId) {
+		try {
+			// 獲取模板詳細信息
+			const response = await fetch(`/crawler/api/templates/?template_id=${templateId}`);
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				const template = result.template;
+				showTemplatePreview(template);
+			} else {
+				throw new Error(result.error || '載入模板失敗');
+			}
+		} catch (error) {
+			console.error('預覽模板失敗:', error);
+			showNotification('預覽失敗：' + error.message, 'error');
+		}
+	}
+
+	// 顯示模板預覽
+	function showTemplatePreview(template) {
+		// 創建預覽模態窗口
+		const modal = document.createElement('div');
+		modal.className = 'template-preview-modal';
+		modal.innerHTML = `
+			<div class="template-preview-overlay">
+				<div class="template-preview-content">
+					<div class="template-preview-header">
+						<h3><i class="fas fa-eye"></i> 模板預覽</h3>
+						<button class="close-preview-btn" onclick="this.closest('.template-preview-modal').remove()">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="template-preview-body">
+						<div class="preview-title">${template.title}</div>
+						<div class="preview-content">${template.content}</div>
+						${template.images && template.images.length > 0 ? `
+							<div class="preview-images">
+								<div class="preview-images-title">圖片預覽 (${template.images.length} 張)</div>
+								<div class="preview-images-grid">
+									${template.images.map((image, index) => `
+										<div class="preview-image-item">
+											<img src="${image.url}" alt="圖片 ${index + 1}">
+											<div class="preview-image-order">${index + 1}</div>
+										</div>
+									`).join('')}
+								</div>
+							</div>
+						` : ''}
+						${template.hashtags ? `
+							<div class="preview-hashtags">
+								<i class="fas fa-tags"></i> ${template.hashtags}
+							</div>
+						` : ''}
+					</div>
+					<div class="template-preview-footer">
+						<button class="btn btn-primary" onclick="useTemplateForPosting(${template.id})">
+							<i class="fas fa-copy"></i> 使用此模板發文
+						</button>
+						<button class="btn btn-secondary" onclick="this.closest('.template-preview-modal').remove()">
+							關閉
+						</button>
+					</div>
+				</div>
+			</div>
+		`;
+		
+		document.body.appendChild(modal);
+		
+		// 點擊遮罩關閉
+		modal.querySelector('.template-preview-overlay').addEventListener('click', function(e) {
+			if (e.target === this) {
+				modal.remove();
+			}
+		});
+	}
+
+	// 使用模板發文
+	function useTemplateForPosting(templateId) {
+		// 關閉預覽窗口
+		document.querySelector('.template-preview-modal').remove();
+		
+		// 切換到發文設定標籤
+		const postingTab = document.querySelector('[data-tab="posting"]');
+		if (postingTab) {
+			postingTab.click();
+		}
+		
+		showNotification('已切換到發文設定，請選擇發文平台', 'info');
+	}
+
+	// 複製模板
+	function copyTemplate(templateId) {
+		// 這個函數將複製模板內容到發文表單
+		showNotification('複製功能將在後續版本中實現', 'info');
 	}
 
 	// 編輯模板
-	function editTemplate(templateId) {
-		// 這個函數可以將模板內容填入編輯表單
-		showNotification('編輯模板功能將在後續版本中實現', 'info');
+	async function editTemplate(templateId) {
+		try {
+			// 獲取模板詳細信息
+			const response = await fetch(`/crawler/api/templates/?template_id=${templateId}`);
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				const template = result.template;
+				
+				// 將內容填入表單頂部
+				fillTemplateForm(template);
+				
+				// 滾動到表單頂部
+				document.querySelector('.form-grid').scrollIntoView({ 
+					behavior: 'smooth', 
+					block: 'start' 
+				});
+				
+				showNotification('模板已載入到編輯表單，請修改後點擊儲存模板', 'info');
+			} else {
+				throw new Error(result.error || '載入模板失敗');
+			}
+		} catch (error) {
+			console.error('載入模板失敗:', error);
+			showNotification('載入模板失敗：' + error.message, 'error');
+		}
+	}
+
+	// 填充模板表單
+	async function fillTemplateForm(template) {
+		// 填充標題
+		const titleInput = document.querySelector('input[name="copy_title"]');
+		if (titleInput) {
+			titleInput.value = template.title;
+		}
+		
+		// 填充內容
+		const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+		if (contentTextarea) {
+			contentTextarea.value = template.content;
+		}
+		
+		// 填充標籤
+		const hashtagsInput = document.querySelector('input[name="hashtags"]');
+		if (hashtagsInput) {
+			hashtagsInput.value = template.hashtags || '';
+		}
+		
+		// 處理圖片 - 載入現有圖片並支援排序
+		templateImages = [];
+		if (template.images && template.images.length > 0) {
+			// 將現有圖片載入到編輯表單中
+			for (let i = 0; i < template.images.length; i++) {
+				const image = template.images[i];
+				// 創建一個模擬的 File 對象，包含必要的屬性
+				const mockFile = {
+					name: `image_${i + 1}.jpg`,
+					type: 'image/jpeg',
+					size: 0,
+					lastModified: Date.now()
+				};
+				
+				templateImages.push({
+					file: mockFile,
+					url: image.url,
+					order: image.order,
+					isExisting: true, // 標記為現有圖片
+					originalId: image.id
+				});
+			}
+			showNotification(`已載入 ${template.images.length} 張圖片，您可以重新排序或替換`, 'info');
+		}
+		
+		// 更新圖片排序區域
+		updateImageSorting();
+		
+		// 修改儲存按鈕為更新模式
+		const saveBtn = document.getElementById('saveTemplateBtn');
+		if (saveBtn) {
+			saveBtn.innerHTML = '<i class="fas fa-save"></i> 更新模板';
+			saveBtn.dataset.editMode = 'true';
+			saveBtn.dataset.templateId = template.id;
+		}
 	}
 
 	// 刪除模板
@@ -1479,9 +1729,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.toggleSidebar = toggleSidebar;
 	window.deleteAccount = deleteAccount;
 	window.removeImage = removeImage;
-	window.useTemplate = useTemplate;
+	window.previewTemplate = previewTemplate;
+	window.copyTemplate = copyTemplate;
 	window.editTemplate = editTemplate;
 	window.deleteTemplate = deleteTemplate;
+	window.useTemplateForPosting = useTemplateForPosting;
 });
 
 

@@ -65,7 +65,7 @@ class WebsiteCookie(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='cookies')
     website = models.CharField(max_length=20, choices=WEBSITE_CHOICES, verbose_name='網站名稱')
     website_url = models.URLField(verbose_name='網站網址')
-    cookie_data = models.TextField(verbose_name='Cookie資料')  # 儲存 JSON 字符串
+    cookie_data = models.JSONField(verbose_name='Cookie資料', default=dict, blank=True)  # 儲存 JSON 數據
     is_active = models.BooleanField(default=True, verbose_name='是否啟用')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='最後更新時間')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
@@ -82,14 +82,8 @@ class WebsiteCookie(models.Model):
     
     def get_cookie_count(self):
         """取得Cookie數量"""
-        import json
-        try:
-            if self.cookie_data:
-                data = json.loads(self.cookie_data)
-                if isinstance(data, dict):
-                    return len(data)
-        except json.JSONDecodeError:
-            pass
+        if self.cookie_data and isinstance(self.cookie_data, dict):
+            return len(self.cookie_data)
         return 0
 
 
@@ -118,7 +112,7 @@ class Community(models.Model):
     last_activity = models.DateTimeField(blank=True, null=True, verbose_name='最後活動時間')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
-    tags = models.TextField(default='[]', blank=True, verbose_name='標籤')  # 儲存 JSON 字符串
+    tags = models.JSONField(default=list, blank=True, verbose_name='標籤')  # 儲存 JSON 數據
     
     class Meta:
         verbose_name = '社團'
@@ -134,14 +128,8 @@ class Community(models.Model):
     
     def get_tags_display(self):
         """取得標籤顯示"""
-        import json
-        try:
-            if self.tags:
-                tags_list = json.loads(self.tags)
-                if isinstance(tags_list, list):
-                    return ', '.join(tags_list)
-        except json.JSONDecodeError:
-            pass
+        if self.tags and isinstance(self.tags, list):
+            return ', '.join(self.tags)
         return ''
     
     def update_last_activity(self):
@@ -156,7 +144,7 @@ class PostTemplate(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='post_templates')
     title = models.CharField(max_length=200, verbose_name='模板標題')
     content = models.TextField(verbose_name='文案內容')
-    hashtags = models.TextField(blank=True, verbose_name='標籤')
+    hashtags = models.JSONField(default=list, blank=True, verbose_name='標籤')
     is_active = models.BooleanField(default=True, verbose_name='是否啟用')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')

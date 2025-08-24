@@ -16,8 +16,8 @@ class DataAnalysisCache(models.Model):
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='用戶', related_name='data_analysis_caches')
     analysis_type = models.CharField(max_length=20, choices=ANALYSIS_TYPE_CHOICES, verbose_name='分析類型')
-    data = models.TextField(verbose_name='分析數據')  # 儲存 JSON 字符串
-    chart_config = models.TextField(verbose_name='圖表配置')  # 儲存 JSON 字符串
+    data = models.JSONField(verbose_name='分析數據', default=dict, blank=True)  # 儲存 JSON 數據
+    chart_config = models.JSONField(verbose_name='圖表配置', default=dict, blank=True)  # 儲存 JSON 數據
     last_updated = models.DateTimeField(auto_now=True, verbose_name='最後更新時間')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
     
@@ -36,13 +36,8 @@ class DataAnalysisCache(models.Model):
     
     def get_data_summary(self):
         """取得數據摘要"""
-        import json
-        try:
-            data = json.loads(self.data) if self.data else {}
-            chart_config = json.loads(self.chart_config) if self.chart_config else {}
-        except json.JSONDecodeError:
-            data = {}
-            chart_config = {}
+        data = self.data if self.data else {}
+        chart_config = self.chart_config if self.chart_config else {}
             
         return {
             'type': self.analysis_type,
@@ -54,8 +49,7 @@ class DataAnalysisCache(models.Model):
     
     def update_data(self, new_data, new_chart_config):
         """更新分析數據和圖表配置"""
-        import json
-        self.data = json.dumps(new_data, ensure_ascii=False)
-        self.chart_config = json.dumps(new_chart_config, ensure_ascii=False)
+        self.data = new_data
+        self.chart_config = new_chart_config
         self.save()
         return self

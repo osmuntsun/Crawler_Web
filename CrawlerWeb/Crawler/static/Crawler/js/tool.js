@@ -756,8 +756,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			const intervalMin = document.querySelector('input[name="interval_min"]').value;
 			const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
 			const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
-				.map(checkbox => checkbox.value);
-			
+					.map(checkbox => checkbox.value);
+				
 			postingData.step2 = {
 				method: 'scheduled',
 				startTime,

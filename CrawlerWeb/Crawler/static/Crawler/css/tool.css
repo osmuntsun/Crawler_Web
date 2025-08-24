@@ -1690,3 +1690,66 @@ body {
 	}
 }
 
+/* 立即發文操作按鈕樣式 */
+.immediate-posting-actions {
+	margin-top: 20px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+	animation: slideDown 0.3s ease;
+}
+
+.immediate-posting-actions .form-actions {
+	display: flex;
+	justify-content: space-between;
+	gap: 15px;
+}
+
+.immediate-posting-actions .btn {
+	padding: 12px 24px;
+	font-size: 1rem;
+	font-weight: 500;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	border: none;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.immediate-posting-actions .btn-secondary {
+	background: rgba(108, 117, 125, 0.8);
+	color: white;
+}
+
+.immediate-posting-actions .btn-secondary:hover {
+	background: rgba(108, 117, 125, 1);
+	transform: translateY(-2px);
+}
+
+.immediate-posting-actions .btn-primary {
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.immediate-posting-actions .btn-primary:hover {
+	background: linear-gradient(135deg, #5a6fd8, #6a4190);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.immediate-posting-actions .form-actions {
+		flex-direction: column;
+	}
+	
+	.immediate-posting-actions .btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+

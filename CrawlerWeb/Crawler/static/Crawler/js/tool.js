@@ -2689,8 +2689,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		const immediatePosting = document.getElementById('immediate_posting');
 		const scheduledPosting = document.getElementById('scheduled_posting');
 		const schedulingOptions = document.getElementById('schedulingOptions');
+		const immediatePostingActions = document.getElementById('immediatePostingActions');
 		
-		if (!immediatePosting || !scheduledPosting || !schedulingOptions) {
+		if (!immediatePosting || !scheduledPosting || !schedulingOptions || !immediatePostingActions) {
 			console.log('發文方式選擇元素未找到');
 			return;
 		}
@@ -2699,25 +2700,61 @@ document.addEventListener('DOMContentLoaded', function() {
 		immediatePosting.addEventListener('change', function() {
 			if (this.checked) {
 				schedulingOptions.style.display = 'none';
-				console.log('選擇立即發文，隱藏排程設定');
+				immediatePostingActions.style.display = 'block';
+				console.log('選擇立即發文，隱藏排程設定，顯示立即發文操作按鈕');
 			}
 		});
 		
 		scheduledPosting.addEventListener('change', function() {
 			if (this.checked) {
 				schedulingOptions.style.display = 'block';
-				console.log('選擇排程發文，顯示排程設定');
+				immediatePostingActions.style.display = 'none';
+				console.log('選擇排程發文，顯示排程設定，隱藏立即發文操作按鈕');
 			}
 		});
 		
 		// 初始化狀態
 		if (immediatePosting.checked) {
 			schedulingOptions.style.display = 'none';
+			immediatePostingActions.style.display = 'block';
 		} else if (scheduledPosting.checked) {
 			schedulingOptions.style.display = 'block';
+			immediatePostingActions.style.display = 'none';
 		}
 		
+		// 綁定立即發文操作按鈕事件
+		bindImmediatePostingActions();
+		
 		console.log('發文方式選擇功能初始化完成');
+	}
+	
+	// 綁定立即發文操作按鈕事件
+	function bindImmediatePostingActions() {
+		const prevStepBtnImmediate = document.getElementById('prevStepBtnImmediate');
+		const nextStepBtnImmediate = document.getElementById('nextStepBtnImmediate');
+		
+		if (!prevStepBtnImmediate || !nextStepBtnImmediate) {
+			console.log('立即發文操作按鈕未找到');
+			return;
+		}
+		
+		// 上一步按鈕
+		prevStepBtnImmediate.addEventListener('click', function() {
+			showStep(1);
+			console.log('從立即發文模式返回步驟1');
+		});
+		
+		// 下一步按鈕
+		nextStepBtnImmediate.addEventListener('click', function() {
+			// 收集立即發文的數據
+			collectStep2Data();
+			
+			// 進入第三步
+			showStep(3);
+			console.log('從立即發文模式進入步驟3');
+		});
+		
+		console.log('立即發文操作按鈕事件綁定完成');
 	}
 	
 	// 在頁面載入完成後初始化發文方式選擇

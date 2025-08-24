@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.log('驗證步驟1...');
 			if (!validateStep1()) {
 				console.log('步驟1驗證失敗');
-				return;
+			return;
 			}
 			console.log('步驟1驗證成功，收集數據...');
 			// 收集步驟1的數據
@@ -613,6 +613,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			fillConfirmationSummary();
 		}
 		
+		// 如果是第二步，重新初始化發文方式選擇和排程實驗
+		if (step === 2) {
+			reinitializePostingMethodSelection();
+			initializeScheduleTest();
+		}
+		
 		// 顯示步驟切換通知
 		const stepNames = ['選擇文案', '排程設定', '確認發布'];
 		showNotification(`已切換到步驟 ${step}: ${stepNames[step - 1]}`, 'info');
@@ -669,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 
 		// 如果是Facebook，檢查是否選擇了社團
-		if (platform === 'facebook') {
+			if (platform === 'facebook') {
 			const selectedCommunities = document.querySelectorAll('.community-checkbox:checked');
 			if (selectedCommunities.length === 0) {
 				showNotification('請至少選擇一個 Facebook 社團', 'warning');
@@ -724,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// 如果是Facebook，收集社團信息
 		if (platform === 'facebook') {
-			const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
+				const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
 				.map(checkbox => ({
 					url: checkbox.value,
 					name: checkbox.dataset.name
@@ -733,24 +739,35 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
-	// 收集步驟2數據
+		// 收集步驟2數據
 	function collectStep2Data() {
-		const startTime = document.getElementById('scheduleStartTime').value;
-		const intervalMin = document.querySelector('input[name="interval_min"]').value;
-		const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
-		const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
-			.map(checkbox => checkbox.value);
-
-		postingData.schedule = {
-			startTime: startTime,
-			intervalMin: intervalMin,
-			intervalUnit: intervalUnit,
-			selectedDays: selectedDays
-		};
-
-		// 收集圖片文件
-		const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
-		postingData.imageFiles = imageFiles;
+		const postingMethod = document.querySelector('input[name="posting_method"]:checked').value;
+		
+		if (postingMethod === 'immediate') {
+			// 立即發文，不需要額外圖片
+			postingData.step2 = {
+				method: 'immediate'
+			};
+			
+			console.log('立即發文模式，步驟2數據收集完成:', postingData.step2);
+		} else {
+			// 排程發文，收集所有排程設定
+			const startTime = document.getElementById('scheduleStartTime').value;
+			const intervalMin = document.querySelector('input[name="interval_min"]').value;
+			const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+			const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
+				.map(checkbox => checkbox.value);
+			
+			postingData.step2 = {
+				method: 'scheduled',
+				startTime,
+				intervalMin,
+				intervalUnit,
+				selectedDays
+			};
+			
+			console.log('排程發文模式，步驟2數據收集完成:', postingData.step2);
+		}
 	}
 
 	// 填充確認摘要
@@ -764,15 +781,161 @@ document.addEventListener('DOMContentLoaded', function() {
 			'無';
 		document.getElementById('confirmContent').textContent = contentPreview;
 		
-		// 排程設定
-		const schedule = postingData.schedule;
-		const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
-		document.getElementById('confirmSchedule').textContent = scheduleText;
+		// 發文方式
+		if (postingData.step2 && postingData.step2.method === 'immediate') {
+			document.getElementById('confirmSchedule').textContent = '立即發文';
+		} else if (postingData.step2 && postingData.step2.method === 'scheduled') {
+			const schedule = postingData.step2;
+			const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
+			document.getElementById('confirmSchedule').textContent = scheduleText;
+		} else {
+			document.getElementById('confirmSchedule').textContent = '未設定';
+		}
 		
 		// 圖片數量
-		const totalImages = (postingData.templateImages ? postingData.templateImages.length : 0) + 
-			(postingData.imageFiles ? postingData.imageFiles.length : 0);
-		document.getElementById('confirmImages').textContent = `${totalImages} 張圖片`;
+		const templateImagesCount = (postingData.templateImages ? postingData.templateImages.length : 0);
+		document.getElementById('confirmImages').textContent = `${templateImagesCount} 張圖片`;
+	}
+
+	// 準備發文數據
+	function preparePostingData() {
+		const postData = {
+			platform: postingData.platform,
+			messageContent: postingData.messageContent,
+			templateImages: postingData.templateImages || [],
+			communities: postingData.communities || []
+		};
+		
+		// 根據發文方式添加額外數據
+		if (postingData.step2) {
+			if (postingData.step2.method === 'immediate') {
+				// 立即發文：不需要額外圖片
+				postData.method = 'immediate';
+			} else if (postingData.step2.method === 'scheduled') {
+				// 排程發文：添加排程設定
+				postData.schedule = {
+					startTime: postingData.step2.startTime,
+					intervalMin: postingData.step2.intervalMin,
+					intervalUnit: postingData.step2.intervalUnit,
+					selectedDays: postingData.step2.selectedDays
+				};
+				postData.method = 'scheduled';
+			}
+		}
+		
+		console.log('準備發文數據:', postData);
+		return postData;
+	}
+
+	// 執行立即發文
+	async function executeImmediatePosting(postData) {
+		try {
+			console.log('開始執行立即發文:', postData);
+			
+			// 準備發送到後端的數據
+			const requestData = {
+				action: 'post_to_community',
+				platform: postData.platform,
+				message: postData.messageContent,
+				communities: postData.communities.map(community => community.url || community.id),
+				template_images: postData.templateImages.map(img => img.url || img.path)
+			};
+			
+			// 獲取 CSRF Token
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+							  document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+			
+			if (!csrfToken) {
+				throw new Error('無法獲取 CSRF Token');
+			}
+			
+			// 發送請求到後端
+			const response = await fetch('/crawler/api/facebook/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
+					},
+				body: JSON.stringify(requestData)
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+			}
+			
+			const result = await response.json();
+			
+			if (result.success) {
+				showNotification(`發布成功！成功：${result.success_count} 個，失敗：${result.failed_count} 個`, 'success');
+				console.log('發布結果:', result);
+			} else {
+				throw new Error(result.error || '發布失敗');
+			}
+			
+			// 發布成功後重置到步驟1
+			resetToStep1();
+			
+		} catch (error) {
+			console.error('立即發文執行失敗:', error);
+			throw new Error(`立即發文失敗: ${error.message}`);
+		}
+	}
+
+	// 保存排程發文
+	async function saveScheduledPosting(postData) {
+		try {
+			console.log('開始保存排程發文:', postData);
+			
+			// 準備發送到後端的數據
+			const requestData = {
+				action: 'save_scheduled_posting',
+				platform: postData.platform,
+				message: postData.messageContent,
+				communities: postData.communities.map(community => community.url || community.id),
+				template_images: postData.templateImages.map(img => img.url || img.path),
+				schedule: postData.schedule
+			};
+			
+			// 獲取 CSRF Token
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+							  document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+			
+			if (!csrfToken) {
+				throw new Error('無法獲取 CSRF Token');
+			}
+			
+			// 發送請求到後端
+			const response = await fetch('/crawler/api/schedule/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
+					},
+				body: JSON.stringify(requestData)
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			const result = await response.json();
+
+			if (result.success) {
+				showNotification('排程發文已保存！將在指定時間自動發布', 'success');
+				console.log('排程保存結果:', result);
+			} else {
+				throw new Error(result.error || '排程保存失敗');
+			}
+			
+			// 保存成功後重置到步驟1
+			resetToStep1();
+			
+		} catch (error) {
+			console.error('排程發文保存失敗:', error);
+			throw new Error(`排程發文保存失敗: ${error.message}`);
+		}
 	}
 
 	// 確認發布
@@ -784,16 +947,20 @@ document.addEventListener('DOMContentLoaded', function() {
 			confirmBtn.disabled = true;
 			confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發布中...';
 
-			// 這裡可以發送數據到後端進行實際的發布
-			// 暫時模擬發布過程
-			await new Promise(resolve => setTimeout(resolve, 2000));
-
-			showNotification('發布成功！已設定排程發文', 'success');
+			// 準備發文數據
+			const postData = preparePostingData();
 			
-			// 重置到步驟1
-			resetToStep1();
+			// 根據發文方式決定發送方式
+			if (postingData.step2 && postingData.step2.method === 'immediate') {
+				// 立即發文：直接發送到後端執行 Selenium
+				await executeImmediatePosting(postData);
+			} else {
+				// 排程發文：保存到排程系統
+				await saveScheduledPosting(postData);
+			}
 			
 		} catch (error) {
+			console.error('發布失敗:', error);
 			showNotification('發布失敗：' + error.message, 'error');
 		} finally {
 			confirmBtn.disabled = false;
@@ -806,11 +973,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		currentStep = 1;
 		postingData = {};
 		showStep(1);
-		
-		// 清空表單
+				
+				// 清空表單
 		document.getElementById('postingForm').reset();
-		document.getElementById('imagePreview').innerHTML = '';
-		document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+				document.getElementById('imagePreview').innerHTML = '';
+				document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
 		
 		// 隱藏Facebook社團選擇
 		const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
@@ -1591,19 +1758,19 @@ document.addEventListener('DOMContentLoaded', function() {
 			postingPlatformSelect.addEventListener('change', function() {
 				const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
 				if (facebookCommunitiesRow) {
-					if (this.value === 'facebook') {
+				if (this.value === 'facebook') {
 						// 顯示 Facebook 社團選項
 						facebookCommunitiesRow.classList.remove('hidden');
 						facebookCommunitiesRow.classList.add('visible');
-						facebookCommunitiesRow.style.display = 'block';
-					} else {
+					facebookCommunitiesRow.style.display = 'block';
+				} else {
 						// 隱藏 Facebook 社團選項
 						facebookCommunitiesRow.classList.remove('visible');
 						facebookCommunitiesRow.classList.add('hidden');
 						// 延遲隱藏，讓過渡效果完成
 						setTimeout(() => {
 							if (!facebookCommunitiesRow.classList.contains('visible')) {
-								facebookCommunitiesRow.style.display = 'none';
+					facebookCommunitiesRow.style.display = 'none';
 							}
 						}, 300);
 					}
@@ -2653,6 +2820,453 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.deleteTemplate = deleteTemplate;
 	window.useTemplateForPosting = useTemplateForPosting;
 	window.handleClearTemplate = handleClearTemplate;
+
+	// 發文方式選擇功能
+	function initializePostingMethodSelection() {
+		const immediatePosting = document.getElementById('immediate_posting');
+		const scheduledPosting = document.getElementById('scheduled_posting');
+		const schedulingOptions = document.getElementById('schedulingOptions');
+		const immediatePostingActions = document.getElementById('immediatePostingActions');
+		
+		if (!immediatePosting || !scheduledPosting || !schedulingOptions || !immediatePostingActions) {
+			console.log('發文方式選擇元素未找到');
+			return;
+		}
+		
+		// 監聽發文方式變更
+		immediatePosting.addEventListener('change', function() {
+			if (this.checked) {
+				schedulingOptions.style.display = 'none';
+				immediatePostingActions.style.display = 'block';
+				console.log('選擇立即發文，隱藏排程設定，顯示立即發文操作按鈕');
+			}
+		});
+		
+		scheduledPosting.addEventListener('change', function() {
+			if (this.checked) {
+				schedulingOptions.style.display = 'block';
+				immediatePostingActions.style.display = 'none';
+				console.log('選擇排程發文，顯示排程設定，隱藏立即發文操作按鈕');
+			}
+		});
+		
+		// 初始化狀態
+		if (immediatePosting.checked) {
+			schedulingOptions.style.display = 'none';
+			immediatePostingActions.style.display = 'block';
+		} else if (scheduledPosting.checked) {
+			schedulingOptions.style.display = 'block';
+			immediatePostingActions.style.display = 'none';
+		}
+		
+		// 綁定立即發文操作按鈕事件
+		bindImmediatePostingActions();
+		
+		console.log('發文方式選擇功能初始化完成');
+	}
+	
+	// 綁定立即發文操作按鈕事件
+	function bindImmediatePostingActions() {
+		const prevStepBtnImmediate = document.getElementById('prevStepBtnImmediate');
+		const nextStepBtnImmediate = document.getElementById('nextStepBtnImmediate');
+		
+		if (!prevStepBtnImmediate || !nextStepBtnImmediate) {
+			console.log('立即發文操作按鈕未找到');
+			return;
+		}
+		
+		// 上一步按鈕
+		prevStepBtnImmediate.addEventListener('click', function() {
+			showStep(1);
+			console.log('從立即發文模式返回步驟1');
+		});
+		
+		// 下一步按鈕
+		nextStepBtnImmediate.addEventListener('click', function() {
+			// 收集立即發文的數據
+			collectStep2Data();
+			
+			// 進入第三步
+			showStep(3);
+			console.log('從立即發文模式進入步驟3');
+		});
+		
+		console.log('立即發文操作按鈕事件綁定完成');
+	}
+	
+	// 在頁面載入完成後初始化發文方式選擇
+	document.addEventListener('DOMContentLoaded', function() {
+		// 延遲初始化，確保所有元素都已載入
+		setTimeout(() => {
+			initializePostingMethodSelection();
+		}, 100);
+	});
+	
+	// 在步驟切換時重新初始化發文方式選擇
+	function reinitializePostingMethodSelection() {
+		setTimeout(() => {
+			initializePostingMethodSelection();
+		}, 50);
+	}
+	
+	// 排程實驗功能
+	function initializeScheduleTest() {
+		const testScheduleBtn = document.getElementById('testScheduleBtn');
+		const scheduleStartTime = document.getElementById('scheduleStartTime');
+		
+		if (!testScheduleBtn || !scheduleStartTime) {
+			console.log('排程實驗元素未找到');
+			return;
+		}
+		
+		// 設置開始時間的最小值為當前時間
+		setScheduleStartTimeMin();
+		
+		// 強制驗證時間輸入
+		enforceTimeValidation();
+		
+		// 啟動定時檢查
+		startTimeValidationTimer();
+		
+		// 綁定測試按鈕事件
+		testScheduleBtn.addEventListener('click', function() {
+			testScheduleSettings();
+		});
+		
+		console.log('排程實驗功能初始化完成');
+	}
+	
+	// 設置開始時間的最小值
+	function setScheduleStartTimeMin() {
+		const scheduleStartTime = document.getElementById('scheduleStartTime');
+		if (!scheduleStartTime) return;
+		
+		// 獲取當前時間
+		const now = new Date();
+		
+		// 格式化為 datetime-local 格式 (YYYY-MM-DDTHH:MM)
+		const year = now.getFullYear();
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const day = String(now.getDate()).padStart(2, '0');
+		const hours = String(now.getHours()).padStart(2, '0');
+		const minutes = String(now.getMinutes()).padStart(2, '0');
+		
+		const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+		
+		// 設置最小值和當前值
+		scheduleStartTime.min = minDateTime;
+		scheduleStartTime.value = minDateTime;
+		
+		console.log('設置開始時間最小值:', minDateTime);
+		
+		// 添加時間變更監聽器，實時驗證時間
+		scheduleStartTime.addEventListener('change', validateScheduleTime);
+		scheduleStartTime.addEventListener('input', validateScheduleTime);
+	}
+	
+	// 驗證排程時間
+	function validateScheduleTime() {
+		const scheduleStartTime = document.getElementById('scheduleStartTime');
+		if (!scheduleStartTime) return;
+		
+		const selectedTime = new Date(scheduleStartTime.value);
+		const now = new Date();
+		
+		// 添加調試信息
+		console.log('驗證排程時間:', {
+			selectedTime: selectedTime.toISOString(),
+			now: now.toISOString(),
+			timeDiff: selectedTime.getTime() - now.getTime()
+		});
+		
+		// 使用時間戳進行精確比較，允許1分鐘的誤差
+		const timeDifference = selectedTime.getTime() - now.getTime();
+		const oneMinuteInMs = 60 * 1000;
+		
+		// 如果選擇的時間早於當前時間超過1分鐘，自動調整為當前時間
+		if (timeDifference < -oneMinuteInMs) {
+			// 獲取當前時間
+			const year = now.getFullYear();
+			const month = String(now.getMonth() + 1).padStart(2, '0');
+			const day = String(now.getDate()).padStart(2, '0');
+			const hours = String(now.getHours()).padStart(2, '0');
+			const minutes = String(now.getMinutes()).padStart(2, '0');
+			
+			const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+			
+			// 更新最小值和當前值
+			scheduleStartTime.min = currentDateTime;
+			scheduleStartTime.value = currentDateTime;
+			
+			console.log('時間已自動調整為當前時間:', currentDateTime);
+			
+			// 顯示提示
+			showNotification('開始時間已自動調整為當前時間', 'info');
+		}
+	}
+	
+	// 強制驗證時間輸入
+	function enforceTimeValidation() {
+		const scheduleStartTime = document.getElementById('scheduleStartTime');
+		if (!scheduleStartTime) return;
+		
+		// 添加 keydown 事件監聽器，防止手動輸入無效時間
+		scheduleStartTime.addEventListener('keydown', function(e) {
+			// 允許刪除、退格、箭頭等控制鍵
+			if ([8, 9, 37, 38, 39, 40, 46].includes(e.keyCode)) {
+				return;
+			}
+			
+			// 允許數字、冒號、連字符、T
+			if (/[\d\-:T]/.test(e.key)) {
+				return;
+			}
+			
+			// 阻止其他字符輸入
+			e.preventDefault();
+		});
+		
+		// 添加 paste 事件監聽器，防止粘貼無效時間
+		scheduleStartTime.addEventListener('paste', function(e) {
+			e.preventDefault();
+			
+			// 獲取剪貼板內容
+			const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+			
+			// 驗證粘貼的內容是否為有效時間格式
+			if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(pastedText)) {
+				const pastedTime = new Date(pastedText);
+				const now = new Date();
+				
+				// 使用時間戳進行精確比較，允許1分鐘的誤差
+				const timeDifference = pastedTime.getTime() - now.getTime();
+				const oneMinuteInMs = 60 * 1000;
+				
+				if (timeDifference >= -oneMinuteInMs) { // 允許1分鐘的誤差
+					this.value = pastedText;
+					validateScheduleTime();
+				} else {
+					showNotification('粘貼的時間不能早於當前時間', 'warning');
+				}
+			} else {
+				showNotification('請粘貼有效的時間格式 (YYYY-MM-DDTHH:MM)', 'warning');
+			}
+		});
+		
+		// 添加 blur 事件監聽器，在失去焦點時驗證
+		scheduleStartTime.addEventListener('blur', function() {
+			validateScheduleTime();
+		});
+	}
+	
+	// 定時檢查時間限制
+	function startTimeValidationTimer() {
+		// 每分鐘檢查一次時間限制
+		setInterval(() => {
+			const scheduleStartTime = document.getElementById('scheduleStartTime');
+			if (!scheduleStartTime) return;
+			
+			const currentValue = new Date(scheduleStartTime.value);
+			const now = new Date();
+			
+			// 使用時間戳進行精確比較，允許1分鐘的誤差
+			const timeDifference = currentValue.getTime() - now.getTime();
+			const oneMinuteInMs = 60 * 1000;
+			
+			// 如果當前值早於現在時間超過1分鐘，自動更新
+			if (timeDifference < -oneMinuteInMs) {
+				const year = now.getFullYear();
+				const month = String(now.getMonth() + 1).padStart(2, '0');
+				const day = String(now.getDate()).padStart(2, '0');
+				const hours = String(now.getHours()).padStart(2, '0');
+				const minutes = String(now.getMinutes()).padStart(2, '0');
+				
+				const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+				
+				// 更新最小值和當前值
+				scheduleStartTime.min = currentDateTime;
+				scheduleStartTime.value = currentDateTime;
+				
+				console.log('定時檢查：時間已自動調整為當前時間:', currentDateTime);
+			}
+		}, 60000); // 每分鐘檢查一次
+	}
+	
+	// 測試排程設定
+	function testScheduleSettings() {
+		const testBtn = document.getElementById('testScheduleBtn');
+		const testResult = document.getElementById('scheduleTestResult');
+		const testContent = document.getElementById('testResultContent');
+		
+		if (!testBtn || !testResult || !testContent) {
+			console.log('排程測試元素未找到');
+			return;
+		}
+		
+		// 禁用測試按鈕
+		testBtn.disabled = true;
+		testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 測試中...';
+		
+		try {
+			// 收集排程設定
+			const startTime = document.getElementById('scheduleStartTime').value;
+			const intervalMin = document.querySelector('input[name="interval_min"]').value;
+			const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+			const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
+				.map(checkbox => checkbox.value);
+			
+			// 驗證設定
+			const validationResults = validateScheduleSettings(startTime, intervalMin, intervalUnit, selectedDays);
+			
+			// 顯示測試結果
+			displayScheduleTestResult(validationResults);
+			
+			// 顯示結果區域
+			testResult.style.display = 'block';
+			
+		} catch (error) {
+			console.error('排程測試失敗:', error);
+			showNotification('排程測試失敗: ' + error.message, 'error');
+		} finally {
+			// 恢復測試按鈕
+			testBtn.disabled = false;
+			testBtn.innerHTML = '<i class="fas fa-play"></i> 測試排程設定';
+		}
+	}
+	
+	// 驗證排程設定
+	function validateScheduleSettings(startTime, intervalMin, intervalUnit, selectedDays) {
+		const results = [];
+		
+		// 驗證開始時間
+		const startDateTime = new Date(startTime);
+		const now = new Date();
+		
+		// 添加調試信息
+		console.log('驗證開始時間:', {
+			startTime: startTime,
+			startDateTime: startDateTime.toISOString(),
+			now: now.toISOString(),
+			startTimestamp: startDateTime.getTime(),
+			nowTimestamp: now.getTime(),
+			timeDiff: startDateTime.getTime() - now.getTime()
+		});
+		
+		// 使用時間戳進行精確比較，允許1分鐘的誤差
+		const timeDifference = startDateTime.getTime() - now.getTime();
+		const oneMinuteInMs = 60 * 1000;
+		
+		if (timeDifference < -oneMinuteInMs) { // 允許1分鐘的誤差
+			results.push({
+				label: '開始時間',
+				value: startDateTime.toLocaleString(),
+				status: 'error',
+				message: '開始時間不能早於當前時間'
+			});
+		} else {
+			results.push({
+				label: '開始時間',
+				value: startDateTime.toLocaleString(),
+				status: 'success',
+				message: '開始時間設定正確'
+			});
+		}
+		
+		// 驗證發文間隔
+		if (intervalMin && intervalMin > 0) {
+			results.push({
+				label: '發文間隔',
+				value: `${intervalMin} ${intervalUnit}`,
+				status: 'success',
+				message: '發文間隔設定正確'
+			});
+		} else {
+			results.push({
+				label: '發文間隔',
+				value: '未設定',
+				status: 'error',
+				message: '請設定有效的發文間隔'
+			});
+		}
+		
+		// 驗證執行日期
+		if (selectedDays.length > 0) {
+			const dayNames = {
+				'monday': '週一', 'tuesday': '週二', 'wednesday': '週三',
+				'thursday': '週四', 'friday': '週五', 'saturday': '週六', 'sunday': '週日'
+			};
+			
+			const dayDisplayNames = selectedDays.map(day => dayNames[day] || day);
+			
+			results.push({
+				label: '執行日期',
+				value: dayDisplayNames.join(', '),
+				status: 'success',
+				message: `已選擇 ${selectedDays.length} 個執行日期`
+			});
+		} else {
+			results.push({
+				label: '執行日期',
+				value: '未選擇',
+				status: 'warning',
+				message: '建議選擇至少一個執行日期'
+			});
+		}
+		
+		// 計算下次發文時間
+		if (startDateTime > now && intervalMin > 0) {
+			const nextPostTime = calculateNextPostTime(startDateTime, parseInt(intervalMin), intervalUnit);
+			results.push({
+				label: '下次發文時間',
+				value: nextPostTime.toLocaleString(),
+				status: 'success',
+				message: '根據設定計算的下次發文時間'
+			});
+		}
+		
+		return results;
+	}
+	
+	// 計算下次發文時間
+	function calculateNextPostTime(startTime, interval, unit) {
+		const nextTime = new Date(startTime);
+		
+		switch (unit) {
+			case 'minutes':
+				nextTime.setMinutes(nextTime.getMinutes() + interval);
+				break;
+			case 'hours':
+				nextTime.setHours(nextTime.getHours() + interval);
+				break;
+			case 'days':
+				nextTime.setDate(nextTime.getDate() + interval);
+				break;
+			default:
+				nextTime.setHours(nextTime.getHours() + interval);
+		}
+		
+		return nextTime;
+	}
+	
+	// 顯示排程測試結果
+	function displayScheduleTestResult(results) {
+		const testContent = document.getElementById('testResultContent');
+		if (!testContent) return;
+		
+		let html = '';
+		
+		results.forEach(result => {
+			html += `
+				<div class="test-item">
+					<div class="test-label">${result.label}</div>
+					<div class="test-value">${result.value}</div>
+					<div class="test-status ${result.status}">${result.message}</div>
+				</div>
+			`;
+		});
+		
+		testContent.innerHTML = html;
+	}
 });
 
 

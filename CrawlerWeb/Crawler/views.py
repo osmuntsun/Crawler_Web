@@ -330,9 +330,26 @@ class FacebookAutomationView(View):
 	def post_to_community(self, request, data):
 		"""在指定社團發文（支援多選社團和圖片上傳）"""
 		try:
-			community_urls = data.get('community_urls', [])
+			# 支援新的數據格式
+			community_urls = data.get('communities', []) or data.get('community_urls', [])
 			message = data.get('message')
-			image_paths = data.get('image_paths', [])
+			
+			# 處理圖片路徑，支援模板圖片和額外圖片
+			template_images = data.get('template_images', [])
+			additional_images = data.get('additional_images', [])
+			image_paths = data.get('image_paths', [])  # 保持向後兼容
+			
+			# 合併所有圖片路徑
+			all_image_paths = []
+			if template_images:
+				all_image_paths.extend(template_images)
+			if additional_images:
+				all_image_paths.extend(additional_images)
+			if image_paths:
+				all_image_paths.extend(image_paths)
+			
+			# 去重
+			all_image_paths = list(set(all_image_paths))
 			
 			if not community_urls or not message:
 				return JsonResponse({'error': '請提供社團連結和發文內容'}, status=400)
@@ -406,8 +423,8 @@ class FacebookAutomationView(View):
 					self.random_human_behavior(driver)
 					
 					# 上傳圖片（如果有的話）
-					if image_paths:
-						print(f"準備上傳 {len(image_paths)} 張圖片")
+					if all_image_paths:
+						print(f"準備上傳 {len(all_image_paths)} 張圖片")
 						try:
 							# 查找圖片上傳按鈕
 							post_img = driver.find_element(
@@ -417,7 +434,7 @@ class FacebookAutomationView(View):
 							print("成功找到圖片上傳按鈕")
 							
 							# 處理每張圖片
-							for i, img_path in enumerate(image_paths):
+							for i, img_path in enumerate(all_image_paths):
 								try:
 									print(f"處理第 {i+1} 張圖片: {img_path}")
 									
@@ -458,8 +475,8 @@ class FacebookAutomationView(View):
 									continue
 									
 							# 所有圖片上傳完成後，再等待一下確保上傳穩定
-							if image_paths:
-								print(f"所有 {len(image_paths)} 張圖片上傳完成，等待確保穩定...")
+							if all_image_paths:
+								print(f"所有 {len(all_image_paths)} 張圖片上傳完成，等待確保穩定...")
 								self.human_delay(1.0, 2.0)  # 人類化的等待時間
 									
 						except Exception as img_error:

@@ -1580,3 +1580,298 @@ body {
 	}
 }
 
+/* 發文方式選擇樣式 */
+.posting-method-selection {
+	display: flex;
+	gap: 20px;
+	margin-bottom: 30px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.method-option {
+	flex: 1;
+	position: relative;
+}
+
+.method-option input[type="radio"] {
+	display: none;
+}
+
+.method-label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 2px solid rgba(102, 126, 234, 0.3);
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-align: center;
+}
+
+.method-label:hover {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(102, 126, 234, 0.5);
+	transform: translateY(-2px);
+}
+
+.method-option input[type="radio"]:checked + .method-label {
+	background: rgba(102, 126, 234, 0.15);
+	border-color: #667eea;
+	box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.method-label i {
+	font-size: 2rem;
+	color: #667eea;
+	margin-bottom: 8px;
+}
+
+.method-label span {
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #333;
+}
+
+.method-label small {
+	font-size: 0.85rem;
+	color: #666;
+	line-height: 1.4;
+}
+
+/* 排程設定選項樣式 */
+.scheduling-options {
+	margin-top: 20px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+	animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.posting-method-selection {
+		flex-direction: column;
+		gap: 15px;
+		padding: 15px;
+	}
+	
+	.method-label {
+		padding: 15px;
+	}
+	
+	.method-label i {
+		font-size: 1.5rem;
+	}
+	
+	.method-label span {
+		font-size: 1rem;
+	}
+	
+	.method-label small {
+		font-size: 0.8rem;
+	}
+}
+
+/* 立即發文操作按鈕樣式 */
+.immediate-posting-actions {
+	margin-top: 20px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 12px;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+	animation: slideDown 0.3s ease;
+}
+
+.immediate-posting-actions .form-actions {
+	display: flex;
+	justify-content: space-between;
+	gap: 15px;
+}
+
+.immediate-posting-actions .btn {
+	padding: 12px 24px;
+	font-size: 1rem;
+	font-weight: 500;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	border: none;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.immediate-posting-actions .btn-secondary {
+	background: rgba(108, 117, 125, 0.8);
+	color: white;
+}
+
+.immediate-posting-actions .btn-secondary:hover {
+	background: rgba(108, 117, 125, 1);
+	transform: translateY(-2px);
+}
+
+.immediate-posting-actions .btn-primary {
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.immediate-posting-actions .btn-primary:hover {
+	background: linear-gradient(135deg, #5a6fd8, #6a4190);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.immediate-posting-actions .form-actions {
+		flex-direction: column;
+	}
+	
+	.immediate-posting-actions .btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* 排程實驗功能樣式 */
+.schedule-test-section {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.schedule-test-result {
+	margin-top: 15px;
+	padding: 15px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	border: 1px solid rgba(102, 126, 234, 0.3);
+	animation: slideDown 0.3s ease;
+}
+
+.test-result-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+	font-weight: 600;
+	color: #667eea;
+}
+
+.test-result-header i {
+	font-size: 1.1rem;
+}
+
+.test-result-content {
+	font-size: 0.9rem;
+	line-height: 1.5;
+	color: #333;
+}
+
+.test-result-content .test-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.test-result-content .test-item:last-child {
+	border-bottom: none;
+}
+
+.test-result-content .test-label {
+	font-weight: 500;
+	color: #555;
+}
+
+.test-result-content .test-value {
+	color: #667eea;
+	font-weight: 600;
+}
+
+.test-result-content .test-status {
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+
+.test-result-content .test-status.success {
+	background: rgba(40, 167, 69, 0.1);
+	color: #28a745;
+	border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.test-result-content .test-status.warning {
+	background: rgba(255, 193, 7, 0.1);
+	color: #ffc107;
+	border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.test-result-content .test-status.error {
+	background: rgba(220, 53, 69, 0.1);
+	color: #dc3545;
+	border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* 測試按鈕樣式 */
+#testScheduleBtn {
+	background: linear-gradient(135deg, #17a2b8, #20c997);
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 6px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+#testScheduleBtn:hover {
+	background: linear-gradient(135deg, #138496, #1ea085);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+}
+
+#testScheduleBtn:disabled {
+	background: rgba(108, 117, 125, 0.6);
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.schedule-test-section {
+		gap: 10px;
+	}
+	
+	#testScheduleBtn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+

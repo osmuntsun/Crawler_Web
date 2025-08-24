@@ -1104,7 +1104,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			if (response.ok && result.success) {
 				displayCommunities(result.communities);
-				showNotification(`成功獲取 ${result.communities.length} 個社團`, 'success');
+				
+				// 顯示資料庫更新結果
+				let message = `成功獲取 ${result.communities.length} 個社團`;
+				if (result.message) {
+					message += `\n${result.message}`;
+				}
+				if (result.added_count !== undefined && result.deleted_count !== undefined) {
+					message += `\n新增：${result.added_count} 個，刪除：${result.deleted_count} 個`;
+				}
+				
+				showNotification(message, 'success');
+				
+				// 如果有更新結果，顯示詳細信息
+				if (result.added_count !== undefined || result.deleted_count !== undefined) {
+					const updateInfo = document.createElement('div');
+					updateInfo.className = 'update-info';
+					updateInfo.innerHTML = `
+						<div class="alert alert-info">
+							<i class="fas fa-info-circle"></i>
+							<strong>資料庫更新結果：</strong><br>
+							總社團數：${result.total_count || result.communities.length}<br>
+							${result.added_count !== undefined ? `新增：${result.added_count} 個<br>` : ''}
+							${result.deleted_count !== undefined ? `刪除：${result.deleted_count} 個<br>` : ''}
+							${result.message || ''}
+						</div>
+					`;
+					
+					// 在社團列表上方插入更新信息
+					const communitiesList = document.getElementById('communitiesList');
+					if (communitiesList && communitiesList.parentNode) {
+						communitiesList.parentNode.insertBefore(updateInfo, communitiesList);
+					}
+				}
 			} else {
 				throw new Error(result.error || '獲取社團失敗');
 			}

@@ -5,6 +5,30 @@
 	box-sizing: border-box;
 }
 
+/* 更新信息樣式 */
+.update-info {
+	margin-bottom: 20px;
+}
+
+.update-info .alert {
+	padding: 15px;
+	border-radius: 8px;
+	border-left: 4px solid #17a2b8;
+	background-color: #d1ecf1;
+	color: #0c5460;
+}
+
+.update-info .alert-info {
+	border-left-color: #17a2b8;
+	background-color: #d1ecf1;
+	color: #0c5460;
+}
+
+.update-info .alert strong {
+	color: #0c5460;
+	font-weight: 600;
+}
+
 body {
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

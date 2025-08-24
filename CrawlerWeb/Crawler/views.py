@@ -265,7 +265,7 @@ class FacebookAutomationView(View):
 			return JsonResponse({'error': f'登入失敗: {str(e)}'}, status=500)
 	
 	def get_communities(self, request, data):
-		"""獲取用戶的 Facebook 社團"""
+		"""獲取用戶的 Facebook 社團並更新資料庫"""
 		try:
 			# 檢查是否有 Facebook Cookie
 			try:
@@ -282,8 +282,12 @@ class FacebookAutomationView(View):
 			driver.get("https://www.facebook.com/")
 			
 			# 添加 Cookie
-			for name, value in website_cookie.cookie_data.items():
-				driver.add_cookie({'name': name, 'value': value})
+			cookie_data = website_cookie.cookie_data
+			if isinstance(cookie_data, dict):
+				for name, value in cookie_data.items():
+					driver.add_cookie({'name': name, 'value': value})
+			else:
+				return JsonResponse({'error': 'Cookie 資料格式錯誤'}, status=400)
 			
 			driver.refresh()
 			time.sleep(2)
@@ -314,12 +318,43 @@ class FacebookAutomationView(View):
 			except Exception as e:
 				pass  # 如果無法獲取社團，繼續執行
 			
+			# 更新資料庫：刪除舊的社團並添加新的社團
+			existing_communities = Community.objects.filter(
+				user=request.user,
+				community_type='facebook'
+			)
+			
+			# 創建現有社團 URL 的集合
+			existing_urls = set(community.url for community in existing_communities)
+			new_urls = set(community['url'] for community in communities)
+			
+			# 刪除不再存在的社團
+			urls_to_delete = existing_urls - new_urls
+			deleted_count = 0
+			if urls_to_delete:
+				deleted_communities = Community.objects.filter(
+					user=request.user,
+					community_type='facebook',
+					url__in=urls_to_delete
+				)
+				deleted_count = deleted_communities.count()
+				deleted_communities.delete()
+				print(f"刪除了 {deleted_count} 個不再存在的社團")
+			
+			# 添加新的社團
+			added_count = self._save_communities_to_db(request.user, communities)
+			print(f"新增了 {added_count} 個社團")
+			
 			driver.quit()
 			
 			return JsonResponse({
 				'success': True,
 				'communities': communities,
-				'count': len(communities)
+				'count': len(communities),
+				'message': f'社團列表已更新！新增 {added_count} 個，刪除 {deleted_count} 個',
+				'added_count': added_count,
+				'deleted_count': deleted_count,
+				'total_count': len(communities)
 			})
 			
 		except Exception as e:

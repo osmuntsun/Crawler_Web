@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, WebsiteCookie, Community, PostTemplate, PostTemplateImage, SocialMediaPost, DataAnalysisCache
+from .models import User, WebsiteCookie, Community, PostTemplate, PostTemplateImage, SocialMediaPost, DataAnalysisCache, Schedule, ScheduleExecution, ScheduleTemplate
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -188,3 +188,84 @@ class DataAnalysisCacheAdmin(admin.ModelAdmin):
     def get_data_summary(self, obj):
         return obj.get_data_summary()
     get_data_summary.short_description = '數據摘要'
+
+
+@admin.register(Schedule)
+class ScheduleAdmin(admin.ModelAdmin):
+    """排程設定管理界面"""
+    list_display = ('name', 'user', 'status', 'frequency', 'next_execution', 'total_executions', 'created_at')
+    list_filter = ('status', 'frequency', 'is_active', 'created_at', 'next_execution')
+    search_fields = ('name', 'user__username', 'description')
+    ordering = ('-created_at',)
+    readonly_fields = ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('基本資訊', {'fields': ('user', 'name', 'description')}),
+        ('排程狀態', {'fields': ('status', 'is_active')}),
+        ('時間設定', {'fields': ('start_time', 'end_time', 'frequency', 'interval_minutes', 'next_execution')}),
+        ('內容設定', {'fields': ('template', 'custom_content', 'custom_hashtags')}),
+        ('圖片設定', {'fields': ('use_template_images', 'additional_images')}),
+        ('發布設定', {'fields': ('platforms', 'target_communities')}),
+        ('執行統計', {'fields': ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time')}),
+        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
+    )
+    
+    def get_execution_status(self, obj):
+        return obj.get_execution_status()
+    get_execution_status.short_description = '執行狀態'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'template')
+
+
+@admin.register(ScheduleExecution)
+class ScheduleExecutionAdmin(admin.ModelAdmin):
+    """排程執行記錄管理界面"""
+    list_display = ('schedule', 'status', 'scheduled_time', 'started_at', 'completed_at', 'success_count', 'failure_count', 'total_count')
+    list_filter = ('status', 'scheduled_time', 'started_at', 'completed_at')
+    search_fields = ('schedule__name', 'schedule__user__username')
+    ordering = ('-created_at',)
+    readonly_fields = ('schedule', 'scheduled_time', 'started_at', 'completed_at', 'success_count', 'failure_count', 'total_count', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('基本資訊', {'fields': ('schedule', 'status')}),
+        ('執行時間', {'fields': ('scheduled_time', 'started_at', 'completed_at')}),
+        ('執行結果', {'fields': ('success_count', 'failure_count', 'total_count')}),
+        ('執行詳情', {'fields': ('execution_log', 'error_messages')}),
+        ('發布詳情', {'fields': ('published_posts',)}),
+        ('統計數據', {'fields': ('reach_count', 'like_count', 'share_count', 'comment_count')}),
+        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
+    )
+    
+    def get_execution_duration(self, obj):
+        duration = obj.get_execution_duration()
+        if duration:
+            return str(duration).split('.')[0]  # 移除微秒
+        return '-'
+    get_execution_duration.short_description = '執行持續時間'
+    
+    def get_success_rate(self, obj):
+        return f"{obj.get_success_rate():.1f}%"
+    get_success_rate.short_description = '成功率'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('schedule', 'schedule__user')
+
+
+@admin.register(ScheduleTemplate)
+class ScheduleTemplateAdmin(admin.ModelAdmin):
+    """排程模板管理界面"""
+    list_display = ('name', 'template_type', 'default_frequency', 'default_interval_minutes', 'usage_count', 'created_at')
+    list_filter = ('template_type', 'default_frequency', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('-usage_count', '-created_at')
+    readonly_fields = ('usage_count', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('基本資訊', {'fields': ('name', 'description', 'template_type')}),
+        ('預設設定', {'fields': ('default_frequency', 'default_interval_minutes')}),
+        ('預設內容', {'fields': ('default_content_template', 'default_hashtags')}),
+        ('預設平台和社團', {'fields': ('default_platforms', 'default_communities')}),
+        ('使用統計', {'fields': ('usage_count',)}),
+        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
+    )

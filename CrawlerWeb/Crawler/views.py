@@ -10,6 +10,7 @@ from Accounts.models import WebsiteCookie, Community, PostTemplate, PostTemplate
 import json
 import time
 import os
+import random
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,6 +18,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 
 def tool(request):
@@ -72,6 +75,57 @@ class FacebookAutomationView(View):
 	"""
 	Facebook 自動化視圖
 	"""
+	
+	def human_delay(self, min_seconds=0.5, max_seconds=2.0):
+		"""人類化的隨機延遲"""
+		delay = random.uniform(min_seconds, max_seconds)
+		print(f"人類化延遲: {delay:.2f} 秒")
+		time.sleep(delay)
+	
+	def human_type(self, element, text, min_delay=0.05, max_delay=0.15):
+		"""人類化的打字速度"""
+		print(f"開始人類化輸入文字: {text[:30]}...")
+		for char in text:
+			element.send_keys(char)
+			# 隨機延遲，模擬人類打字速度
+			delay = random.uniform(min_delay, max_delay)
+			time.sleep(delay)
+		print("文字輸入完成")
+	
+	def human_scroll(self, driver, direction="down", distance=None):
+		"""人類化的滾動行為"""
+		if distance is None:
+			distance = random.randint(100, 500)
+		
+		if direction == "down":
+			driver.execute_script(f"window.scrollBy(0, {distance});")
+		elif direction == "up":
+			driver.execute_script(f"window.scrollBy(0, -{distance});")
+		
+		print(f"人類化滾動: {direction} {distance}px")
+		self.human_delay(0.3, 1.0)
+	
+	def human_move_mouse(self, driver, element):
+		"""人類化的鼠標移動"""
+		actions = ActionChains(driver)
+		# 隨機移動到元素
+		actions.move_to_element(element)
+		actions.perform()
+		print("人類化鼠標移動完成")
+		self.human_delay(0.2, 0.8)
+	
+	def random_human_behavior(self, driver):
+		"""隨機的人類行為"""
+		behaviors = [
+			lambda: self.human_scroll(driver, "down", random.randint(50, 200)),
+			lambda: self.human_scroll(driver, "up", random.randint(30, 100)),
+			lambda: self.human_delay(0.5, 1.5),
+		]
+		
+		# 30% 機率執行隨機行為
+		if random.random() < 0.3:
+			random.choice(behaviors)()
+			print("執行了隨機人類行為")
 	
 	def post(self, request):
 		"""處理 Facebook 自動化請求"""
@@ -343,9 +397,13 @@ class FacebookAutomationView(View):
 						By.XPATH,
 						'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
 					)
-					post_input.send_keys(message)
 					
-					time.sleep(1)
+					# 人類化的鼠標移動和文字輸入
+					self.human_move_mouse(driver, post_input)
+					self.human_type(post_input, message)
+					
+					# 隨機人類行為
+					self.random_human_behavior(driver)
 					
 					# 上傳圖片（如果有的話）
 					if image_paths:
@@ -382,7 +440,8 @@ class FacebookAutomationView(View):
 											# 上傳圖片
 											post_img.send_keys(absolute_path)
 											print(f"成功發送圖片路徑: {absolute_path}")
-											time.sleep(0.5)
+											print("等待圖片上傳完成...")
+											self.human_delay(0.8, 1.5)  # 人類化的等待時間
 										else:
 											print(f"圖片文件不存在: {absolute_path}")
 											continue
@@ -391,17 +450,23 @@ class FacebookAutomationView(View):
 										print(f"使用絕對路徑: {img_path}")
 										post_img.send_keys(img_path)
 										print(f"成功發送圖片路徑: {img_path}")
-										time.sleep(0.5)
+										print("等待圖片上傳完成...")
+										self.human_delay(0.8, 1.5)  # 人類化的等待時間
 										
 								except Exception as single_img_error:
 									print(f"上傳第 {i+1} 張圖片失敗: {str(single_img_error)}")
 									continue
 									
+							# 所有圖片上傳完成後，再等待一下確保上傳穩定
+							if image_paths:
+								print(f"所有 {len(image_paths)} 張圖片上傳完成，等待確保穩定...")
+								self.human_delay(1.0, 2.0)  # 人類化的等待時間
+									
 						except Exception as img_error:
 							print(f"圖片上傳過程發生錯誤: {str(img_error)}")
 							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
 					
-					time.sleep(1)
+					# time.sleep(1)
 					
 					# 點擊發文按鈕
 					submit_button = driver.find_element(
@@ -417,8 +482,9 @@ class FacebookAutomationView(View):
 						'message': '發文成功'
 					})
 					
-					# 等待一下再發下一個
-					time.sleep(3)
+					# 人類化的等待時間
+					print("等待一下再發下一個社團...")
+					self.human_delay(2.0, 4.0)
 					
 				except Exception as e:
 					failed_count += 1
@@ -463,6 +529,20 @@ class FacebookAutomationView(View):
 		print("正在創建Chrome驅動程序...")
 		driver = webdriver.Chrome(service=service, options=options)
 		print("Chrome驅動程序創建成功！")
+		
+		# 添加反檢測代碼，隱藏 webdriver 屬性
+		print("正在添加反檢測代碼...")
+		try:
+			driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+				"source": """
+					Object.defineProperty(navigator, 'webdriver', {
+						get: () => undefined
+					})
+				"""
+			})
+			print("反檢測代碼添加成功！")
+		except Exception as e:
+			print(f"添加反檢測代碼失敗: {str(e)}")
 		
 		return driver
 	

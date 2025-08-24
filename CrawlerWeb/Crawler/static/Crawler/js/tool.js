@@ -2230,8 +2230,9 @@ document.addEventListener('DOMContentLoaded', function() {
 							html += `</div>`;
 						}
 						
-						if (template.hashtags) {
-							html += `<div class="template-hashtags"><i class="fas fa-tags"></i> ${template.hashtags}</div>`;
+						if (template.hashtags && Array.isArray(template.hashtags) && template.hashtags.length > 0) {
+							const hashtagsText = template.hashtags.join(', ');
+							html += `<div class="template-hashtags"><i class="fas fa-tags"></i> ${hashtagsText}</div>`;
 						}
 						
 						html += `</div>`;
@@ -2269,11 +2270,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		// 收集所有標籤
 		const allHashtags = new Set();
 		templates.forEach((template, index) => {
-			console.log(`模板 ${index}: hashtags = "${template.hashtags}"`);
-			if (template.hashtags) {
-				const hashtags = template.hashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+			console.log(`模板 ${index}: hashtags =`, template.hashtags);
+			if (template.hashtags && Array.isArray(template.hashtags)) {
+				const hashtags = template.hashtags.filter(tag => tag && tag.trim());
 				console.log(`  解析後的標籤:`, hashtags);
-				hashtags.forEach(tag => allHashtags.add(tag));
+				hashtags.forEach(tag => allHashtags.add(tag.trim()));
 			}
 		});
 		
@@ -2314,11 +2315,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		
 		const filteredTemplates = templates.filter(template => {
-			if (!template.hashtags) {
+			if (!template.hashtags || !Array.isArray(template.hashtags)) {
 				console.log(`模板 "${template.title}" 沒有標籤，過濾掉`);
 				return false;
 			}
-			const hashtags = template.hashtags.split(',').map(tag => tag.trim());
+			const hashtags = template.hashtags.map(tag => tag.trim());
 			console.log(`模板 "${template.title}" 的標籤:`, hashtags);
 			const isMatch = hashtags.includes(selectedHashtag);
 			console.log(`標籤 "${selectedHashtag}" 匹配結果:`, isMatch);
@@ -2469,9 +2470,9 @@ document.addEventListener('DOMContentLoaded', function() {
 								</div>
 							</div>
 						` : ''}
-						${template.hashtags ? `
+						${template.hashtags && Array.isArray(template.hashtags) && template.hashtags.length > 0 ? `
 							<div class="preview-hashtags">
-								<i class="fas fa-tags"></i> ${template.hashtags}
+								<i class="fas fa-tags"></i> ${template.hashtags.join(', ')}
 							</div>
 						` : ''}
 					</div>
@@ -2611,7 +2612,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				// 使用通用函數處理文字內容
 				const finalContent = processTemplateContent(template.content);
 				formData.append('content', finalContent);
-				formData.append('hashtags', template.hashtags || '');
+				formData.append('hashtags', Array.isArray(template.hashtags) ? template.hashtags.join(', ') : (template.hashtags || ''));
 				
 				// 複製圖片（只複製圖片URL，不複製實際文件）
 				if (template.images && template.images.length > 0) {
@@ -2727,7 +2728,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// 填充標籤
 		const hashtagsInput = document.querySelector('input[name="hashtags"]');
 		if (hashtagsInput) {
-			hashtagsInput.value = template.hashtags || '';
+			hashtagsInput.value = Array.isArray(template.hashtags) ? template.hashtags.join(', ') : (template.hashtags || '');
 		}
 		
 		// 處理圖片 - 載入現有圖片並支援排序

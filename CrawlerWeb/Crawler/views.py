@@ -1137,13 +1137,19 @@ class PostTemplateView(View):
 			if not title or not content:
 				return JsonResponse({'error': '請提供模板標題和內容'}, status=400)
 			
+			# 處理 hashtags：將字符串轉換為 JSON 數組
+			hashtags_list = []
+			if hashtags:
+				# 分割字符串並清理空白
+				hashtags_list = [tag.strip() for tag in hashtags.split(',') if tag.strip()]
+			
 			# 創建或更新模板
 			if template_id:
 				try:
 					template = PostTemplate.objects.get(id=template_id, user=request.user)
 					template.title = title
 					template.content = content
-					template.hashtags = hashtags
+					template.hashtags = hashtags_list
 					template.save()
 					action = '更新'
 				except PostTemplate.DoesNotExist:
@@ -1153,7 +1159,7 @@ class PostTemplateView(View):
 					user=request.user,
 					title=title,
 					content=content,
-					hashtags=hashtags
+					hashtags=hashtags_list
 				)
 				action = '創建'
 			

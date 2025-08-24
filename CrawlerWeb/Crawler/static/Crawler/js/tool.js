@@ -1603,6 +1603,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				// 重新載入模板列表
 				await loadPostTemplates();
 				
+				// 同時更新發文設定頁面的文案模板選項
+				await updateCopyTemplateOptions();
+				
 				// 檢查表單狀態並更新按鈕
 				checkFormEmptyAndUpdateButtons();
 			} else {
@@ -1772,6 +1775,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			} else {
 				throw new Error(result.error || '載入模板列表失敗');
 			}
+			
+			// 同時更新發文設定頁面的文案模板選項，保持兩個頁面同步
+			await updateCopyTemplateOptions();
 		} catch (error) {
 			console.error('載入模板列表失敗:', error);
 			templatesList.innerHTML = `
@@ -2171,6 +2177,9 @@ document.addEventListener('DOMContentLoaded', function() {
 					// 重新載入模板列表以顯示新複製的模板
 					await loadPostTemplates();
 					
+					// 同時更新發文設定頁面的文案模板選項
+					await updateCopyTemplateOptions();
+					
 					// 滾動到新複製的模板位置
 					setTimeout(() => {
 						const newTemplateCard = document.querySelector(`[data-template-id="${copyResult.template_id}"]`);
@@ -2323,6 +2332,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (response.ok && result.success) {
 				showNotification(result.message, 'success');
 				await loadPostTemplates();
+				// 同時更新發文設定頁面的文案模板選項
+				await updateCopyTemplateOptions();
 			} else {
 				throw new Error(result.error || '刪除失敗');
 			}

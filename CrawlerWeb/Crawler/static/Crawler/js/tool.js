@@ -1281,7 +1281,43 @@ document.addEventListener('DOMContentLoaded', function() {
 			const templateId = saveBtn.dataset.templateId;
 			
 			if (isEditMode && templateId) {
-				formData.append('template_id', templateId);
+				// 在編輯模式下，先檢查模板是否仍然存在
+				try {
+					const checkResponse = await fetch(`/crawler/api/templates/?template_id=${templateId}`);
+					const checkResult = await checkResponse.json();
+					
+					if (!checkResponse.ok || !checkResult.success) {
+						// 模板不存在，重置為創建模式
+						showNotification('原模板已被刪除，將創建新模板', 'warning');
+						
+						// 清空原本載入的圖片
+						templateImages = [];
+						updateImageSorting();
+						
+						// 重置儲存按鈕
+						saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
+						delete saveBtn.dataset.editMode;
+						delete saveBtn.dataset.templateId;
+						
+						// 不添加 template_id，讓後端創建新模板
+					} else {
+						// 模板存在，繼續編輯模式
+						formData.append('template_id', templateId);
+					}
+				} catch (error) {
+					console.error('檢查模板狀態失敗:', error);
+					// 檢查失敗時，重置為創建模式
+					showNotification('無法檢查模板狀態，將創建新模板', 'warning');
+					
+					// 清空原本載入的圖片
+					templateImages = [];
+					updateImageSorting();
+					
+					// 重置儲存按鈕
+					saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
+					delete saveBtn.dataset.editMode;
+					delete saveBtn.dataset.templateId;
+				}
 			}
 			
 			// 添加圖片和順序

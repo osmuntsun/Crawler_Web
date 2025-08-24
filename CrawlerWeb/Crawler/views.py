@@ -1083,20 +1083,81 @@ class PostTemplateView(View):
 			try:
 				template = PostTemplate.objects.get(id=template_id, user=request.user)
 				
-				# 先刪除所有相關的圖片文件
+				# 智能刪除圖片：只有當沒有其他模板使用時才刪除圖片文件
+				images_to_delete = []  # 記錄要刪除的圖片路徑
+				
 				for image in template.images.all():
 					if image.image and hasattr(image.image, 'path'):
 						try:
 							import os
-							# 刪除文件系統中的圖片文件
-							if os.path.exists(image.image.path):
-								os.remove(image.image.path)
-								print(f"已刪除圖片文件: {image.image.path}")
+							# 檢查這張圖片文件是否被其他模板使用
+							# 通過比較文件名來檢查，這樣更可靠
+							image_path = image.image.path
+							image_filename = os.path.basename(image_path)
+							
+							print(f"檢查圖片: {image_filename}")  # 調試信息
+							
+							# 檢查這張圖片是否被其他模板使用
+							# 需要檢查實際圖片文件和複製的圖片URL
+							other_templates_using_same_file = False
+							
+							# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片文件
+							print(f"開始檢查其他模板是否使用圖片: {image_filename}")
+							for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
+								print(f"檢查模板 {other_template.id}: {other_template.title}")
+								for other_image in other_template.images.all():
+									print(f"  檢查圖片記錄: image={other_image.image}, alt_text={other_image.alt_text}")
+									
+									# 檢查實際圖片文件
+									if (other_image.image and 
+										hasattr(other_image.image, 'path') and 
+										os.path.basename(other_image.image.path) == image_filename):
+										other_templates_using_same_file = True
+										print(f"發現其他模板 {other_template.id} 使用相同圖片文件: {image_filename}")
+										break
+									# 檢查複製的圖片URL（存儲在alt_text中）
+									elif (other_image.alt_text and 
+										  other_image.alt_text.startswith('/media/')):
+										# 從alt_text中提取文件名進行比較
+										alt_text_filename = os.path.basename(other_image.alt_text)
+										print(f"  比較文件名: {alt_text_filename} vs {image_filename}")
+										if alt_text_filename == image_filename:
+											other_templates_using_same_file = True
+											print(f"發現其他模板 {other_template.id} 使用複製圖片: {image_filename}")
+											break
+								if other_templates_using_same_file:
+									break
+							
+							print(f"其他模板使用此圖片: {other_templates_using_same_file}")  # 調試信息
+							
+							if not other_templates_using_same_file:
+								# 沒有其他模板使用這張圖片，記錄為要刪除
+								images_to_delete.append(image_path)
+								print(f"圖片文件將被刪除: {image_path}")
+							else:
+								# 有其他模板使用這張圖片，保留文件
+								print(f"圖片文件被其他模板使用，保留: {image_path}")
 						except Exception as e:
-							print(f"刪除圖片文件失敗: {e}")
+							print(f"處理圖片文件失敗: {e}")
+					else:
+						print(f"圖片對象無效: image={image.image}, hasattr={hasattr(image.image, 'path') if image.image else False}")  # 調試信息
 				
 				# 刪除模板（會自動刪除相關的圖片記錄）
 				template.delete()
+				
+				# 現在安全地刪除不再被使用的圖片文件
+				for image_path in images_to_delete:
+					try:
+						if os.path.exists(image_path):
+							os.remove(image_path)
+							print(f"已刪除未使用的圖片文件: {image_path}")
+						else:
+							print(f"圖片文件不存在: {image_path}")
+					except Exception as e:
+						print(f"刪除圖片文件失敗: {image_path}, 錯誤: {e}")
+				
+				# 清理孤立的圖片文件
+				self.cleanup_orphaned_images()
 				
 				return JsonResponse({
 					'success': True,
@@ -1110,6 +1171,63 @@ class PostTemplateView(View):
 			return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
 		except Exception as e:
 			return JsonResponse({'error': f'刪除模板失敗: {str(e)}'}, status=500)
+	
+	def cleanup_orphaned_images(self):
+		"""清理孤立的圖片文件"""
+		try:
+			import os
+			from django.conf import settings
+			
+			# 獲取所有模板使用的圖片文件路徑
+			used_image_paths = set()
+			
+			# 從資料庫中獲取所有使用的圖片路徑
+			for template in PostTemplate.objects.filter(is_active=True):
+				for image in template.images.all():
+					# 檢查實際圖片文件
+					if image.image and hasattr(image.image, 'path'):
+						used_image_paths.add(image.image.path)
+					
+					# 檢查複製的圖片URL（存儲在alt_text中）
+					if (image.alt_text and 
+						image.alt_text.startswith('/media/')):
+						# 將相對路徑轉換為絕對路徑
+						# 從 /media/templates/1/filename.jpg 轉換為絕對路徑
+						relative_path = image.alt_text.replace('/media/', '')
+						alt_text_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+						# 不檢查文件是否存在，因為文件可能已經被刪除
+						# 我們只需要知道有模板在使用這個圖片
+						used_image_paths.add(alt_text_path)
+						print(f"添加複製圖片路徑到保護列表: {alt_text_path}")
+						
+						# 同時也添加標準化的路徑格式，以確保路徑匹配
+						normalized_path = os.path.normpath(alt_text_path)
+						used_image_paths.add(normalized_path)
+						print(f"添加標準化路徑到保護列表: {normalized_path}")
+			
+			# 檢查 media/templates 目錄中的文件
+			templates_dir = os.path.join(settings.MEDIA_ROOT, 'templates')
+			if os.path.exists(templates_dir):
+				for user_dir in os.listdir(templates_dir):
+					user_dir_path = os.path.join(templates_dir, user_dir)
+					if os.path.isdir(user_dir_path):
+						for filename in os.listdir(user_dir_path):
+							file_path = os.path.join(user_dir_path, filename)
+							if os.path.isfile(file_path):
+								# 檢查文件是否被使用
+								if file_path not in used_image_paths:
+									try:
+										os.remove(file_path)
+										print(f"清理孤立圖片文件: {file_path}")
+									except Exception as e:
+										print(f"刪除孤立圖片文件失敗: {file_path}, 錯誤: {e}")
+								else:
+									print(f"圖片文件仍在使用: {file_path}")
+			
+			print("孤立圖片文件清理完成")
+			
+		except Exception as e:
+			print(f"清理孤立圖片文件時發生錯誤: {e}")
 
 
 

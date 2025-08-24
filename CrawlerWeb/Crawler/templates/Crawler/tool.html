@@ -395,6 +395,7 @@
 							</div>
 							
 							<form id="postingForm" class="form-grid">
+								{% csrf_token %}
 								<div class="form-row">
 									<label><i class="fas fa-globe"></i> 選擇社群平台</label>
 									<select name="posting_platform" class="form-select" required id="postingPlatform">

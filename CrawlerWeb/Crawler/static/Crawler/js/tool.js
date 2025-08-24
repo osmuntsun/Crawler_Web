@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			console.log('驗證步驟1...');
 			if (!validateStep1()) {
 				console.log('步驟1驗證失敗');
-				return;
+			return;
 			}
 			console.log('步驟1驗證成功，收集數據...');
 			// 收集步驟1的數據
@@ -674,7 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 
 		// 如果是Facebook，檢查是否選擇了社團
-		if (platform === 'facebook') {
+			if (platform === 'facebook') {
 			const selectedCommunities = document.querySelectorAll('.community-checkbox:checked');
 			if (selectedCommunities.length === 0) {
 				showNotification('請至少選擇一個 Facebook 社團', 'warning');
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// 如果是Facebook，收集社團信息
 		if (platform === 'facebook') {
-			const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
+				const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
 				.map(checkbox => ({
 					url: checkbox.value,
 					name: checkbox.dataset.name
@@ -758,8 +758,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			const intervalMin = document.querySelector('input[name="interval_min"]').value;
 			const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
 			const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
-				.map(checkbox => checkbox.value);
-
+					.map(checkbox => checkbox.value);
+				
 			// 收集圖片文件
 			const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
 			
@@ -805,6 +805,151 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.getElementById('confirmImages').textContent = `${totalImages} 張圖片`;
 	}
 
+	// 準備發文數據
+	function preparePostingData() {
+		const postData = {
+			platform: postingData.platform,
+			messageContent: postingData.messageContent,
+			templateImages: postingData.templateImages || [],
+			communities: postingData.communities || []
+		};
+		
+		// 根據發文方式添加額外數據
+		if (postingData.step2) {
+			if (postingData.step2.method === 'immediate') {
+				// 立即發文：添加額外圖片
+				postData.additionalImages = postingData.step2.imageFiles || [];
+				postData.method = 'immediate';
+			} else if (postingData.step2.method === 'scheduled') {
+				// 排程發文：添加排程設定
+				postData.schedule = {
+					startTime: postingData.step2.startTime,
+					intervalMin: postingData.step2.intervalMin,
+					intervalUnit: postingData.step2.intervalUnit,
+					selectedDays: postingData.step2.selectedDays
+				};
+				postData.additionalImages = postingData.step2.imageFiles || [];
+				postData.method = 'scheduled';
+			}
+		}
+		
+		console.log('準備發文數據:', postData);
+		return postData;
+	}
+
+	// 執行立即發文
+	async function executeImmediatePosting(postData) {
+		try {
+			console.log('開始執行立即發文:', postData);
+			
+			// 準備發送到後端的數據
+			const requestData = {
+				action: 'post_to_community',
+				platform: postData.platform,
+				message: postData.messageContent,
+				communities: postData.communities.map(community => community.url || community.id),
+				template_images: postData.templateImages.map(img => img.url || img.path),
+				additional_images: postData.additionalImages.map(img => img.url || img.path)
+			};
+			
+			// 獲取 CSRF Token
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+							  document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+			
+			if (!csrfToken) {
+				throw new Error('無法獲取 CSRF Token');
+			}
+			
+			// 發送請求到後端
+			const response = await fetch('/crawler/api/facebook/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
+					},
+				body: JSON.stringify(requestData)
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+			}
+			
+			const result = await response.json();
+			
+			if (result.success) {
+				showNotification(`發布成功！成功：${result.success_count} 個，失敗：${result.failed_count} 個`, 'success');
+				console.log('發布結果:', result);
+			} else {
+				throw new Error(result.error || '發布失敗');
+			}
+			
+			// 發布成功後重置到步驟1
+			resetToStep1();
+			
+		} catch (error) {
+			console.error('立即發文執行失敗:', error);
+			throw new Error(`立即發文失敗: ${error.message}`);
+		}
+	}
+
+	// 保存排程發文
+	async function saveScheduledPosting(postData) {
+		try {
+			console.log('開始保存排程發文:', postData);
+			
+			// 準備發送到後端的數據
+			const requestData = {
+				action: 'save_scheduled_posting',
+				platform: postData.platform,
+				message: postData.messageContent,
+				communities: postData.communities.map(community => community.url || community.id),
+				template_images: postData.templateImages.map(img => img.url || img.path),
+				additional_images: postData.additionalImages.map(img => img.url || img.path),
+				schedule: postData.schedule
+			};
+			
+			// 獲取 CSRF Token
+			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+							  document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+			
+			if (!csrfToken) {
+				throw new Error('無法獲取 CSRF Token');
+			}
+			
+			// 發送請求到後端
+			const response = await fetch('/crawler/api/schedule/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
+					},
+				body: JSON.stringify(requestData)
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			const result = await response.json();
+
+			if (result.success) {
+				showNotification('排程發文已保存！將在指定時間自動發布', 'success');
+				console.log('排程保存結果:', result);
+			} else {
+				throw new Error(result.error || '排程保存失敗');
+			}
+			
+			// 保存成功後重置到步驟1
+			resetToStep1();
+			
+		} catch (error) {
+			console.error('排程發文保存失敗:', error);
+			throw new Error(`排程發文保存失敗: ${error.message}`);
+		}
+	}
+
 	// 確認發布
 	async function confirmPosting() {
 		const confirmBtn = document.getElementById('confirmPostingBtn');
@@ -814,16 +959,20 @@ document.addEventListener('DOMContentLoaded', function() {
 			confirmBtn.disabled = true;
 			confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發布中...';
 
-			// 這裡可以發送數據到後端進行實際的發布
-			// 暫時模擬發布過程
-			await new Promise(resolve => setTimeout(resolve, 2000));
-
-			showNotification('發布成功！已設定排程發文', 'success');
+			// 準備發文數據
+			const postData = preparePostingData();
 			
-			// 重置到步驟1
-			resetToStep1();
+			// 根據發文方式決定發送方式
+			if (postingData.step2 && postingData.step2.method === 'immediate') {
+				// 立即發文：直接發送到後端執行 Selenium
+				await executeImmediatePosting(postData);
+			} else {
+				// 排程發文：保存到排程系統
+				await saveScheduledPosting(postData);
+			}
 			
 		} catch (error) {
+			console.error('發布失敗:', error);
 			showNotification('發布失敗：' + error.message, 'error');
 		} finally {
 			confirmBtn.disabled = false;
@@ -836,11 +985,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		currentStep = 1;
 		postingData = {};
 		showStep(1);
-		
-		// 清空表單
+				
+				// 清空表單
 		document.getElementById('postingForm').reset();
-		document.getElementById('imagePreview').innerHTML = '';
-		document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+				document.getElementById('imagePreview').innerHTML = '';
+				document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
 		
 		// 隱藏Facebook社團選擇
 		const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
@@ -1621,19 +1770,19 @@ document.addEventListener('DOMContentLoaded', function() {
 			postingPlatformSelect.addEventListener('change', function() {
 				const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
 				if (facebookCommunitiesRow) {
-					if (this.value === 'facebook') {
+				if (this.value === 'facebook') {
 						// 顯示 Facebook 社團選項
 						facebookCommunitiesRow.classList.remove('hidden');
 						facebookCommunitiesRow.classList.add('visible');
-						facebookCommunitiesRow.style.display = 'block';
-					} else {
+					facebookCommunitiesRow.style.display = 'block';
+				} else {
 						// 隱藏 Facebook 社團選項
 						facebookCommunitiesRow.classList.remove('visible');
 						facebookCommunitiesRow.classList.add('hidden');
 						// 延遲隱藏，讓過渡效果完成
 						setTimeout(() => {
 							if (!facebookCommunitiesRow.classList.contains('visible')) {
-								facebookCommunitiesRow.style.display = 'none';
+					facebookCommunitiesRow.style.display = 'none';
 							}
 						}, 300);
 					}

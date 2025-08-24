@@ -436,179 +436,478 @@ document.addEventListener('DOMContentLoaded', function() {
 		await loadCopyTemplates();
 	}
 
-	// 處理發文
+	// 多步驟發文處理
+	let currentStep = 1;
+	let postingData = {};
+
+	// 下一步按鈕事件
+	document.addEventListener('click', function(e) {
+		if (e.target.id === 'nextStepBtn') {
+			nextStep();
+		} else if (e.target.id === 'nextStepBtn2') {
+			nextStep();
+		} else if (e.target.id === 'prevStepBtn') {
+			prevStep();
+		} else if (e.target.id === 'prevStepBtn2') {
+			prevStep();
+		} else if (e.target.id === 'confirmPostingBtn') {
+			confirmPosting();
+		}
+	});
+
+	// 初始化步驟系統
+	document.addEventListener('DOMContentLoaded', function() {
+		// 確保步驟1顯示，其他步驟隱藏
+		showStep(1);
+		
+		// 綁定步驟按鈕事件
+		bindStepButtons();
+		
+		// 設置步驟2的開始時間默認值
+		setDefaultStartTime();
+	});
+
+	// 設置默認開始時間
+	function setDefaultStartTime() {
+		const startTimeInput = document.getElementById('scheduleStartTime');
+		if (startTimeInput) {
+			// 設置為當前時間後1小時
+			const now = new Date();
+			now.setHours(now.getHours() + 1);
+			now.setMinutes(0);
+			now.setSeconds(0);
+			now.setMilliseconds(0);
+			
+			// 格式化為 datetime-local 格式
+			const year = now.getFullYear();
+			const month = String(now.getMonth() + 1).padStart(2, '0');
+			const day = String(now.getDate()).padStart(2, '0');
+			const hours = String(now.getHours()).padStart(2, '0');
+			const minutes = String(now.getMinutes()).padStart(2, '0');
+			
+			startTimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+		}
+	}
+
+	// 綁定步驟按鈕事件
+	function bindStepButtons() {
+		const nextStepBtn = document.getElementById('nextStepBtn');
+		const nextStepBtn2 = document.getElementById('nextStepBtn2');
+		const prevStepBtn = document.getElementById('prevStepBtn');
+		const prevStepBtn2 = document.getElementById('prevStepBtn2');
+		const confirmPostingBtn = document.getElementById('confirmPostingBtn');
+
+		if (nextStepBtn) {
+			nextStepBtn.addEventListener('click', nextStep);
+		}
+		if (nextStepBtn2) {
+			nextStepBtn2.addEventListener('click', nextStep);
+		}
+		if (prevStepBtn) {
+			prevStepBtn.addEventListener('click', prevStep);
+		}
+		if (prevStepBtn2) {
+			prevStepBtn2.addEventListener('click', prevStep);
+		}
+		if (confirmPostingBtn) {
+			confirmPostingBtn.addEventListener('click', confirmPosting);
+		}
+
+		// 綁定步驟指示器點擊事件
+		bindStepIndicators();
+	}
+
+	// 綁定步驟指示器點擊事件
+	function bindStepIndicators() {
+		document.querySelectorAll('.step-item').forEach((item, index) => {
+			item.addEventListener('click', function() {
+				const stepNumber = index + 1;
+				console.log(`點擊步驟指示器: ${stepNumber}, 當前步驟: ${currentStep}`);
+				
+				// 允許點擊任何已完成的步驟或當前步驟
+				if (stepNumber <= currentStep) {
+					// 添加點擊動畫效果
+					item.style.transform = 'scale(0.95)';
+					setTimeout(() => {
+						item.style.transform = '';
+						showStep(stepNumber);
+					}, 150);
+				} else {
+					// 顯示警告並添加震動效果
+					showNotification(`請先完成步驟 ${stepNumber - 1}`, 'warning');
+					item.style.animation = 'shake 0.5s ease';
+					setTimeout(() => {
+						item.style.animation = '';
+					}, 500);
+				}
+			});
+		});
+	}
+
+	// 下一步
+	function nextStep() {
+		console.log(`下一步按鈕點擊，當前步驟: ${currentStep}`);
+		
+		if (currentStep === 1) {
+			console.log('驗證步驟1...');
+			if (!validateStep1()) {
+				console.log('步驟1驗證失敗');
+				return;
+			}
+			console.log('步驟1驗證成功，收集數據...');
+			// 收集步驟1的數據
+			collectStep1Data();
+			console.log('切換到步驟2...');
+			showStep(2);
+		} else if (currentStep === 2) {
+			console.log('驗證步驟2...');
+			if (!validateStep2()) {
+				console.log('步驟2驗證失敗');
+				return;
+			}
+			console.log('步驟2驗證成功，收集數據...');
+			// 收集步驟2的數據
+			collectStep2Data();
+			console.log('切換到步驟3...');
+			showStep(3);
+		}
+	}
+
+	// 上一步
+	function prevStep() {
+		if (currentStep === 2) {
+			showStep(1);
+		} else if (currentStep === 3) {
+			showStep(2);
+		}
+	}
+
+	// 顯示指定步驟
+	function showStep(step) {
+		console.log(`切換到步驟 ${step}, 從步驟 ${currentStep} 切換`);
+		
+		// 隱藏所有步驟內容
+		document.querySelectorAll('.posting-step-content').forEach(content => {
+			content.style.display = 'none';
+			console.log(`隱藏步驟內容: ${content.id}`);
+		});
+
+		// 顯示指定步驟
+		const targetStep = document.getElementById(`step${step}-content`);
+		if (targetStep) {
+			targetStep.style.display = 'block';
+			console.log(`顯示步驟內容: ${targetStep.id}`);
+		} else {
+			console.error(`找不到步驟 ${step} 的內容元素`);
+		}
+
+		// 更新步驟指示器
+		updateStepIndicator(step);
+
+		// 更新當前步驟
+		currentStep = step;
+		console.log(`當前步驟已更新為: ${currentStep}`);
+
+		// 如果是步驟3，填充確認信息
+		if (step === 3) {
+			fillConfirmationSummary();
+		}
+		
+		// 顯示步驟切換通知
+		const stepNames = ['選擇文案', '排程設定', '確認發布'];
+		showNotification(`已切換到步驟 ${step}: ${stepNames[step - 1]}`, 'info');
+	}
+
+	// 更新步驟指示器
+	function updateStepIndicator(step) {
+		console.log(`更新步驟指示器到步驟 ${step}`);
+		
+		// 更新步驟項目狀態
+		document.querySelectorAll('.step-item').forEach((item, index) => {
+			const stepNumber = index + 1;
+			item.classList.remove('active', 'completed', 'clickable', 'disabled');
+			
+			if (stepNumber === step) {
+				item.classList.add('active');
+				console.log(`步驟 ${stepNumber} 設為活動狀態`);
+			} else if (stepNumber < step) {
+				item.classList.add('completed', 'clickable');
+				console.log(`步驟 ${stepNumber} 設為完成狀態，可點擊`);
+			} else {
+				item.classList.add('disabled');
+				console.log(`步驟 ${stepNumber} 設為禁用狀態`);
+			}
+		});
+		
+		// 更新連線效果
+		updateStepConnections(step);
+		
+		// 調試信息
+		console.log(`步驟指示器更新完成，當前步驟: ${step}`);
+		console.log(`可點擊的步驟: ${Array.from(document.querySelectorAll('.step-item.clickable')).map((item, index) => index + 1).join(', ')}`);
+	}
+
+	// 更新步驟連線效果（已簡化，因為移除了連線）
+	function updateStepConnections(step) {
+		// 連線已移除，此函數保留以備將來使用
+		console.log(`當前步驟: ${step}`);
+	}
+
+	// 驗證步驟1
+	function validateStep1() {
+		const platform = document.getElementById('postingPlatform').value;
+		const copyTemplate = document.getElementById('copyTemplate').value;
+
+		if (!platform) {
+			showNotification('請選擇社群平台', 'warning');
+			return false;
+		}
+
+		if (!copyTemplate) {
+			showNotification('請選擇文案模板', 'warning');
+			return false;
+		}
+
+		// 如果是Facebook，檢查是否選擇了社團
+		if (platform === 'facebook') {
+			const selectedCommunities = document.querySelectorAll('.community-checkbox:checked');
+			if (selectedCommunities.length === 0) {
+				showNotification('請至少選擇一個 Facebook 社團', 'warning');
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// 驗證步驟2
+	function validateStep2() {
+		const startTime = document.getElementById('scheduleStartTime').value;
+		const intervalMin = document.querySelector('input[name="interval_min"]').value;
+		const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+		const selectedDays = document.querySelectorAll('input[name="days"]:checked');
+
+		if (!startTime) {
+			showNotification('請設定開始時間', 'warning');
+			return false;
+		}
+
+		if (!intervalMin || intervalMin < 1) {
+			showNotification('請設定有效的發文間隔', 'warning');
+			return false;
+		}
+
+		if (selectedDays.length === 0) {
+			showNotification('請至少選擇一個執行日期', 'warning');
+			return false;
+		}
+
+		return true;
+	}
+
+	// 收集步驟1數據
+	function collectStep1Data() {
+		const platform = document.getElementById('postingPlatform').value;
+		const copyTemplate = document.getElementById('copyTemplate').value;
+		const copyTemplateSelect = document.getElementById('copyTemplate');
+		const selectedOption = copyTemplateSelect.options[copyTemplateSelect.selectedIndex];
+
+		postingData.platform = platform;
+		postingData.templateId = copyTemplate;
+
+		if (selectedOption && selectedOption.dataset.template) {
+			const template = JSON.parse(selectedOption.dataset.template);
+			postingData.template = template;
+			postingData.messageContent = processTemplateContent(template.content);
+			postingData.templateImages = template.images || [];
+		}
+
+		// 如果是Facebook，收集社團信息
+		if (platform === 'facebook') {
+			const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
+				.map(checkbox => ({
+					url: checkbox.value,
+					name: checkbox.dataset.name
+				}));
+			postingData.communities = selectedCommunities;
+		}
+	}
+
+	// 收集步驟2數據
+	function collectStep2Data() {
+		const startTime = document.getElementById('scheduleStartTime').value;
+		const intervalMin = document.querySelector('input[name="interval_min"]').value;
+		const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+		const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
+			.map(checkbox => checkbox.value);
+
+		postingData.schedule = {
+			startTime: startTime,
+			intervalMin: intervalMin,
+			intervalUnit: intervalUnit,
+			selectedDays: selectedDays
+		};
+
+		// 收集圖片文件
+		const imageFiles = Array.from(document.getElementById('postingImageUpload').files);
+		postingData.imageFiles = imageFiles;
+	}
+
+	// 填充確認摘要
+	function fillConfirmationSummary() {
+		// 平台信息
+		document.getElementById('confirmPlatform').textContent = getPlatformDisplayName(postingData.platform);
+		
+		// 文案內容
+		const contentPreview = postingData.messageContent ? 
+			postingData.messageContent.substring(0, 100) + (postingData.messageContent.length > 100 ? '...' : '') :
+			'無';
+		document.getElementById('confirmContent').textContent = contentPreview;
+		
+		// 排程設定
+		const schedule = postingData.schedule;
+		const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
+		document.getElementById('confirmSchedule').textContent = scheduleText;
+		
+		// 圖片數量
+		const totalImages = (postingData.templateImages ? postingData.templateImages.length : 0) + 
+			(postingData.imageFiles ? postingData.imageFiles.length : 0);
+		document.getElementById('confirmImages').textContent = `${totalImages} 張圖片`;
+	}
+
+	// 確認發布
+	async function confirmPosting() {
+		const confirmBtn = document.getElementById('confirmPostingBtn');
+		const originalText = confirmBtn.innerHTML;
+		
+		try {
+			confirmBtn.disabled = true;
+			confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發布中...';
+
+			// 這裡可以發送數據到後端進行實際的發布
+			// 暫時模擬發布過程
+			await new Promise(resolve => setTimeout(resolve, 2000));
+
+			showNotification('發布成功！已設定排程發文', 'success');
+			
+			// 重置到步驟1
+			resetToStep1();
+			
+		} catch (error) {
+			showNotification('發布失敗：' + error.message, 'error');
+		} finally {
+			confirmBtn.disabled = false;
+			confirmBtn.innerHTML = originalText;
+		}
+	}
+
+	// 重置到步驟1
+	function resetToStep1() {
+		currentStep = 1;
+		postingData = {};
+		showStep(1);
+		
+		// 清空表單
+		document.getElementById('postingForm').reset();
+		document.getElementById('imagePreview').innerHTML = '';
+		document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+		
+		// 隱藏Facebook社團選擇
+		const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
+		if (facebookCommunitiesRow) {
+			facebookCommunitiesRow.style.display = 'none';
+		}
+	}
+
+	// 處理發文（保留原有邏輯，但改為內部調用）
 	async function handlePosting(e) {
 		e.preventDefault();
 		
-		const form = e.target;
-		const formData = new FormData(form);
-		
-		const platform = formData.get('posting_platform');
-		const copyTemplate = formData.get('copy_template');
-		const imageFiles = Array.from(formData.getAll('posting_images'));
+		// 直接進入多步驟流程
+		nextStep();
+	}
 
-		// 獲取選取的文案內容
-		let messageContent = '';
-		
-		if (copyTemplate) {
-			// 從選中的選項中獲取模板數據
-			const copyTemplateSelect = document.getElementById('copyTemplate');
-			const selectedOption = copyTemplateSelect.options[copyTemplateSelect.selectedIndex];
-			
-			console.log('選取的模板ID:', copyTemplate);
-			console.log('選中的選項:', selectedOption);
-			
-			if (selectedOption && selectedOption.dataset.template) {
-				const template = JSON.parse(selectedOption.dataset.template);
-				console.log('選取的模板:', template);
-				
-				// 使用通用函數處理文字內容
-				messageContent = processTemplateContent(template.content);
-				console.log('原始模板內容:', template.content);
-				console.log('處理後的文案內容:', messageContent);
-				
-				// 獲取模板中的圖片
-				if (template.images && template.images.length > 0) {
-					console.log('模板包含圖片:', template.images);
-					// 將模板圖片添加到 imageFiles 中
-					template.images.forEach((image, index) => {
-						// 創建一個模擬的 File 對象，包含圖片的 URL 和名稱
-						const mockFile = {
-							name: image.name || `template_image_${index + 1}.jpg`,
-							url: image.url,
-							path: image.url, // 添加 path 屬性
-							type: 'image/jpeg',
-							size: 0,
-							lastModified: Date.now()
-						};
-						imageFiles.push(mockFile);
-					});
-					console.log('處理後的圖片文件:', imageFiles);
-				}
-			} else {
-				showNotification('找不到選取的文案模板', 'warning');
-				return;
-			}
+	// 為步驟2的圖片上傳添加事件監聽器
+	document.addEventListener('DOMContentLoaded', function() {
+		const postingImageUpload = document.getElementById('postingImageUpload');
+		if (postingImageUpload) {
+			postingImageUpload.addEventListener('change', function(e) {
+				handlePostingImageUpload(e);
+			});
 		}
+	});
 
-		if (!platform || !messageContent || messageContent.trim() === '') {
-			showNotification('請選擇社群平台和有效的文案內容', 'warning');
+	// 處理步驟2的圖片上傳
+	function handlePostingImageUpload(e) {
+		const files = Array.from(e.target.files);
+		const imagePreview = document.getElementById('imagePreview');
+		const imagePreviewRow = document.getElementById('imagePreviewRow');
+		
+		if (files.length === 0) {
+			imagePreview.innerHTML = '';
+			imagePreviewRow.style.display = 'none';
 			return;
 		}
 
-		const postingBtn = document.getElementById('postingBtn');
-		const statusDiv = document.getElementById('postingStatus');
+		imagePreviewRow.style.display = 'block';
+		let html = '';
+		files.forEach((file, index) => {
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				const imgElement = document.querySelector(`#posting_preview_${index} img`);
+				if (imgElement) {
+					imgElement.src = e.target.result;
+					// 隱藏載入動畫，顯示圖片
+					const loadingDiv = document.querySelector(`#posting_preview_${index} .image-loading`);
+					if (loadingDiv) {
+						loadingDiv.style.display = 'none';
+					}
+					imgElement.style.display = 'block';
+				}
+			};
+			reader.readAsDataURL(file);
+
+			html += `
+				<div class="image-preview-item" id="posting_preview_${index}" data-file="${JSON.stringify({
+					name: file.name,
+					size: file.size,
+					type: file.type,
+					lastModified: file.lastModified
+				})}">
+					<img src="" alt="預覽圖片" style="display: none;">
+					<div class="image-loading">
+						<i class="fas fa-spinner fa-spin"></i>
+					</div>
+					<button type="button" class="remove-image" onclick="removePostingImage(${index})">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+			`;
+		});
 		
-		// 更新按鈕狀態
-		postingBtn.disabled = true;
-		postingBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 發文中...';
-		
-		// 清除之前的狀態
-		statusDiv.style.display = 'none';
-		statusDiv.className = 'status-message';
-
-		try {
-			let response;
-			
-			if (platform === 'facebook') {
-				// Facebook 特殊處理
-				const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
-					.map(checkbox => checkbox.value);
-				
-				if (selectedCommunities.length === 0) {
-					throw new Error('請至少選擇一個 Facebook 社團');
-				}
-
-				// 獲取 CSRF 令牌
-				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-				
-				// 創建 JSON 數據來發送
-				const postData = {
-					action: 'post_to_community',
-					community_urls: selectedCommunities,
-					message: messageContent,
-					image_paths: imageFiles
-						.map(file => file.url || file.path)
-						.filter(path => path && path.trim() !== '') // 過濾掉空值
-				};
-				
-				// 添加調試日誌
-				console.log('準備發送的數據:', postData);
-				console.log('圖片路徑數組:', postData.image_paths);
-				console.log('JSON 字符串:', JSON.stringify(postData));
-				
-				response = await fetch('/crawler/api/facebook/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-CSRFToken': csrfToken,
-					},
-					body: JSON.stringify(postData)
-				});
-			} else {
-				// 其他平台的發文邏輯
-				// 獲取 CSRF 令牌
-				const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-				
-				response = await fetch('/crawler/api/posting/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-CSRFToken': csrfToken,
-					},
-					body: JSON.stringify({
-						platform: platform,
-						message: messageContent,
-						images: imageFiles.map(file => file.path || file.name)
-					})
-				});
-			}
-
-			const result = await response.json();
-
-			if (response.ok && result.success) {
-				statusDiv.className = 'status-message success';
-				statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + result.message;
-				statusDiv.style.display = 'block';
-				
-				showNotification('發文成功！', 'success');
-				
-				// 清空表單
-				form.reset();
-				
-				// 安全地清空圖片預覽
-				const imagePreview = document.getElementById('imagePreview');
-				if (imagePreview) {
-					imagePreview.innerHTML = '';
-				}
-				
-				// 安全地清空文案預覽
-				const copyPreview = document.getElementById('copyPreview');
-				if (copyPreview) {
-					copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
-					copyPreview.classList.remove('preview-active');
-				}
-				
-				// 隱藏 Facebook 社團選擇
-				const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
-				if (facebookCommunitiesRow) {
-					facebookCommunitiesRow.style.display = 'none';
-				}
-			} else {
-				throw new Error(result.error || '發文失敗');
-			}
-		} catch (error) {
-			statusDiv.className = 'status-message error';
-			statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + error.message;
-			statusDiv.style.display = 'block';
-			
-			showNotification('發文失敗：' + error.message, 'error');
-		} finally {
-			// 恢復按鈕狀態
-			postingBtn.disabled = false;
-			postingBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 發佈內容';
-		}
+		imagePreview.innerHTML = html;
 	}
+
+	// 移除步驟2的圖片預覽
+	window.removePostingImage = function(index) {
+		const previewItem = document.getElementById(`posting_preview_${index}`);
+		if (previewItem) {
+			previewItem.remove();
+		}
+		
+		// 重新設置 input 的 files
+		const postingImageUpload = document.getElementById('postingImageUpload');
+		const dt = new DataTransfer();
+		const files = Array.from(postingImageUpload.files);
+		files.splice(index, 1);
+		files.forEach(file => dt.items.add(file));
+		postingImageUpload.files = dt.files;
+		
+		// 如果沒有圖片了，隱藏預覽行
+		if (files.length === 0) {
+			document.getElementById('imagePreviewRow').style.display = 'none';
+		}
+	};
 
 	// 獲取 Facebook 社團列表
 	async function getFacebookCommunities() {

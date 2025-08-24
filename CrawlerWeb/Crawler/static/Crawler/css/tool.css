@@ -434,6 +434,250 @@ body {
 	}
 }
 
+/* 發文步驟指示器 */
+.posting-steps {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30px;
+	padding: 30px 40px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 15px;
+	backdrop-filter: blur(10px);
+	position: relative;
+	gap: 0;
+}
+
+/* 步驟連線已移除 */
+
+.step-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	opacity: 0.6;
+	position: relative;
+	z-index: 2;
+	flex: 1;
+	text-align: center;
+	animation: fadeInUp 0.6s ease;
+}
+
+.step-item:nth-child(1) { animation-delay: 0.1s; }
+.step-item:nth-child(2) { animation-delay: 0.2s; }
+.step-item:nth-child(3) { animation-delay: 0.3s; }
+
+.step-item.active {
+	opacity: 1;
+	transform: scale(1.05);
+}
+
+.step-item.completed {
+	opacity: 0.8;
+}
+
+.step-number {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 1.1rem;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	transition: all 0.3s ease;
+}
+
+/* 步驟圓圈定位已簡化 */
+
+.step-item.active .step-number {
+	background: linear-gradient(135deg, #28a745, #20c997);
+	box-shadow: 0 4px 20px rgba(40, 167, 69, 0.4);
+}
+
+.step-item.completed .step-number {
+	background: linear-gradient(135deg, #17a2b8, #20c997);
+	box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+}
+
+/* 完成步驟的綠色勾勾已移除 */
+
+.step-label {
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: #333;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.step-item.active .step-label {
+	color: #28a745;
+	font-weight: 600;
+}
+
+.step-item:hover {
+	transform: translateY(-2px);
+	opacity: 0.9;
+}
+
+.step-item:hover .step-number {
+	box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+}
+
+.step-item:active {
+	transform: translateY(0);
+}
+
+/* 可點擊的步驟樣式 */
+.step-item.clickable {
+	cursor: pointer;
+}
+
+.step-item.clickable:hover .step-number {
+	background: linear-gradient(135deg, #17a2b8, #20c997);
+}
+
+.step-item.clickable:hover .step-label {
+	color: #17a2b8;
+}
+
+/* 不可點擊的步驟樣式 */
+.step-item.disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+
+.step-item.disabled:hover {
+	transform: none;
+}
+
+/* 步驟內容 */
+.posting-step-content {
+	animation: fadeIn 0.5s ease;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.posting-steps {
+		flex-direction: column;
+		gap: 15px;
+		padding: 20px 15px;
+	}
+	
+	.step-item {
+		width: 100%;
+		max-width: none;
+	}
+	
+	.step-number {
+		width: 35px;
+		height: 35px;
+		font-size: 1rem;
+	}
+	
+	.step-label {
+		font-size: 0.85rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.posting-steps {
+		padding: 15px 10px;
+	}
+	
+	.step-number {
+		width: 30px;
+		height: 30px;
+		font-size: 0.9rem;
+	}
+	
+	.step-label {
+		font-size: 0.8rem;
+	}
+}
+
+/* 間隔輸入 */
+.interval-inputs {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+/* 日期選擇 */
+.days-selection {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.day-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	padding: 8px;
+	border-radius: 8px;
+	background: rgba(102, 126, 234, 0.1);
+	transition: all 0.3s ease;
+}
+
+.day-checkbox:hover {
+	background: rgba(102, 126, 234, 0.2);
+}
+
+.day-checkbox input[type="checkbox"] {
+	margin: 0;
+}
+
+.day-checkbox span {
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+
+/* 確認摘要 */
+.confirmation-summary {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 15px;
+	padding: 25px;
+	margin-bottom: 25px;
+	backdrop-filter: blur(10px);
+}
+
+.summary-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 15px;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-item:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+}
+
+.summary-item label {
+	font-weight: 600;
+	color: #667eea;
+	min-width: 120px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.summary-item span {
+	color: #333;
+	flex: 1;
+	line-height: 1.5;
+}
+
 /* 通知區域 */
 .notifications {
 	position: fixed;
@@ -1309,5 +1553,30 @@ body {
 .btn-danger {
 	background: linear-gradient(135deg, #dc3545, #fd7e14);
 	color: white;
+}
+
+/* 震動動畫 */
+@keyframes shake {
+	0%, 100% {
+		transform: translateX(0);
+	}
+	10%, 30%, 50%, 70%, 90% {
+		transform: translateX(-2px);
+	}
+	20%, 40%, 60%, 80% {
+		transform: translateX(2px);
+	}
+}
+
+/* 淡入上升動畫 */
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 

@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}報表生成 - Datanalyze{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'Datanalyze/css/main.css' %}">
+<link rel="stylesheet" href="{% static 'Datanalyze/css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 頁面標題 -->
+    <h1 class="page-title">報表生成器</h1>
+    
+    <!-- 導航欄 -->
+    <div class="dashboard-nav">
+        <a href="{% url 'datanalyze:dashboard' %}" class="nav-link">儀表板</a>
+        <a href="{% url 'datanalyze:data_analysis' %}" class="nav-link">詳細分析</a>
+        <a href="{% url 'datanalyze:reports' %}" class="nav-link active">報表生成</a>
+    </div>
+    
+    <!-- 報表類型選擇 -->
+    <div class="card">
+        <h3 class="section-title">選擇報表類型</h3>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="report-type-card" data-report="user">
+                    <div class="report-icon">👥</div>
+                    <h4>用戶報表</h4>
+                    <p>用戶註冊、活躍度、行為分析</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="report-type-card" data-report="transaction">
+                    <div class="report-icon">💰</div>
+                    <h4>交易報表</h4>
+                    <p>收入、支出、轉換率分析</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="report-type-card" data-report="performance">
+                    <div class="report-icon">📊</div>
+                    <h4>性能報表</h4>
+                    <p>系統性能、響應時間、錯誤率</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="report-type-card" data-report="custom">
+                    <div class="report-icon">⚙️</div>
+                    <h4>自定義報表</h4>
+                    <p>根據需求創建個性化報表</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 報表配置 -->
+    <div class="card" id="reportConfig" style="display: none;">
+        <h3 class="section-title">報表配置</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label">報表名稱</label>
+                    <input type="text" class="form-control" id="reportName" placeholder="輸入報表名稱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">時間範圍</label>
+                    <select class="form-control" id="reportTimeRange">
+                        <option value="today">今天</option>
+                        <option value="yesterday">昨天</option>
+                        <option value="week">本週</option>
+                        <option value="month">本月</option>
+                        <option value="quarter">本季度</option>
+                        <option value="year">本年</option>
+                        <option value="custom">自定義</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customDateRange" style="display: none;">
+                    <label class="form-label">自定義日期範圍</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label">數據粒度</label>
+                    <select class="form-control" id="dataGranularity">
+                        <option value="hourly">每小時</option>
+                        <option value="daily">每天</option>
+                        <option value="weekly">每週</option>
+                        <option value="monthly">每月</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">包含圖表</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" value="line" checked> 折線圖</label>
+                        <label><input type="checkbox" value="bar" checked> 柱狀圖</label>
+                        <label><input type="checkbox" value="pie"> 餅圖</label>
+                        <label><input type="checkbox" value="table" checked> 數據表</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">導出格式</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" value="pdf" checked> PDF</label>
+                        <label><input type="checkbox" value="excel"> Excel</label>
+                        <label><input type="checkbox" value="csv"> CSV</label>
+                        <label><input type="checkbox" value="html"> HTML</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 高級選項 -->
+        <div class="advanced-options" style="margin-top: 20px;">
+            <h4>高級選項</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">篩選條件</label>
+                        <div class="filter-conditions">
+                            <div class="filter-row">
+                                <select class="form-control filter-field">
+                                    <option value="">選擇欄位</option>
+                                    <option value="user_id">用戶ID</option>
+                                    <option value="status">狀態</option>
+                                    <option value="category">類別</option>
+                                </select>
+                                <select class="form-control filter-operator">
+                                    <option value="equals">等於</option>
+                                    <option value="contains">包含</option>
+                                    <option value="greater">大於</option>
+                                    <option value="less">小於</option>
+                                </select>
+                                <input type="text" class="form-control filter-value" placeholder="值">
+                                <button class="btn btn-danger remove-filter">移除</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" id="addFilter">添加篩選條件</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">排序規則</label>
+                        <div class="sort-rules">
+                            <div class="sort-row">
+                                <select class="form-control sort-field">
+                                    <option value="">選擇欄位</option>
+                                    <option value="date">日期</option>
+                                    <option value="amount">金額</option>
+                                    <option value="count">數量</option>
+                                </select>
+                                <select class="form-control sort-direction">
+                                    <option value="asc">升序</option>
+                                    <option value="desc">降序</option>
+                                </select>
+                                <button class="btn btn-danger remove-sort">移除</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" id="addSort">添加排序規則</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 操作按鈕 -->
+        <div class="row" style="margin-top: 30px;">
+            <div class="col-md-6">
+                <button class="btn btn-primary" id="previewReport">預覽報表</button>
+                <button class="btn btn-success" id="generateReport">生成報表</button>
+            </div>
+            <div class="col-md-6 text-right">
+                <button class="btn btn-secondary" id="saveTemplate">保存模板</button>
+                <button class="btn btn-warning" id="loadTemplate">載入模板</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 報表預覽 -->
+    <div class="card" id="reportPreview" style="display: none;">
+        <h3 class="section-title">報表預覽</h3>
+        <div class="report-preview-content">
+            <div class="report-header">
+                <h2 id="previewTitle">報表標題</h2>
+                <p id="previewDateRange">日期範圍</p>
+            </div>
+            <div class="report-summary">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="summary-item">
+                            <div class="summary-number" id="previewTotal">0</div>
+                            <div class="summary-label">總數</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-item">
+                            <div class="summary-number" id="previewAverage">0</div>
+                            <div class="summary-label">平均值</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-item">
+                            <div class="summary-number" id="previewMax">0</div>
+                            <div class="summary-label">最大值</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-item">
+                            <div class="summary-number" id="previewMin">0</div>
+                            <div class="summary-label">最小值</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="report-charts">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>趨勢圖</h4>
+                            <canvas id="previewChart" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>分布圖</h4>
+                            <canvas id="previewDistributionChart" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="report-table">
+                <h4>詳細數據</h4>
+                <div class="table-responsive">
+                    <table class="data-table" id="previewTable">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>數值</th>
+                                <th>變化</th>
+                                <th>百分比</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 預覽數據將在這裡動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 報表歷史 -->
+    <div class="card">
+        <h3 class="section-title">報表歷史</h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>報表名稱</th>
+                        <th>類型</th>
+                        <th>生成時間</th>
+                        <th>狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>用戶活躍度報表</td>
+                        <td>用戶報表</td>
+                        <td>2024-01-15 14:30</td>
+                        <td><span class="status-completed">已完成</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary">下載</button>
+                            <button class="btn btn-sm btn-danger">刪除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>收入分析報表</td>
+                        <td>交易報表</td>
+                        <td>2024-01-14 09:15</td>
+                        <td><span class="status-completed">已完成</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary">下載</button>
+                            <button class="btn btn-sm btn-danger">刪除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>系統性能報表</td>
+                        <td>性能報表</td>
+                        <td>2024-01-13 16:45</td>
+                        <td><span class="status-processing">處理中</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" disabled>等待中</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 載入狀態指示器 -->
+<div class="loading" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+    生成報表中...
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'Datanalyze/js/main.js' %}"></script>
+<script>
+    // 報表頁面特定的 JavaScript 代碼
+    document.addEventListener('DOMContentLoaded', function() {
+        // 報表類型選擇
+        const reportTypeCards = document.querySelectorAll('.report-type-card');
+        const reportConfig = document.getElementById('reportConfig');
+        
+        reportTypeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const reportType = this.getAttribute('data-report');
+                showReportConfig(reportType);
+            });
+        });
+        
+        // 自定義日期範圍顯示/隱藏
+        const timeRangeSelect = document.getElementById('reportTimeRange');
+        const customDateRange = document.getElementById('customDateRange');
+        
+        timeRangeSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+        });
+        
+        // 添加篩選條件
+        document.getElementById('addFilter').addEventListener('click', function() {
+            addFilterRow();
+        });
+        
+        // 添加排序規則
+        document.getElementById('addSort').addEventListener('click', function() {
+            addSortRow();
+        });
+        
+        // 預覽報表
+        document.getElementById('previewReport').addEventListener('click', function() {
+            previewReport();
+        });
+        
+        // 生成報表
+        document.getElementById('generateReport').addEventListener('click', function() {
+            generateReport();
+        });
+    });
+    
+    // 顯示報表配置
+    function showReportConfig(reportType) {
+        document.getElementById('reportConfig').style.display = 'block';
+        
+        // 根據報表類型設置預設值
+        switch(reportType) {
+            case 'user':
+                document.getElementById('reportName').value = '用戶分析報表';
+                break;
+            case 'transaction':
+                document.getElementById('reportName').value = '交易分析報表';
+                break;
+            case 'performance':
+                document.getElementById('reportName').value = '性能分析報表';
+                break;
+            case 'custom':
+                document.getElementById('reportName').value = '自定義報表';
+                break;
+        }
+        
+        // 滾動到配置區域
+        document.getElementById('reportConfig').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 添加篩選行
+    function addFilterRow() {
+        const filterConditions = document.querySelector('.filter-conditions');
+        const newRow = document.createElement('div');
+        newRow.className = 'filter-row';
+        newRow.innerHTML = `
+            <select class="form-control filter-field">
+                <option value="">選擇欄位</option>
+                <option value="user_id">用戶ID</option>
+                <option value="status">狀態</option>
+                <option value="category">類別</option>
+            </select>
+            <select class="form-control filter-operator">
+                <option value="equals">等於</option>
+                <option value="contains">包含</option>
+                <option value="greater">大於</option>
+                <option value="less">小於</option>
+            </select>
+            <input type="text" class="form-control filter-value" placeholder="值">
+            <button class="btn btn-danger remove-filter">移除</button>
+        `;
+        
+        filterConditions.appendChild(newRow);
+        
+        // 綁定移除按鈕事件
+        newRow.querySelector('.remove-filter').addEventListener('click', function() {
+            filterConditions.removeChild(newRow);
+        });
+    }
+    
+    // 添加排序行
+    function addSortRow() {
+        const sortRules = document.querySelector('.sort-rules');
+        const newRow = document.createElement('div');
+        newRow.className = 'sort-row';
+        newRow.innerHTML = `
+            <select class="form-control sort-field">
+                <option value="">選擇欄位</option>
+                <option value="date">日期</option>
+                <option value="amount">金額</option>
+                <option value="count">數量</option>
+            </select>
+            <select class="form-control sort-direction">
+                <option value="asc">升序</option>
+                <option value="desc">降序</option>
+            </select>
+            <button class="btn btn-danger remove-sort">移除</button>
+        `;
+        
+        sortRules.appendChild(newRow);
+        
+        // 綁定移除按鈕事件
+        newRow.querySelector('.remove-sort').addEventListener('click', function() {
+            sortRules.removeChild(newRow);
+        });
+    }
+    
+    // 預覽報表
+    function previewReport() {
+        const reportName = document.getElementById('reportName').value;
+        const timeRange = document.getElementById('reportTimeRange').value;
+        
+        if (!reportName) {
+            showNotification('請輸入報表名稱', 'error');
+            return;
+        }
+        
+        // 顯示預覽區域
+        document.getElementById('reportPreview').style.display = 'block';
+        
+        // 更新預覽內容
+        document.getElementById('previewTitle').textContent = reportName;
+        document.getElementById('previewDateRange').textContent = `時間範圍: ${timeRange}`;
+        
+        // 模擬數據
+        document.getElementById('previewTotal').textContent = '1,234';
+        document.getElementById('previewAverage').textContent = '123.4';
+        document.getElementById('previewMax').textContent = '456';
+        document.getElementById('previewMin').textContent = '12';
+        
+        // 滾動到預覽區域
+        document.getElementById('reportPreview').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 生成報表
+    function generateReport() {
+        const reportName = document.getElementById('reportName').value;
+        
+        if (!reportName) {
+            showNotification('請輸入報表名稱', 'error');
+            return;
+        }
+        
+        // 顯示載入狀態
+        document.querySelector('.loading').style.display = 'block';
+        
+        // 模擬報表生成過程
+        setTimeout(() => {
+            document.querySelector('.loading').style.display = 'none';
+            showNotification('報表生成完成！', 'success');
+            
+            // 這裡可以實現實際的報表生成邏輯
+            console.log('報表生成完成:', reportName);
+        }, 3000);
+    }
+</script>
+{% endblock %}

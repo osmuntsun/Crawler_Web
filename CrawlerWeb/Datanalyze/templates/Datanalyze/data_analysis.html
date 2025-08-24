@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}數據分析 - Datanalyze{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'Datanalyze/css/main.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 頁面標題 -->
+    <h1 class="page-title">數據分析儀表板</h1>
+    
+    <!-- 導航欄 -->
+    <div class="dashboard-nav">
+        <a href="{% url 'datanalyze:dashboard' %}" class="nav-link">儀表板</a>
+        <a href="{% url 'datanalyze:data_analysis' %}" class="nav-link active">詳細分析</a>
+        <a href="{% url 'datanalyze:reports' %}" class="nav-link">報表生成</a>
+    </div>
+    
+    <!-- 統計卡片 -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="data-display">
+                <div class="data-number" id="totalRecords">0</div>
+                <div class="data-label">總記錄數</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-display">
+                <div class="data-number" id="activeUsers">0</div>
+                <div class="data-label">活躍用戶</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-display">
+                <div class="data-number" id="dailyGrowth">0%</div>
+                <div class="data-label">日增長率</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-display">
+                <div class="data-number" id="conversionRate">0%</div>
+                <div class="data-label">轉換率</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 導航標籤 -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" data-target="overview">概覽</button>
+        <button class="nav-tab" data-target="trends">趨勢分析</button>
+        <button class="nav-tab" data-target="users">用戶分析</button>
+        <button class="nav-tab" data-target="performance">性能指標</button>
+    </div>
+    
+    <!-- 概覽標籤內容 -->
+    <div id="overview" class="tab-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <h3 class="section-title">數據趨勢圖</h3>
+                    <div class="chart-container">
+                        <canvas id="trendChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <h3 class="section-title">快速篩選</h3>
+                    <div class="form-group">
+                        <label class="form-label">時間範圍</label>
+                        <select class="form-control" id="timeRange">
+                            <option value="7">最近7天</option>
+                            <option value="30">最近30天</option>
+                            <option value="90">最近90天</option>
+                            <option value="365">最近一年</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">數據類型</label>
+                        <select class="form-control" id="dataType">
+                            <option value="all">全部</option>
+                            <option value="users">用戶數據</option>
+                            <option value="transactions">交易數據</option>
+                            <option value="activities">活動數據</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="applyFilter">應用篩選</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 趨勢分析標籤內容 -->
+    <div id="trends" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 class="section-title">趨勢分析</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h4>用戶增長趨勢</h4>
+                        <canvas id="userGrowthChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h4>收入趨勢</h4>
+                        <canvas id="revenueChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 用戶分析標籤內容 -->
+    <div id="users" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 class="section-title">用戶分析</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h4>用戶年齡分布</h4>
+                        <canvas id="ageChart" width="200" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h4>用戶地區分布</h4>
+                        <canvas id="regionChart" width="200" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-container">
+                        <h4>用戶活躍度</h4>
+                        <canvas id="activityChart" width="200" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 性能指標標籤內容 -->
+    <div id="performance" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 class="section-title">性能指標</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h4>系統響應時間</h4>
+                        <canvas id="responseTimeChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container">
+                        <h4>錯誤率趨勢</h4>
+                        <canvas id="errorRateChart" width="300" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 數據表格 -->
+    <div class="card">
+        <div class="row">
+            <div class="col-md-6">
+                <h3 class="section-title">詳細數據</h3>
+            </div>
+            <div class="col-md-6 text-right">
+                <div class="btn-group">
+                    <button class="btn btn-success export-btn" data-export="csv">導出 CSV</button>
+                    <button class="btn btn-warning export-btn" data-export="excel">導出 Excel</button>
+                    <button class="btn btn-danger export-btn" data-export="pdf">導出 PDF</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 搜索和篩選 -->
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="searchInput" placeholder="搜索數據...">
+            </div>
+            <div class="col-md-6">
+                <div class="btn-group">
+                    <button class="btn filter-btn" data-filter="status" data-value="active">活躍</button>
+                    <button class="btn filter-btn" data-filter="status" data-value="inactive">非活躍</button>
+                    <button class="btn filter-btn" data-filter="status" data-value="new">新用戶</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 數據表格 -->
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>
+                            <button class="btn sort-btn" data-sort="id" data-direction="asc">
+                                ID <span class="sort-icon">↑</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button class="btn sort-btn" data-sort="name" data-direction="asc">
+                                名稱 <span class="sort-icon">↑</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button class="btn sort-btn" data-sort="date" data-direction="asc">
+                                日期 <span class="sort-icon">↑</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button class="btn sort-btn" data-sort="value" data-direction="asc">
+                                數值 <span class="sort-icon">↑</span>
+                            </button>
+                        </th>
+                        <th>
+                            <button class="btn sort-btn" data-sort="status" data-direction="asc">
+                                狀態 <span class="sort-icon">↑</span>
+                            </button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="data-row">
+                        <td data-id="1">1</td>
+                        <td data-name="用戶A">用戶A</td>
+                        <td data-date="2024-01-15">2024-01-15</td>
+                        <td data-value="150">150</td>
+                        <td data-status="active">活躍</td>
+                    </tr>
+                    <tr class="data-row">
+                        <td data-id="2">2</td>
+                        <td data-name="用戶B">用戶B</td>
+                        <td data-date="2024-01-14">2024-01-14</td>
+                        <td data-value="89">89</td>
+                        <td data-status="inactive">非活躍</td>
+                    </tr>
+                    <tr class="data-row">
+                        <td data-id="3">3</td>
+                        <td data-name="用戶C">用戶C</td>
+                        <td data-date="2024-01-13">2024-01-13</td>
+                        <td data-value="234">234</td>
+                        <td data-status="new">新用戶</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 載入狀態指示器 -->
+<div class="loading" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+    載入中...
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'Datanalyze/js/main.js' %}"></script>
+<script>
+    // 頁面特定的 JavaScript 代碼
+    document.addEventListener('DOMContentLoaded', function() {
+        // 模擬數據載入
+        setTimeout(() => {
+            document.getElementById('totalRecords').textContent = '1,234';
+            document.getElementById('activeUsers').textContent = '856';
+            document.getElementById('dailyGrowth').textContent = '12.5%';
+            document.getElementById('conversionRate').textContent = '3.2%';
+        }, 1000);
+        
+        // 綁定篩選按鈕事件
+        document.getElementById('applyFilter').addEventListener('click', function() {
+            const timeRange = document.getElementById('timeRange').value;
+            const dataType = document.getElementById('dataType').value;
+            
+            console.log(`應用篩選: 時間範圍=${timeRange}, 數據類型=${dataType}`);
+            
+            // 這裡可以實現具體的篩選邏輯
+            showNotification('篩選已應用', 'success');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, WebsiteCookie, Community, PostTemplate, PostTemplateImage
+from .models import User, WebsiteCookie, Community, PostTemplate, PostTemplateImage, SocialMediaPost
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -148,3 +148,23 @@ class PostTemplateImageAdmin(admin.ModelAdmin):
     delete_selected_with_files.short_description = "刪除選中的模板圖片（包括文件）"
     
     actions = ['delete_selected', 'delete_selected_with_files']
+
+
+@admin.register(SocialMediaPost)
+class SocialMediaPostAdmin(admin.ModelAdmin):
+    """社交媒體貼文管理界面"""
+    list_display = ('user', 'platform', 'post_id', 'reach_count', 'like_count', 'share_count', 'comment_count', 'engagement_rate', 'data_collected_at')
+    list_filter = ('platform', 'user', 'posted_at', 'data_collected_at')
+    search_fields = ('user__username', 'post_id', 'content', 'post_url')
+    ordering = ('-data_collected_at', '-posted_at')
+    readonly_fields = ('created_at', 'updated_at', 'data_collected_at', 'engagement_rate')
+    
+    fieldsets = (
+        ('基本資訊', {'fields': ('user', 'platform', 'post_id', 'content', 'post_url')}),
+        ('數據分析', {'fields': ('reach_count', 'like_count', 'share_count', 'view_time_seconds', 'save_count', 'comment_count')}),
+        ('時間資訊', {'fields': ('posted_at', 'data_collected_at', 'created_at', 'updated_at')}),
+    )
+    
+    def get_engagement_summary(self, obj):
+        return obj.get_engagement_summary()
+    get_engagement_summary.short_description = '互動摘要'

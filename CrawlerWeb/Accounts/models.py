@@ -65,7 +65,7 @@ class WebsiteCookie(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='cookies')
     website = models.CharField(max_length=20, choices=WEBSITE_CHOICES, verbose_name='網站名稱')
     website_url = models.URLField(verbose_name='網站網址')
-    cookie_data = models.JSONField(verbose_name='Cookie資料')
+    cookie_data = models.TextField(verbose_name='Cookie資料')  # 儲存 JSON 字符串
     is_active = models.BooleanField(default=True, verbose_name='是否啟用')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='最後更新時間')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
@@ -82,8 +82,14 @@ class WebsiteCookie(models.Model):
     
     def get_cookie_count(self):
         """取得Cookie數量"""
-        if isinstance(self.cookie_data, dict):
-            return len(self.cookie_data)
+        import json
+        try:
+            if self.cookie_data:
+                data = json.loads(self.cookie_data)
+                if isinstance(data, dict):
+                    return len(data)
+        except json.JSONDecodeError:
+            pass
         return 0
 
 
@@ -112,7 +118,7 @@ class Community(models.Model):
     last_activity = models.DateTimeField(blank=True, null=True, verbose_name='最後活動時間')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
-    tags = models.JSONField(default=list, blank=True, verbose_name='標籤')
+    tags = models.TextField(default='[]', blank=True, verbose_name='標籤')  # 儲存 JSON 字符串
     
     class Meta:
         verbose_name = '社團'
@@ -128,8 +134,14 @@ class Community(models.Model):
     
     def get_tags_display(self):
         """取得標籤顯示"""
-        if isinstance(self.tags, list):
-            return ', '.join(self.tags)
+        import json
+        try:
+            if self.tags:
+                tags_list = json.loads(self.tags)
+                if isinstance(tags_list, list):
+                    return ', '.join(tags_list)
+        except json.JSONDecodeError:
+            pass
         return ''
     
     def update_last_activity(self):
@@ -183,3 +195,82 @@ class PostTemplateImage(models.Model):
 	
 	def __str__(self):
 		return f"{self.template.title} - 圖片 {self.order + 1}"
+
+
+class SocialMediaPost(models.Model):
+    """社交媒體貼文數據模型"""
+    PLATFORM_CHOICES = [
+        ('facebook', 'Facebook'),
+        ('instagram', 'Instagram'),
+        ('twitter', 'Twitter'),
+        ('linkedin', 'LinkedIn'),
+        ('youtube', 'YouTube'),
+        ('discord', 'Discord'),
+        ('telegram', 'Telegram'),
+        ('line', 'Line'),
+        ('wechat', 'WeChat'),
+        ('other', '其他'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='social_media_posts')
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, verbose_name='平台')
+    post_id = models.CharField(max_length=255, verbose_name='貼文ID')
+    content = models.TextField(blank=True, verbose_name='貼文內容')
+    post_url = models.URLField(blank=True, verbose_name='貼文連結')
+    
+    # 數據分析字段
+    reach_count = models.PositiveIntegerField(default=0, verbose_name='觸及人數')
+    like_count = models.PositiveIntegerField(default=0, verbose_name='按讚次數')
+    share_count = models.PositiveIntegerField(default=0, verbose_name='分享次數')
+    view_time_seconds = models.PositiveIntegerField(default=0, verbose_name='停留時間(秒)')
+    save_count = models.PositiveIntegerField(default=0, verbose_name='收藏次數')
+    comment_count = models.PositiveIntegerField(default=0, verbose_name='留言數量')
+    
+    # 計算字段
+    engagement_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name='互動率(%)')
+    
+    # 時間字段
+    posted_at = models.DateTimeField(blank=True, null=True, verbose_name='發布時間')
+    data_collected_at = models.DateTimeField(auto_now=True, verbose_name='數據收集時間')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='建立時間')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
+    
+    class Meta:
+        verbose_name = '社交媒體貼文'
+        verbose_name_plural = '社交媒體貼文'
+        ordering = ['-data_collected_at', '-posted_at']
+        indexes = [
+            models.Index(fields=['user', 'platform']),
+            models.Index(fields=['platform', 'data_collected_at']),
+            models.Index(fields=['posted_at']),
+        ]
+        unique_together = ['user', 'platform', 'post_id']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_platform_display()} - {self.post_id}"
+    
+    def calculate_engagement_rate(self):
+        """計算互動率 (按讚+分享+留言+收藏) / 觸及人數 * 100"""
+        if self.reach_count > 0:
+            total_engagement = self.like_count + self.share_count + self.comment_count + self.save_count
+            self.engagement_rate = (total_engagement / self.reach_count) * 100
+        else:
+            self.engagement_rate = 0.00
+        return self.engagement_rate
+    
+    def save(self, *args, **kwargs):
+        """保存時自動計算互動率"""
+        self.calculate_engagement_rate()
+        super().save(*args, **kwargs)
+    
+    def get_engagement_summary(self):
+        """取得互動摘要"""
+        return {
+            'reach': self.reach_count,
+            'likes': self.like_count,
+            'shares': self.share_count,
+            'comments': self.comment_count,
+            'saves': self.save_count,
+            'view_time': self.view_time_seconds,
+            'engagement_rate': self.engagement_rate
+        }

@@ -1,0 +1,342 @@
+/* 報表頁面專用樣式 */
+
+/* 報表類型卡片 */
+.report-type-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.report-type-card:hover {
+    border-color: #3498db;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(52, 152, 219, 0.15);
+}
+
+.report-type-card.selected {
+    border-color: #3498db;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.report-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.report-type-card h4 {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.report-type-card p {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.report-type-card.selected p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 報表配置樣式 */
+#reportConfig {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+}
+
+.advanced-options {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.advanced-options h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* 篩選和排序樣式 */
+.filter-conditions,
+.sort-rules {
+    margin-bottom: 15px;
+}
+
+.filter-row,
+.sort-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.filter-row .form-control,
+.sort-row .form-control {
+    flex: 1;
+}
+
+.filter-row .btn,
+.sort-row .btn {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* 複選框組樣式 */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+}
+
+/* 報表預覽樣式 */
+.report-preview-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.report-header h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.report-header p {
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.report-summary {
+    margin-bottom: 30px;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.summary-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.summary-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.report-charts {
+    margin-bottom: 30px;
+}
+
+.report-table h4 {
+    color: #495057;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* 報表歷史樣式 */
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-processing {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 按鈕組樣式 */
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .filter-row,
+    .sort-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-row .btn,
+    .sort-row .btn {
+        width: 100%;
+    }
+    
+    .checkbox-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .report-type-card {
+        margin-bottom: 15px;
+    }
+    
+    .report-preview-content {
+        padding: 20px;
+    }
+    
+    .summary-item {
+        margin-bottom: 15px;
+    }
+}
+
+/* 動畫效果 */
+.report-type-card,
+.card,
+.summary-item {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 載入動畫 */
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* 表格樣式增強 */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* 表單樣式增強 */
+.form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+/* 工具提示樣式 */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

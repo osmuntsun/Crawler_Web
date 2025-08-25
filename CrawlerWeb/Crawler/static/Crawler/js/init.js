@@ -144,17 +144,8 @@ function initCrawlerTools() {
 		});
 	}
 	
-	const messageTextarea = document.getElementById('messageTextarea');
-	if (messageTextarea) {
-		messageTextarea.addEventListener('input', function() {
-			if (typeof window.validateStep1 === 'function') {
-				window.validateStep1();
-			}
-			// 添加文案預覽即時更新
-			updateCopyPreview();
-		});
-	}
-
+	// 移除 messageTextarea 相關的事件監聽器，因為元素已不存在
+	
 	// 為表單輸入框添加事件監聽器，檢查內容變化
 	window.bindFormInputListeners();
 
@@ -186,30 +177,9 @@ function initCrawlerTools() {
 
 // 即時更新文案預覽
 function updateCopyPreview() {
-	const messageTextarea = document.getElementById('messageTextarea');
-	const copyPreview = document.getElementById('copyPreview');
-	
-	if (!messageTextarea || !copyPreview) {
-		return;
-	}
-	
-	const content = messageTextarea.value.trim();
-	
-	if (content) {
-		// 處理內容並顯示預覽
-		const processedContent = window.processTemplateContent(content);
-		copyPreview.innerHTML = `
-			<div class="template-preview">
-				<div class="preview-content">
-					<div class="content-text">${processedContent}</div>
-				</div>
-			</div>
-		`;
-		copyPreview.classList.add('preview-active');
-	} else {
-		copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
-		copyPreview.classList.remove('preview-active');
-	}
+	// 由於 messageTextarea 已移除，這個函數暫時不需要
+	// 文案預覽現在由模板選擇器直接觸發
+	console.log('updateCopyPreview: messageTextarea 已移除，函數暫時不需要');
 }
 
 // 綁定事件監聽器

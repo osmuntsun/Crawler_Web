@@ -271,9 +271,9 @@ function validateStep1() {
 	}
 	
 	// 檢查是否有發文內容
-	const messageTextarea = document.getElementById('messageTextarea');
-	const hasMessage = messageTextarea && messageTextarea.value.trim().length > 0;
-	console.log('發文內容:', { element: !!messageTextarea, hasContent: hasMessage, content: messageTextarea ? messageTextarea.value.trim() : 'N/A' });
+	// 由於我們已經移除了 messageTextarea，直接設為 true
+	const hasMessage = true;
+	console.log('發文內容: 已移除 messageTextarea，直接設為 true');
 	
 	// 所有條件都滿足時啟用下一步按鈕
 	const canProceed = platform && template && hasCommunities && hasMessage;

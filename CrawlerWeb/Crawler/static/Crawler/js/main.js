@@ -1,4 +1,48 @@
 // main.js - 主要初始化和核心功能
+
+// 通知系統 - 移到全局範圍
+function showNotification(message, type = 'info') {
+	const notifications = document.getElementById('notifications');
+	if (!notifications) {
+		console.warn('找不到通知容器元素');
+		return;
+	}
+	
+	const notification = document.createElement('div');
+	notification.className = `notification notification-${type}`;
+	notification.innerHTML = `
+		<div class="notification-content">
+			<i class="fas fa-${getNotificationIcon(type)}"></i>
+			<span>${message}</span>
+		</div>
+		<button class="notification-close" onclick="this.parentElement.remove()">
+			<i class="fas fa-times"></i>
+		</button>
+	`;
+
+	notifications.appendChild(notification);
+
+	// 自動移除通知
+	setTimeout(() => {
+		if (notification.parentElement) {
+			notification.remove();
+		}
+	}, 5000);
+}
+
+function getNotificationIcon(type) {
+	const icons = {
+		success: 'check-circle',
+		error: 'exclamation-circle',
+		warning: 'exclamation-triangle',
+		info: 'info-circle'
+	};
+	return icons[type] || 'info-circle';
+}
+
+// 立即導出到全局
+window.showNotification = showNotification;
+
 document.addEventListener('DOMContentLoaded', function() {
 	// 側邊欄導航功能
 	const sidebarItems = document.querySelectorAll('.sidebar-item');
@@ -59,41 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	const urlTab = new URLSearchParams(location.search).get('tab');
 	if (urlTab && tabContents[urlTab]) {
 		activateTab(urlTab);
-	}
-
-	// 通知系統
-	function showNotification(message, type = 'info') {
-		const notifications = document.getElementById('notifications');
-		const notification = document.createElement('div');
-		notification.className = `notification notification-${type}`;
-		notification.innerHTML = `
-			<div class="notification-content">
-				<i class="fas fa-${getNotificationIcon(type)}"></i>
-				<span>${message}</span>
-			</div>
-			<button class="notification-close" onclick="this.parentElement.remove()">
-				<i class="fas fa-times"></i>
-			</button>
-		`;
-
-		notifications.appendChild(notification);
-
-		// 自動移除通知
-		setTimeout(() => {
-			if (notification.parentElement) {
-				notification.remove();
-			}
-		}, 5000);
-	}
-
-	function getNotificationIcon(type) {
-		const icons = {
-			success: 'check-circle',
-			error: 'exclamation-circle',
-			warning: 'exclamation-triangle',
-			info: 'info-circle'
-		};
-		return icons[type] || 'info-circle';
 	}
 
 	// 檔案上傳拖拽功能
@@ -199,9 +208,28 @@ document.addEventListener('DOMContentLoaded', function() {
 		// 初始化爬蟲工具功能
 		window.initCrawlerTools();
 	}
-
-	// 導出全局函數供HTML使用
-	window.showNotification = showNotification;
-	window.toggleSidebar = toggleSidebar;
-	window.validateForm = validateForm;
 });
+
+// 導出全局函數供其他模組使用
+window.toggleSidebar = function() {
+	const sidebar = document.querySelector('.sidebar');
+	if (sidebar) {
+		sidebar.classList.toggle('open');
+	}
+};
+
+window.validateForm = function(form) {
+	const inputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+	let isValid = true;
+
+	inputs.forEach(input => {
+		if (!input.value.trim()) {
+			input.style.borderColor = '#dc3545';
+			isValid = false;
+		} else {
+			input.style.borderColor = '#e1e5e9';
+		}
+	});
+
+	return isValid;
+};

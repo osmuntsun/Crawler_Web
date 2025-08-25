@@ -252,96 +252,165 @@ async function updateCopyTemplateOptions() {
 
 // 處理文案模板選擇變更
 function handleCopyTemplateChange() {
-	console.log('模板選擇變更事件觸發');
-	
-	const copyTemplateSelect = document.getElementById('templateSelect');
-	const copyPreview = document.getElementById('copyPreview');
+	const copyTemplateSelect = document.getElementById('copyTemplate');
 	const messageTextarea = document.getElementById('messageTextarea');
 	
-	console.log('找到的元素:', {
-		copyTemplateSelect: !!copyTemplateSelect,
-		copyPreview: !!copyPreview,
-		messageTextarea: !!messageTextarea
-	});
-	
-	if (!copyTemplateSelect || !copyPreview) {
-		console.error('找不到必要的元素');
-		return;
-	}
+	if (!copyTemplateSelect || !messageTextarea) return;
 	
 	const selectedTemplateId = copyTemplateSelect.value;
-	console.log('選中的模板ID:', selectedTemplateId);
-	
 	if (!selectedTemplateId) {
-		copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
-		// 清空發文內容
-		if (messageTextarea) {
-			messageTextarea.value = '';
+		messageTextarea.value = '';
+		return;
+	}
+	
+	// 從本地存儲獲取模板內容
+	const templates = JSON.parse(localStorage.getItem('copyTemplates') || '[]');
+	const template = templates.find(t => t.id === selectedTemplateId);
+	
+	if (template) {
+		messageTextarea.value = template.template;
+		// 觸發文案預覽更新
+		if (typeof window.updateCopyPreview === 'function') {
+			window.updateCopyPreview();
 		}
+	}
+}
+
+// 模板保存、預覽、清空等操作函數
+function handleSaveTemplate() {
+	const titleInput = document.querySelector('input[name="copy_title"]');
+	const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+	const hashtagsInput = document.querySelector('input[name="hashtags"]');
+	
+	if (!titleInput || !contentTextarea) {
+		window.showNotification('請填寫模板標題和內容', 'warning');
 		return;
 	}
 	
-	// 獲取選中的模板數據
-	const selectedOption = copyTemplateSelect.options[copyTemplateSelect.selectedIndex];
-	console.log('選中的選項:', selectedOption);
+	const title = titleInput.value.trim();
+	const content = contentTextarea.value.trim();
+	const hashtags = hashtagsInput ? hashtagsInput.value.trim() : '';
 	
-	if (!selectedOption || !selectedOption.dataset.template) {
-		console.error('模板數據不存在');
+	if (!title || !content) {
+		window.showNotification('請填寫模板標題和內容', 'warning');
 		return;
 	}
 	
-	const template = JSON.parse(selectedOption.dataset.template);
-	console.log('解析的模板數據:', template);
+	// 創建新模板
+	const newTemplate = {
+		id: Date.now().toString(),
+		title: title,
+		template: content,
+		hashtags: hashtags,
+		images: window.templateImages || [],
+		created_at: new Date().toISOString()
+	};
 	
-	// 填充發文內容到textarea
-	if (messageTextarea && template.content) {
-		console.log('填充發文內容:', template.content);
-		messageTextarea.value = template.content.trim();
+	// 保存到本地存儲
+	const templates = JSON.parse(localStorage.getItem('copyTemplates') || '[]');
+	templates.push(newTemplate);
+	localStorage.setItem('copyTemplates', JSON.stringify(templates));
+	
+	// 顯示成功通知
+	window.showNotification('模板保存成功！', 'success');
+	
+	// 重新載入模板選項
+	loadCopyTemplates();
+	
+	// 清空表單
+	titleInput.value = '';
+	contentTextarea.value = '';
+	if (hashtagsInput) hashtagsInput.value = '';
+	
+	// 清空圖片
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (imageUploadArea) {
+		imageUploadArea.innerHTML = '<p>拖拽圖片到這裡或點擊選擇檔案</p>';
+	}
+	window.templateImages = [];
+	
+	// 更新按鈕狀態
+	checkFormEmptyAndUpdateButtons();
+}
+
+function handlePreviewTemplate() {
+	const titleInput = document.querySelector('input[name="copy_title"]');
+	const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+	const hashtagsInput = document.querySelector('input[name="hashtags"]');
+	
+	if (!titleInput || !contentTextarea) {
+		window.showNotification('請填寫模板標題和內容', 'warning');
+		return;
+	}
+	
+	const title = titleInput.value.trim();
+	const content = contentTextarea.value.trim();
+	const hashtags = hashtagsInput ? hashtagsInput.value.trim() : '';
+	
+	if (!title || !content) {
+		window.showNotification('請填寫模板標題和內容', 'warning');
+		return;
+	}
+	
+	// 創建預覽內容
+	let previewContent = `標題：${title}\n\n內容：${content}`;
+	if (hashtags) {
+		previewContent += `\n\n標籤：${hashtags}`;
+	}
+	
+	// 顯示預覽（這裡可以彈出一個模態框或更新預覽區域）
+	window.showNotification('模板預覽功能開發中...', 'info');
+	console.log('模板預覽:', previewContent);
+}
+
+function handleClearTemplate() {
+	const titleInput = document.querySelector('input[name="copy_title"]');
+	const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+	const hashtagsInput = document.querySelector('input[name="hashtags"]');
+	
+	// 清空所有輸入欄位
+	if (titleInput) titleInput.value = '';
+	if (contentTextarea) contentTextarea.value = '';
+	if (hashtagsInput) hashtagsInput.value = '';
+	
+	// 清空圖片
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (imageUploadArea) {
+		imageUploadArea.innerHTML = '<p>拖拽圖片到這裡或點擊選擇檔案</p>';
+	}
+	window.templateImages = [];
+	
+	// 更新按鈕狀態
+	checkFormEmptyAndUpdateButtons();
+	
+	// 顯示通知
+	window.showNotification('模板已清空', 'info');
+}
+
+// 檢查表單是否為空並更新按鈕狀態
+function checkFormEmptyAndUpdateButtons() {
+	const titleInput = document.querySelector('input[name="copy_title"]');
+	const contentTextarea = document.querySelector('textarea[name="copy_template"]');
+	const hashtagsInput = document.querySelector('input[name="hashtags"]');
+	
+	const isFormEmpty = (!titleInput || titleInput.value.trim() === '') &&
+						(!contentTextarea || contentTextarea.value.trim() === '') &&
+						(!hashtagsInput || hashtagsInput.value.trim() === '') &&
+						(!window.templateImages || window.templateImages.length === 0);
+	
+	// 獲取清空按鈕
+	const clearBtn = document.getElementById('clearTemplateBtn');
+	
+	// 如果表單為空，隱藏清空按鈕
+	if (isFormEmpty) {
+		if (clearBtn) {
+			clearBtn.style.display = 'none';
+		}
 	} else {
-		console.log('無法填充發文內容:', {
-			hasMessageTextarea: !!messageTextarea,
-			hasContent: !!template.content
-		});
-	}
-	
-	// 顯示模板預覽（只顯示內容和圖片，不顯示標題和圖片數量）
-	// 使用通用函數處理文字內容
-	const finalContent = processTemplateContent(template.content);
-	let previewHTML = `
-		<div class="template-preview">
-			<div class="preview-content">
-				${finalContent}
-			</div>
-	`;
-	
-	// 添加圖片預覽（不顯示標題和數量）
-	if (template.images && template.images.length > 0) {
-		previewHTML += `
-			<div class="preview-images">
-				<div class="preview-images-grid">
-		`;
-		
-		template.images.forEach((image, index) => {
-			previewHTML += `
-				<div class="preview-image-item">
-					<img src="${image.url}" alt="圖片 ${index + 1}" onerror="this.style.display='none'">
-					<div class="preview-image-order">${index + 1}</div>
-				</div>
-			`;
-		});
-		
-		previewHTML += `
-				</div>
-			</div>
-		`;
-	}
-	
-	previewHTML += '</div>';
-	copyPreview.innerHTML = previewHTML;
-	
-	// 觸發驗證
-	if (typeof validateStep1 === 'function') {
-		validateStep1();
+		// 如果表單有內容，顯示清空按鈕
+		if (clearBtn) {
+			clearBtn.style.display = 'inline-block';
+		}
 	}
 }
 
@@ -368,3 +437,7 @@ window.handleHashtagFilter = handleHashtagFilter;
 window.updateCopyTemplateOptions = updateCopyTemplateOptions;
 window.handleCopyTemplateChange = handleCopyTemplateChange;
 window.processTemplateContent = processTemplateContent;
+window.handleSaveTemplate = handleSaveTemplate;
+window.handlePreviewTemplate = handlePreviewTemplate;
+window.handleClearTemplate = handleClearTemplate;
+window.checkFormEmptyAndUpdateButtons = checkFormEmptyAndUpdateButtons;

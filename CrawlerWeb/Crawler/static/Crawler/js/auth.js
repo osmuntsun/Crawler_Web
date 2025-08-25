@@ -64,6 +64,8 @@ async function handleAccountLogin(e) {
 				await loadAccountsStatus();
 				await loadCommunities();
 				await updatePostingPlatforms();
+				// 立即檢查並隱藏已登入的平台選項
+				await checkAndHideLoggedInPlatforms();
 			})();
 			
 			// 如果是 Facebook 登入成功，從選項中移除 Facebook
@@ -74,6 +76,7 @@ async function handleAccountLogin(e) {
 					if (facebookOption) {
 						facebookOption.style.display = 'none';
 						facebookOption.disabled = true;
+						console.log('Facebook登入成功，已隱藏Facebook選項');
 					}
 				}
 			}
@@ -241,32 +244,67 @@ async function updateAccountsTable(accounts) {
 // 檢查並隱藏已登入的平台選項
 async function checkAndHideLoggedInPlatforms() {
 	try {
-		console.log('檢查已登入的平台...');
-		const response = await fetch('/crawler/api/accounts/status/');
-		const accounts = await response.json();
-		console.log('已登入的帳號:', accounts);
+		console.log('開始檢查已登入的平台...');
 		
+		// 查找平台選擇元素
 		const platformSelect = document.querySelector('select[name="login_platform"]');
 		if (!platformSelect) {
-			console.log('找不到平台選擇元素');
+			console.error('找不到平台選擇元素: select[name="login_platform"]');
 			return;
 		}
 		
+		console.log('找到平台選擇元素:', platformSelect);
+		
+		// 獲取所有選項
+		const allOptions = platformSelect.querySelectorAll('option');
+		console.log('所有平台選項:', Array.from(allOptions).map(opt => ({ value: opt.value, text: opt.textContent })));
+		
+		// 發送API請求獲取帳號狀態
+		const response = await fetch('/crawler/api/accounts/status/');
+		if (!response.ok) {
+			throw new Error(`API請求失敗: ${response.status} ${response.statusText}`);
+		}
+		
+		const accounts = await response.json();
+		console.log('API返回的帳號數據:', accounts);
+		
+		if (!Array.isArray(accounts)) {
+			console.error('API返回的數據不是陣列:', accounts);
+			return;
+		}
+		
+		// 遍歷每個帳號，隱藏已登入的平台
 		accounts.forEach(account => {
-			if (account.is_active) {
+			console.log('處理帳號:', account);
+			
+			if (account.is_active && account.website) {
+				console.log(`帳號 ${account.website} 是活躍的，準備隱藏對應選項`);
+				
+				// 查找對應的平台選項
 				const option = platformSelect.querySelector(`option[value="${account.website}"]`);
 				if (option) {
+					// 隱藏選項
 					option.style.display = 'none';
 					option.disabled = true;
-					console.log(`隱藏平台選項: ${account.website}`);
+					console.log(`成功隱藏平台選項: ${account.website}`);
 				} else {
-					console.log(`找不到平台選項: ${account.website}`);
+					console.warn(`找不到對應的平台選項: ${account.website}`);
+					console.log('當前所有選項值:', Array.from(allOptions).map(opt => opt.value));
 				}
+			} else {
+				console.log(`帳號 ${account.website} 不是活躍的或缺少website字段:`, account);
 			}
 		});
+		
+		// 檢查最終結果
+		const visibleOptions = platformSelect.querySelectorAll('option:not([style*="display: none"])');
+		console.log('隱藏完成後的可見選項數量:', visibleOptions.length);
+		console.log('隱藏完成後的可見選項:', Array.from(visibleOptions).map(opt => ({ value: opt.value, text: opt.textContent })));
+		
 	} catch (error) {
-		console.error('檢查已登入平台失敗:', error);
+		console.error('檢查已登入平台時發生錯誤:', error);
 		console.error('錯誤詳情:', error.message);
+		console.error('錯誤堆疊:', error.stack);
 	}
 }
 

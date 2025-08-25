@@ -221,40 +221,6 @@ function handlePostingPlatformChange() {
 	}
 }
 
-// 檢查表單是否為空並更新按鈕狀態
-function checkFormEmptyAndUpdateButtons() {
-	const titleInput = document.querySelector('input[name="copy_title"]');
-	const contentTextarea = document.querySelector('textarea[name="copy_template"]');
-	const hashtagsInput = document.querySelector('input[name="hashtags"]');
-	
-	const isFormEmpty = (!titleInput || titleInput.value.trim() === '') &&
-						(!contentTextarea || contentTextarea.value.trim() === '') &&
-						(!hashtagsInput || hashtagsInput.value.trim() === '') &&
-						window.templateImages && window.templateImages.length === 0;
-	
-	// 獲取清空按鈕
-	const clearBtn = document.getElementById('clearTemplateBtn');
-	
-	// 如果表單為空，重置為新建模式並隱藏清空按鈕
-	if (isFormEmpty) {
-		const saveBtn = document.getElementById('saveTemplateBtn');
-		if (saveBtn) {
-			saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存模板';
-			delete saveBtn.dataset.editMode;
-			delete saveBtn.dataset.templateId;
-		}
-		
-		if (clearBtn) {
-			clearBtn.style.display = 'none';
-		}
-	} else {
-		// 如果表單有內容，顯示清空按鈕
-		if (clearBtn) {
-			clearBtn.style.display = 'inline-block';
-		}
-	}
-}
-
 // 為表單輸入框添加事件監聽器，檢查內容變化
 function bindFormInputListeners() {
 	const titleInput = document.querySelector('input[name="copy_title"]');
@@ -262,14 +228,116 @@ function bindFormInputListeners() {
 	const hashtagsInput = document.querySelector('input[name="hashtags"]');
 	
 	if (titleInput) {
-		titleInput.addEventListener('input', checkFormEmptyAndUpdateButtons);
+		titleInput.addEventListener('input', window.checkFormEmptyAndUpdateButtons);
 	}
 	if (contentTextarea) {
-		contentTextarea.addEventListener('input', checkFormEmptyAndUpdateButtons);
+		contentTextarea.addEventListener('input', window.checkFormEmptyAndUpdateButtons);
 	}
 	if (hashtagsInput) {
-		hashtagsInput.addEventListener('input', checkFormEmptyAndUpdateButtons);
+		hashtagsInput.addEventListener('input', window.checkFormEmptyAndUpdateButtons);
 	}
+}
+
+// 模板圖片上傳相關函數
+function handleTemplateImageUpload(e) {
+	const files = Array.from(e.target.files);
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	
+	if (files.length === 0) {
+		imageUploadArea.innerHTML = '<p>拖拽圖片到這裡或點擊選擇檔案</p>';
+		return;
+	}
+	
+	// 處理選中的圖片檔案
+	processTemplateImages(files);
+}
+
+function handleDragOver(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (imageUploadArea) {
+		imageUploadArea.style.borderColor = '#667eea';
+		imageUploadArea.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+	}
+}
+
+function handleDragLeave(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (imageUploadArea) {
+		imageUploadArea.style.borderColor = '#e1e5e9';
+		imageUploadArea.style.backgroundColor = 'transparent';
+	}
+}
+
+function handleDrop(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (imageUploadArea) {
+		imageUploadArea.style.borderColor = '#e1e5e9';
+		imageUploadArea.style.backgroundColor = 'transparent';
+	}
+	
+	const files = Array.from(e.dataTransfer.files).filter(file => 
+		file.type.startsWith('image/')
+	);
+	
+	if (files.length > 0) {
+		processTemplateImages(files);
+	}
+}
+
+function processTemplateImages(files) {
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (!imageUploadArea) return;
+	
+	// 清空上傳區域
+	imageUploadArea.innerHTML = '';
+	
+	// 創建圖片預覽
+	files.forEach((file, index) => {
+		const reader = new FileReader();
+		reader.onload = function(e) {
+			const imgContainer = document.createElement('div');
+			imgContainer.className = 'template-image-preview';
+			imgContainer.innerHTML = `
+				<img src="${e.target.result}" alt="模板圖片 ${index + 1}">
+				<button type="button" class="remove-template-image" onclick="removeTemplateImage(${index})">
+					<i class="fas fa-times"></i>
+				</button>
+			`;
+			imageUploadArea.appendChild(imgContainer);
+		};
+		reader.readAsDataURL(file);
+	});
+	
+	// 更新全局變數
+	window.templateImages = files;
+	
+	// 檢查表單狀態
+	window.checkFormEmptyAndUpdateButtons();
+}
+
+function removeTemplateImage(index) {
+	const imageUploadArea = document.getElementById('imageUploadArea');
+	if (!imageUploadArea) return;
+	
+	const imageContainers = imageUploadArea.querySelectorAll('.template-image-preview');
+	if (imageContainers[index]) {
+		imageContainers[index].remove();
+	}
+	
+	// 更新全局變數
+	if (window.templateImages && window.templateImages.length > index) {
+		window.templateImages.splice(index, 1);
+	}
+	
+	// 檢查表單狀態
+	window.checkFormEmptyAndUpdateButtons();
 }
 
 // 導出全局函數
@@ -280,5 +348,9 @@ window.handlePostingImageUpload = handlePostingImageUpload;
 window.removePostingImage = removePostingImage;
 window.updatePostingPlatforms = updatePostingPlatforms;
 window.handlePostingPlatformChange = handlePostingPlatformChange;
-window.checkFormEmptyAndUpdateButtons = checkFormEmptyAndUpdateButtons;
 window.bindFormInputListeners = bindFormInputListeners;
+window.handleTemplateImageUpload = handleTemplateImageUpload;
+window.handleDragOver = handleDragOver;
+window.handleDragLeave = handleDragLeave;
+window.handleDrop = handleDrop;
+window.removeTemplateImage = removeTemplateImage;

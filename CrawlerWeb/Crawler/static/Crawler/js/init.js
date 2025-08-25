@@ -170,8 +170,15 @@ function initCrawlerTools() {
 	
 	// 檢查並隱藏已登入的平台選項
 	setTimeout(async () => {
+		console.log('延遲1秒後開始檢查已登入的平台...');
 		await window.checkAndHideLoggedInPlatforms();
 	}, 1000); // 延遲1秒執行，確保其他數據已載入
+	
+	// 再次檢查（以防第一次失敗）
+	setTimeout(async () => {
+		console.log('延遲3秒後再次檢查已登入的平台...');
+		await window.checkAndHideLoggedInPlatforms();
+	}, 3000);
 	
 	// 綁定事件監聽器
 	bindEventListeners();
@@ -255,7 +262,6 @@ function bindEventListeners() {
 			}
 			
 			// 初始化時也要檢查一次
-			const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
 			if (facebookCommunitiesRow) {
 				if (postingPlatformSelect.value === 'facebook') {
 					facebookCommunitiesRow.classList.remove('hidden');
@@ -271,6 +277,6 @@ function bindEventListeners() {
 	}
 }
 
-// 導出全局函數
+// 立即導出到全局，確保其他模組可以使用
 window.initCrawlerTools = initCrawlerTools;
 window.updateCopyPreview = updateCopyPreview;

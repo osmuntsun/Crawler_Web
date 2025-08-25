@@ -398,7 +398,7 @@
 								{% csrf_token %}
 								<div class="form-row">
 									<label><i class="fas fa-globe"></i> 選擇社群平台</label>
-									<select name="posting_platform" class="form-select" required id="postingPlatform">
+									<select name="posting_platform" class="form-select" required id="platformSelect">
 										<option value="">選擇要發文的社群平台</option>
 										<!-- 平台選項將由 JavaScript 動態生成 -->
 									</select>
@@ -407,7 +407,7 @@
 								
 								<div class="form-row">
 									<label><i class="fas fa-file-alt"></i> 選擇文案模板</label>
-									<select name="copy_template" class="form-select" required id="copyTemplate">
+									<select name="copy_template" class="form-select" required id="templateSelect">
 										<option value="">選擇要使用的文案模板</option>
 										<!-- 文案選項將由 JavaScript 動態生成 -->
 									</select>
@@ -418,6 +418,12 @@
 									<div id="copyPreview" class="copy-preview">
 										<p class="text-muted">請先選擇文案模板</p>
 									</div>
+								</div>
+								
+								<div class="form-row">
+									<label><i class="fas fa-edit"></i> 發文內容</label>
+									<textarea name="message_content" id="messageTextarea" class="form-textarea" rows="4" placeholder="輸入或編輯您的發文內容"></textarea>
+									<small class="form-help">您可以在此編輯發文內容，或直接使用模板內容</small>
 								</div>
 								
 								<!-- Facebook 社團選擇（僅在選擇 Facebook 時顯示） -->
@@ -829,6 +835,18 @@
 	<div id="notifications" class="notifications"></div>
 
 	<script>window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};</script>
+	
+	<!-- 載入分離的JavaScript模組 -->
+	<!-- 注意：載入順序很重要，確保依賴關係正確 -->
+	<script src="{% static 'Crawler/js/main.js' %}"></script>
+	<script src="{% static 'Crawler/js/auth.js' %}"></script>
+	<script src="{% static 'Crawler/js/communities.js' %}"></script>
+	<script src="{% static 'Crawler/js/templates.js' %}"></script>
+	<script src="{% static 'Crawler/js/posting.js' %}"></script>
+	<script src="{% static 'Crawler/js/utils.js' %}"></script>
+	<script src="{% static 'Crawler/js/init.js' %}"></script>
+	
+	<!-- 最後載入主要的模組載入器 -->
 	<script src="{% static 'Crawler/js/tool.js' %}"></script>
 </body>
 </html>

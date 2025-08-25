@@ -21,6 +21,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+from .models import Schedule, ScheduleExecution
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def tool(request):
@@ -1421,6 +1426,324 @@ class PostTemplateView(View):
 			
 		except Exception as e:
 			print(f"清理孤立圖片文件時發生錯誤: {e}")
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ScheduleView(View):
+    """排程管理視圖"""
+    
+    def get(self, request):
+        """獲取用戶的排程列表"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            schedules = Schedule.objects.filter(user=request.user).order_by('-created_at')
+            schedule_list = []
+            
+            for schedule in schedules:
+                next_execution = schedule.get_next_execution_time()
+                schedule_list.append({
+                    'id': schedule.id,
+                    'name': schedule.name,
+                    'description': schedule.description,
+                    'status': schedule.status,
+                    'is_active': schedule.is_active,
+                    'execution_days': schedule.execution_days,
+                    'posting_times': schedule.posting_times,
+                    'platform': schedule.platform,
+                    'target_communities': schedule.target_communities,
+                    'total_executions': schedule.total_executions,
+                    'successful_executions': schedule.successful_executions,
+                    'failed_executions': schedule.failed_executions,
+                    'last_execution_time': schedule.last_execution_time.isoformat() if schedule.last_execution_time else None,
+                    'next_execution': next_execution.isoformat() if next_execution else None,
+                    'created_at': schedule.created_at.isoformat(),
+                    'updated_at': schedule.updated_at.isoformat()
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'schedules': schedule_list,
+                'count': len(schedule_list)
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'獲取排程列表失敗: {str(e)}'
+            })
+    
+    def post(self, request):
+        """創建新的排程發文"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+            
+            if action == 'save_scheduled_posting':
+                return self.save_scheduled_posting(request, data)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': '無效的操作'
+                })
+                
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': '無效的 JSON 格式'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'操作失敗: {str(e)}'
+            })
+    
+    def save_scheduled_posting(self, request, data):
+        """保存排程發文設定"""
+        try:
+            user = request.user
+            
+            # 收集發文時間數據
+            posting_times = []
+            time_inputs = request.POST.getlist('posting_times[]')
+            for time_str in time_inputs:
+                if time_str and time_str.strip():
+                    posting_times.append(time_str.strip())
+            
+            if not posting_times:
+                return JsonResponse({
+                    'success': False,
+                    'error': '請至少設定一個發文時間'
+                })
+            
+            # 收集執行日期數據
+            execution_days = []
+            days_inputs = request.POST.getlist('days')
+            for day in days_inputs:
+                if day and day.strip():
+                    execution_days.append(day.strip())
+            
+            if not execution_days:
+                return JsonResponse({
+                    'success': False,
+                    'error': '請至少選擇一個執行日期'
+                })
+            
+            # 創建排程記錄
+            schedule = Schedule.objects.create(
+                user=user,
+                name=f"排程發文 - {data['platform']} - {timezone.now().strftime('%Y-%m-%d %H:%M')}",
+                description=f"自動發布到 {len(data['communities'])} 個社群",
+                execution_days=execution_days,
+                posting_times=posting_times,
+                platform=data['platform'],
+                target_communities=data['communities'],
+                custom_content=data['message'],
+                additional_images=data.get('template_images', [])
+            )
+            
+            # 創建執行記錄
+            next_execution = schedule.get_next_execution_time()
+            if next_execution:
+                ScheduleExecution.objects.create(
+                    schedule=schedule,
+                    execution_time=next_execution,
+                    status='pending'
+                )
+            
+            return JsonResponse({
+                'success': True,
+                'message': '排程發文設定已保存',
+                'schedule_id': schedule.id,
+                'next_execution': next_execution.isoformat() if next_execution else None
+            })
+            
+        except Exception as e:
+            logger.error(f'保存排程發文失敗: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'error': f'保存失敗: {str(e)}'
+            })
+    
+    def _calculate_interval_minutes(self, interval_value, interval_unit):
+        """計算間隔分鐘數（保留用於向後兼容）"""
+        try:
+            value = int(interval_value)
+            if interval_unit == 'minutes':
+                return value
+            elif interval_unit == 'hours':
+                return value * 60
+            elif interval_unit == 'days':
+                return value * 24 * 60
+            else:
+                return 60
+        except (ValueError, TypeError):
+            return 60
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ScheduleDetailView(View):
+    """排程詳情視圖"""
+    
+    def get(self, request, schedule_id):
+        """獲取排程詳情"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            schedule = Schedule.objects.get(id=schedule_id, user=request.user)
+            
+            next_execution = schedule.get_next_execution_time()
+            schedule_data = {
+                'id': schedule.id,
+                'name': schedule.name,
+                'description': schedule.description,
+                'status': schedule.status,
+                'is_active': schedule.is_active,
+                'execution_days': schedule.execution_days,
+                'posting_times': schedule.posting_times,
+                'platform': schedule.platform,
+                'target_communities': schedule.target_communities,
+                'custom_content': schedule.custom_content,
+                'additional_images': schedule.additional_images,
+                'total_executions': schedule.total_executions,
+                'successful_executions': schedule.successful_executions,
+                'failed_executions': schedule.failed_executions,
+                'last_execution_time': schedule.last_execution_time.isoformat() if schedule.last_execution_time else None,
+                'next_execution': next_execution.isoformat() if next_execution else None,
+                'created_at': schedule.created_at.isoformat(),
+                'updated_at': schedule.updated_at.isoformat()
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'schedule': schedule_data
+            })
+            
+        except Schedule.DoesNotExist:
+            return JsonResponse({'error': '找不到指定的排程'}, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'獲取排程詳情失敗: {str(e)}'
+            })
+    
+    def put(self, request, schedule_id):
+        """更新排程設定"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            data = json.loads(request.body)
+            schedule = Schedule.objects.get(id=schedule_id, user=request.user)
+            
+            # 更新排程設定
+            if 'name' in data:
+                schedule.name = data['name']
+            if 'description' in data:
+                schedule.description = data['description']
+            if 'status' in data:
+                schedule.status = data['status']
+            if 'is_active' in data:
+                schedule.is_active = data['is_active']
+            if 'execution_days' in data:
+                schedule.execution_days = data['execution_days']
+            if 'posting_times' in data:
+                schedule.posting_times = data['posting_times']
+            
+            schedule.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': '排程設定已更新'
+            })
+            
+        except Schedule.DoesNotExist:
+            return JsonResponse({'error': '找不到指定的排程'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'更新排程設定失敗: {str(e)}'
+            })
+    
+    def delete(self, request, schedule_id):
+        """刪除排程設定"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            schedule = Schedule.objects.get(id=schedule_id, user=request.user)
+            schedule.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': '排程設定已刪除'
+            })
+            
+        except Schedule.DoesNotExist:
+            return JsonResponse({'error': '找不到指定的排程'}, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'刪除排程設定失敗: {str(e)}'
+            })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ScheduleToggleView(View):
+    """排程狀態切換視圖"""
+    
+    def post(self, request, schedule_id):
+        """切換排程狀態"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+            
+            if action not in ['activate', 'pause', 'cancel']:
+                return JsonResponse({'error': '無效的操作'}, status=400)
+            
+            schedule = Schedule.objects.get(id=schedule_id, user=request.user)
+            
+            if action == 'activate':
+                schedule.status = 'active'
+                schedule.is_active = True
+                message = '排程已啟用'
+            elif action == 'pause':
+                schedule.status = 'paused'
+                schedule.is_active = False
+                message = '排程已暫停'
+            elif action == 'cancel':
+                schedule.status = 'cancelled'
+                schedule.is_active = False
+                message = '排程已取消'
+            
+            schedule.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'status': schedule.status,
+                'is_active': schedule.is_active
+            })
+            
+        except Schedule.DoesNotExist:
+            return JsonResponse({'error': '找不到指定的排程'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': '無效的 JSON 格式'}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'切換排程狀態失敗: {str(e)}'
+            })
 
 
 

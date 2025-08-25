@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 import os
 import uuid
+from datetime import datetime
 
 User = get_user_model()
 
@@ -168,51 +169,51 @@ class SocialMediaPost(models.Model):
 
 
 class Schedule(models.Model):
-    """排程設定模型"""
-    SCHEDULE_STATUS_CHOICES = [
+    """排程設定"""
+    STATUS_CHOICES = [
         ('active', '啟用'),
         ('paused', '暫停'),
-        ('disabled', '停用'),
-        ('completed', '已完成'),
-        ('expired', '已過期'),
+        ('completed', '完成'),
+        ('cancelled', '取消'),
     ]
     
     FREQUENCY_CHOICES = [
-        ('once', '單次'),
-        ('hourly', '每小時'),
-        ('daily', '每天'),
+        ('daily', '每日'),
         ('weekly', '每週'),
         ('monthly', '每月'),
         ('custom', '自定義'),
     ]
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶', related_name='schedules')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='使用者')
     name = models.CharField(max_length=200, verbose_name='排程名稱')
     description = models.TextField(blank=True, verbose_name='排程描述')
-    
-    # 排程狀態
-    status = models.CharField(max_length=20, choices=SCHEDULE_STATUS_CHOICES, default='active', verbose_name='排程狀態')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name='狀態')
     is_active = models.BooleanField(default=True, verbose_name='是否啟用')
     
-    # 時間設定
-    start_time = models.DateTimeField(verbose_name='開始時間')
+    # 舊字段（保留用於向後兼容）
+    start_time = models.DateTimeField(verbose_name='開始時間', null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True, verbose_name='結束時間')
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily', verbose_name='執行頻率')
     interval_minutes = models.PositiveIntegerField(default=60, verbose_name='執行間隔(分鐘)')
-    next_execution = models.DateTimeField(verbose_name='下次執行時間')
+    next_execution = models.DateTimeField(null=True, blank=True, verbose_name='下次執行時間')
+    platforms = models.JSONField(default=list, blank=True, verbose_name='目標平台')
+    
+    # 新字段
+    execution_days = models.JSONField(default=list, blank=True, verbose_name='執行日期')
+    posting_times = models.JSONField(default=list, blank=True, verbose_name='發文時間')
     
     # 內容設定
     template = models.ForeignKey(PostTemplate, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='文案模板')
     custom_content = models.TextField(blank=True, verbose_name='自定義內容')
-    custom_hashtags = models.JSONField(default=list, blank=True, verbose_name='自定義標籤')
+    custom_hashtags = models.TextField(blank=True, verbose_name='自定義標籤')
     
     # 圖片設定
     use_template_images = models.BooleanField(default=True, verbose_name='使用模板圖片')
-    additional_images = models.JSONField(default=list, blank=True, verbose_name='額外圖片路徑')
+    additional_images = models.JSONField(default=list, blank=True, verbose_name='額外圖片')
     
     # 發布設定
-    platforms = models.JSONField(default=list, blank=True, verbose_name='目標平台')  # ['facebook', 'instagram']
-    target_communities = models.JSONField(default=list, blank=True, verbose_name='目標社團/頁面')  # [{'platform': 'facebook', 'url': '...', 'name': '...'}]
+    platform = models.CharField(max_length=20, verbose_name='社群平台', blank=True)
+    target_communities = models.JSONField(default=list, blank=True, verbose_name='目標社團/頁面')
     
     # 執行統計
     total_executions = models.PositiveIntegerField(default=0, verbose_name='總執行次數')
@@ -220,7 +221,7 @@ class Schedule(models.Model):
     failed_executions = models.PositiveIntegerField(default=0, verbose_name='失敗執行次數')
     last_execution_time = models.DateTimeField(null=True, blank=True, verbose_name='最後執行時間')
     
-    # 時間戳記
+    # 時間資訊
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
     
@@ -228,56 +229,46 @@ class Schedule(models.Model):
         verbose_name = '排程設定'
         verbose_name_plural = '排程設定'
         ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['user', 'status']),
-            models.Index(fields=['next_execution']),
-            models.Index(fields=['status', 'next_execution']),
-        ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.name}"
+        return f"{self.name} - {self.user.username}"
     
-    def get_execution_status(self):
-        """獲取執行狀態"""
-        if self.status == 'completed':
-            return '已完成'
-        elif self.status == 'expired':
-            return '已過期'
-        elif self.status == 'paused':
-            return '已暫停'
-        elif self.status == 'disabled':
-            return '已停用'
-        elif self.next_execution <= timezone.now():
-            return '待執行'
-        else:
-            return '等待中'
-    
-    def calculate_next_execution(self):
+    def get_next_execution_time(self):
         """計算下次執行時間"""
-        if self.frequency == 'once':
+        if not self.posting_times or not self.execution_days:
             return None
-        elif self.frequency == 'hourly':
-            return timezone.now() + timedelta(minutes=self.interval_minutes)
-        elif self.frequency == 'daily':
-            return timezone.now() + timedelta(days=1)
-        elif self.frequency == 'weekly':
-            return timezone.now() + timedelta(weeks=1)
-        elif self.frequency == 'monthly':
-            return timezone.now() + timedelta(days=30)
-        else:
-            return timezone.now() + timedelta(minutes=self.interval_minutes)
-    
-    def should_execute(self):
-        """檢查是否應該執行"""
-        if not self.is_active or self.status != 'active':
-            return False
-        if self.end_time and timezone.now() > self.end_time:
-            return False
-        return timezone.now() >= self.next_execution
+        
+        now = timezone.now()
+        current_time = now.time()
+        current_weekday = now.strftime('%A').lower()
+        
+        # 檢查今天是否在執行日期中
+        if current_weekday in self.execution_days:
+            # 找到今天下一個要執行的時間
+            for time_str in sorted(self.posting_times):
+                time_obj = datetime.strptime(time_str, '%H:%M').time()
+                if time_obj > current_time:
+                    # 今天還有時間要執行
+                    next_execution = datetime.combine(now.date(), time_obj)
+                    return timezone.make_aware(next_execution)
+        
+        # 找到下一個執行日期和時間
+        for i in range(1, 8):  # 最多檢查7天
+            next_date = now.date() + timedelta(days=i)
+            next_weekday = next_date.strftime('%A').lower()
+            
+            if next_weekday in self.execution_days:
+                # 找到下一個執行日期，使用第一個時間
+                first_time = sorted(self.posting_times)[0]
+                time_obj = datetime.strptime(first_time, '%H:%M').time()
+                next_execution = datetime.combine(next_date, time_obj)
+                return timezone.make_aware(next_execution)
+        
+        return None
 
 
 class ScheduleExecution(models.Model):
-    """排程執行記錄模型"""
+    """排程執行記錄"""
     EXECUTION_STATUS_CHOICES = [
         ('pending', '等待中'),
         ('running', '執行中'),
@@ -286,87 +277,40 @@ class ScheduleExecution(models.Model):
         ('cancelled', '已取消'),
     ]
     
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, verbose_name='排程', related_name='executions')
-    
-    # 執行狀態
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, verbose_name='排程設定')
     status = models.CharField(max_length=20, choices=EXECUTION_STATUS_CHOICES, default='pending', verbose_name='執行狀態')
     
-    # 執行時間
-    scheduled_time = models.DateTimeField(verbose_name='預定執行時間')
+    # 舊字段（保留用於向後兼容）
+    scheduled_time = models.DateTimeField(verbose_name='預定執行時間', null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True, verbose_name='開始執行時間')
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name='完成時間')
-    
-    # 執行結果
     success_count = models.PositiveIntegerField(default=0, verbose_name='成功發布數')
     failure_count = models.PositiveIntegerField(default=0, verbose_name='失敗發布數')
     total_count = models.PositiveIntegerField(default=0, verbose_name='總發布數')
-    
-    # 執行詳情
     execution_log = models.JSONField(default=dict, blank=True, verbose_name='執行日誌')
     error_messages = models.JSONField(default=list, blank=True, verbose_name='錯誤訊息')
-    
-    # 發布詳情
-    published_posts = models.JSONField(default=list, blank=True, verbose_name='已發布貼文')  # [{'platform': 'facebook', 'community': '...', 'post_id': '...', 'url': '...'}]
-    
-    # 統計數據
+    published_posts = models.JSONField(default=list, blank=True, verbose_name='已發布貼文')
     reach_count = models.PositiveIntegerField(default=0, verbose_name='觸及人數')
     like_count = models.PositiveIntegerField(default=0, verbose_name='按讚數')
     share_count = models.PositiveIntegerField(default=0, verbose_name='分享數')
     comment_count = models.PositiveIntegerField(default=0, verbose_name='留言數')
-    
-    # 時間戳記
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
+    
+    # 新字段
+    execution_time = models.DateTimeField(verbose_name='執行時間', default=timezone.now)
+    result_message = models.TextField(blank=True, verbose_name='執行結果訊息')
+    error_details = models.TextField(blank=True, verbose_name='錯誤詳情')
+    execution_duration = models.PositiveIntegerField(null=True, blank=True, verbose_name='執行時長(秒)')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
     
     class Meta:
         verbose_name = '排程執行記錄'
         verbose_name_plural = '排程執行記錄'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['schedule', 'status']),
-            models.Index(fields=['scheduled_time']),
-            models.Index(fields=['status', 'scheduled_time']),
-        ]
+        ordering = ['-execution_time']
     
     def __str__(self):
-        return f"{self.schedule.name} - {self.scheduled_time.strftime('%Y-%m-%d %H:%M')}"
-    
-    def get_execution_duration(self):
-        """獲取執行持續時間"""
-        if self.started_at and self.completed_at:
-            return self.completed_at - self.started_at
-        elif self.started_at:
-            return timezone.now() - self.started_at
-        return None
-    
-    def get_success_rate(self):
-        """獲取成功率"""
-        if self.total_count > 0:
-            return (self.success_count / self.total_count) * 100
-        return 0
-    
-    def add_log_entry(self, message, level='info'):
-        """添加日誌條目"""
-        if not self.execution_log:
-            self.execution_log = {'entries': []}
-        
-        self.execution_log['entries'].append({
-            'timestamp': timezone.now().isoformat(),
-            'level': level,
-            'message': message
-        })
-        self.save()
-    
-    def add_error_message(self, error):
-        """添加錯誤訊息"""
-        if not self.error_messages:
-            self.error_messages = []
-        
-        self.error_messages.append({
-            'timestamp': timezone.now().isoformat(),
-            'error': str(error)
-        })
-        self.save()
+        return f"{self.schedule.name} - {self.execution_time.strftime('%Y-%m-%d %H:%M')}"
 
 
 class ScheduleTemplate(models.Model):

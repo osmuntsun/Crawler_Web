@@ -13,6 +13,11 @@ urlpatterns = [
 	path('api/communities/', views.CommunitiesView.as_view(), name='communities_api'),
 	path('api/posting/', views.PostingView.as_view(), name='posting'),
 	path('api/templates/', views.PostTemplateView.as_view(), name='post_templates'),
+	
+	# 排程相關 API
+	path('api/schedule/', views.ScheduleView.as_view(), name='schedule_api'),
+	path('api/schedule/<int:schedule_id>/', views.ScheduleDetailView.as_view(), name='schedule_detail'),
+	path('api/schedule/<int:schedule_id>/toggle/', views.ScheduleToggleView.as_view(), name='schedule_toggle'),
 ]
 
 

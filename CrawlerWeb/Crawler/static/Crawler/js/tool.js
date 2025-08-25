@@ -617,6 +617,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (step === 2) {
 			reinitializePostingMethodSelection();
 			initializeScheduleTest();
+			// 初始化日期選擇按鈕
+			setTimeout(() => {
+				initializeDateSelectionButtons();
+				addDateCheckboxListeners();
+			}, 100);
 		}
 		
 		// 顯示步驟切換通知
@@ -882,59 +887,68 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
-	// 保存排程發文
-	async function saveScheduledPosting(postData) {
+	// 保存排程發文設定
+	async function saveScheduledPosting() {
 		try {
-			console.log('開始保存排程發文:', postData);
+			// 收集發文時間數據
+			const postingTimes = collectPostingTimesData();
+			if (postingTimes.length === 0) {
+				showNotification('請至少設定一個發文時間', 'error');
+				return;
+			}
 			
-			// 準備發送到後端的數據
-			const requestData = {
+			// 收集執行日期數據
+			const executionDays = [];
+			const dayCheckboxes = document.querySelectorAll('input[name="days"]:checked');
+			dayCheckboxes.forEach(checkbox => {
+				executionDays.push(checkbox.value);
+			});
+			
+			if (executionDays.length === 0) {
+				showNotification('請至少選擇一個執行日期', 'error');
+				return;
+			}
+			
+			// 準備排程數據
+			const scheduleData = {
 				action: 'save_scheduled_posting',
-				platform: postData.platform,
-				message: postData.messageContent,
-				communities: postData.communities.map(community => community.url || community.id),
-				template_images: postData.templateImages.map(img => img.url || img.path),
-				schedule: postData.schedule
+				platform: postingData.platform,
+				message: postingData.message,
+				communities: postingData.communities,
+				template_images: postingData.template_images || [],
+				posting_times: postingTimes,
+				execution_days: executionDays
 			};
 			
-			// 獲取 CSRF Token
-			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-							  document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
-			
-			if (!csrfToken) {
-				throw new Error('無法獲取 CSRF Token');
-			}
+			console.log('準備保存排程發文:', scheduleData);
 			
 			// 發送請求到後端
 			const response = await fetch('/crawler/api/schedule/', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-CSRFToken': csrfToken,
-					},
-				body: JSON.stringify(requestData)
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': getCSRFToken()
+				},
+				body: JSON.stringify(scheduleData)
 			});
 			
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-			}
-
 			const result = await response.json();
-
-			if (result.success) {
-				showNotification('排程發文已保存！將在指定時間自動發布', 'success');
-				console.log('排程保存結果:', result);
-			} else {
-				throw new Error(result.error || '排程保存失敗');
-			}
 			
-			// 保存成功後重置到步驟1
-			resetToStep1();
+			if (result.success) {
+				showNotification(result.message, 'success');
+				console.log('排程發文保存成功:', result);
+				
+				// 重置到第一步驟
+				resetToStep1();
+				
+			} else {
+				showNotification(`排程發文保存失敗: ${result.error}`, 'error');
+				console.error('排程發文保存失敗:', result.error);
+			}
 			
 		} catch (error) {
-			console.error('排程發文保存失敗:', error);
-			throw new Error(`排程發文保存失敗: ${error.message}`);
+			console.error('保存排程發文時發生錯誤:', error);
+			showNotification(`排程發文保存失敗: ${error.message}`, 'error');
 		}
 	}
 
@@ -956,7 +970,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				await executeImmediatePosting(postData);
 			} else {
 				// 排程發文：保存到排程系統
-				await saveScheduledPosting(postData);
+				await saveScheduledPosting();
 			}
 			
 		} catch (error) {
@@ -2853,6 +2867,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.deleteTemplate = deleteTemplate;
 	window.useTemplateForPosting = useTemplateForPosting;
 	window.handleClearTemplate = handleClearTemplate;
+	window.addPostingTime = addPostingTime;
+	window.removePostingTime = removePostingTime;
 
 	// 發文方式選擇功能
 	function initializePostingMethodSelection() {
@@ -3300,6 +3316,231 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		testContent.innerHTML = html;
 	}
+	
+	// 日期選擇按鈕功能
+	function initializeDateSelectionButtons() {
+		console.log('初始化日期選擇按鈕...');
+		
+		// 每天按鈕
+		const selectAllDaysBtn = document.getElementById('selectAllDaysBtn');
+		if (selectAllDaysBtn) {
+			console.log('找到每天按鈕，添加事件監聽器');
+			selectAllDaysBtn.addEventListener('click', function() {
+				console.log('點擊每天按鈕');
+				
+				// 移除所有按鈕的選中狀態
+				document.querySelectorAll('.days-selection .btn').forEach(btn => {
+					btn.classList.remove('selected');
+				});
+				
+				// 添加當前按鈕的選中狀態
+				this.classList.add('selected');
+				
+				const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+				dayCheckboxes.forEach(checkbox => {
+					checkbox.checked = true;
+				});
+			});
+		} else {
+			console.log('未找到每天按鈕');
+		}
+		
+		// 工作日按鈕
+		const selectWeekdaysBtn = document.getElementById('selectWeekdaysBtn');
+		if (selectWeekdaysBtn) {
+			console.log('找到工作日按鈕，添加事件監聽器');
+			selectWeekdaysBtn.addEventListener('click', function() {
+				console.log('點擊工作日按鈕');
+				
+				// 移除所有按鈕的選中狀態
+				document.querySelectorAll('.days-selection .btn').forEach(btn => {
+					btn.classList.remove('selected');
+				});
+				
+				// 添加當前按鈕的選中狀態
+				this.classList.add('selected');
+				
+				const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+				dayCheckboxes.forEach(checkbox => {
+					if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(checkbox.value)) {
+						checkbox.checked = true;
+					} else {
+						checkbox.checked = false;
+					}
+				});
+			});
+		} else {
+			console.log('未找到工作日按鈕');
+		}
+		
+		// 清空按鈕
+		const clearDaysBtn = document.getElementById('clearDaysBtn');
+		if (clearDaysBtn) {
+			console.log('找到清空按鈕，添加事件監聽器');
+			clearDaysBtn.addEventListener('click', function() {
+				console.log('點擊清空按鈕');
+				
+				// 移除所有按鈕的選中狀態
+				document.querySelectorAll('.days-selection .btn').forEach(btn => {
+					btn.classList.remove('selected');
+				});
+				
+				// 添加當前按鈕的選中狀態
+				this.classList.add('selected');
+				
+				const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+				dayCheckboxes.forEach(checkbox => {
+					checkbox.checked = false;
+				});
+			});
+		} else {
+			console.log('未找到清空按鈕');
+		}
+		
+		// 延遲一點時間再檢查狀態，確保DOM完全渲染
+		setTimeout(() => {
+			console.log('延遲檢查按鈕狀態...');
+			updateSelectedButtonState();
+		}, 200);
+	}
+	
+	// 更新按鈕選中狀態的函數
+	function updateSelectedButtonState() {
+		const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+		const checkedDays = Array.from(dayCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+		
+		console.log('當前選中的日期:', checkedDays);
+		console.log('選中日期數量:', checkedDays.length);
+		
+		// 移除所有按鈕的選中狀態
+		document.querySelectorAll('.days-selection .btn').forEach(btn => {
+			btn.classList.remove('selected');
+			console.log('移除按鈕選中狀態:', btn.textContent.trim());
+		});
+		
+		// 根據選中的日期判斷應該選中哪個按鈕
+		if (checkedDays.length === 7) {
+			// 所有日期都被選中
+			const selectAllDaysBtn = document.getElementById('selectAllDaysBtn');
+			if (selectAllDaysBtn) {
+				selectAllDaysBtn.classList.add('selected');
+				console.log('選中"每天"按鈕');
+			}
+		} else if (checkedDays.length === 5 && 
+				   checkedDays.includes('monday') && 
+				   checkedDays.includes('tuesday') && 
+				   checkedDays.includes('wednesday') && 
+				   checkedDays.includes('thursday') && 
+				   checkedDays.includes('friday')) {
+			// 只有工作日被選中
+			const selectWeekdaysBtn = document.getElementById('selectWeekdaysBtn');
+			if (selectWeekdaysBtn) {
+				selectWeekdaysBtn.classList.add('selected');
+				console.log('選中"工作日"按鈕');
+			}
+		} else if (checkedDays.length === 0) {
+			// 沒有日期被選中
+			const clearDaysBtn = document.getElementById('clearDaysBtn');
+			if (clearDaysBtn) {
+				clearDaysBtn.classList.add('selected');
+				console.log('選中"清空"按鈕');
+			}
+		} else {
+			// 混合狀態，不選中任何按鈕
+			console.log('混合狀態，不選中任何按鈕');
+		}
+	}
+	
+	// 為日期選擇框添加變化監聽
+	function addDateCheckboxListeners() {
+		const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+		dayCheckboxes.forEach(checkbox => {
+			checkbox.addEventListener('change', function() {
+				// 當日期選擇框變化時，更新按鈕狀態
+				updateSelectedButtonState();
+			});
+		});
+	}
+	
+	// 在頁面加載完成後初始化
+	document.addEventListener('DOMContentLoaded', function() {
+		console.log('DOM加載完成，初始化日期選擇按鈕');
+		initializeDateSelectionButtons();
+		addDateCheckboxListeners();
+	});
+
+	// 發文時間管理功能
+	function addPostingTime() {
+		const postingTimesList = document.getElementById('postingTimesList');
+		if (!postingTimesList) return;
+		
+		// 創建新的時間項目
+		const timeItem = document.createElement('div');
+		timeItem.className = 'posting-time-item';
+		timeItem.innerHTML = `
+			<input type="time" name="posting_times[]" value="12:00" class="form-input time-input">
+			<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
+				<i class="fas fa-minus"></i>
+			</button>
+		`;
+		
+		postingTimesList.appendChild(timeItem);
+		
+		// 更新刪除按鈕狀態
+		updateRemoveButtonsState();
+		
+		console.log('新增發文時間');
+	}
+	
+	function removePostingTime(button) {
+		const postingTimesList = document.getElementById('postingTimesList');
+		if (!postingTimesList) return;
+		
+		// 檢查是否只剩一個時間項目
+		const timeItems = postingTimesList.querySelectorAll('.posting-time-item');
+		if (timeItems.length <= 1) {
+			showNotification('每天至少需要設定一個發文時間', 'warning');
+			return;
+		}
+		
+		// 移除時間項目
+		button.closest('.posting-time-item').remove();
+		
+		// 更新刪除按鈕狀態
+		updateRemoveButtonsState();
+		
+		console.log('移除發文時間');
+	}
+	
+	function updateRemoveButtonsState() {
+		const postingTimesList = document.getElementById('postingTimesList');
+		if (!postingTimesList) return;
+		
+		const timeItems = postingTimesList.querySelectorAll('.posting-time-item');
+		const removeButtons = postingTimesList.querySelectorAll('.remove-time-btn');
+		
+		// 如果只有一個時間項目，禁用刪除按鈕
+		removeButtons.forEach(button => {
+			button.disabled = timeItems.length <= 1;
+		});
+	}
+	
+	// 收集發文時間數據
+	function collectPostingTimesData() {
+		const timeInputs = document.querySelectorAll('input[name="posting_times[]"]');
+		const postingTimes = Array.from(timeInputs).map(input => input.value).filter(time => time);
+		
+		console.log('收集到的發文時間:', postingTimes);
+		return postingTimes;
+	}
+	
+	// 在頁面加載完成後初始化發文時間功能
+	document.addEventListener('DOMContentLoaded', function() {
+		// 初始化發文時間功能
+		setTimeout(() => {
+			updateRemoveButtonsState();
+		}, 100);
+	});
 });
 
 

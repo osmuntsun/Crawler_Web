@@ -129,26 +129,22 @@ class SocialMediaPostAdmin(admin.ModelAdmin):
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
     """排程設定管理界面"""
-    list_display = ('name', 'user', 'status', 'frequency', 'next_execution', 'total_executions', 'created_at')
-    list_filter = ('status', 'frequency', 'is_active', 'created_at', 'next_execution')
-    search_fields = ('name', 'user__username', 'description')
+    list_display = ('name', 'user', 'platform', 'status', 'execution_days', 'posting_times', 'total_executions', 'created_at')
+    list_filter = ('platform', 'status', 'is_active', 'created_at')
+    search_fields = ('name', 'user__username', 'description', 'platform')
     ordering = ('-created_at',)
     readonly_fields = ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time', 'created_at', 'updated_at')
     
     fieldsets = (
         ('基本資訊', {'fields': ('user', 'name', 'description')}),
         ('排程狀態', {'fields': ('status', 'is_active')}),
-        ('時間設定', {'fields': ('start_time', 'end_time', 'frequency', 'interval_minutes', 'next_execution')}),
+        ('執行設定', {'fields': ('execution_days', 'posting_times')}),
         ('內容設定', {'fields': ('template', 'custom_content', 'custom_hashtags')}),
         ('圖片設定', {'fields': ('use_template_images', 'additional_images')}),
-        ('發布設定', {'fields': ('platforms', 'target_communities')}),
+        ('發布設定', {'fields': ('platform', 'target_communities')}),
         ('執行統計', {'fields': ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time')}),
         ('時間資訊', {'fields': ('created_at', 'updated_at')}),
     )
-    
-    def get_execution_status(self, obj):
-        return obj.get_execution_status()
-    get_execution_status.short_description = '執行狀態'
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'template')
@@ -157,32 +153,18 @@ class ScheduleAdmin(admin.ModelAdmin):
 @admin.register(ScheduleExecution)
 class ScheduleExecutionAdmin(admin.ModelAdmin):
     """排程執行記錄管理界面"""
-    list_display = ('schedule', 'status', 'scheduled_time', 'started_at', 'completed_at', 'success_count', 'failure_count', 'total_count')
-    list_filter = ('status', 'scheduled_time', 'started_at', 'completed_at')
+    list_display = ('schedule', 'status', 'execution_time', 'result_message', 'execution_duration', 'created_at')
+    list_filter = ('status', 'execution_time', 'created_at')
     search_fields = ('schedule__name', 'schedule__user__username')
-    ordering = ('-created_at',)
-    readonly_fields = ('schedule', 'scheduled_time', 'started_at', 'completed_at', 'success_count', 'failure_count', 'total_count', 'created_at', 'updated_at')
+    ordering = ('-execution_time',)
+    readonly_fields = ('schedule', 'execution_time', 'result_message', 'error_details', 'execution_duration', 'created_at')
     
     fieldsets = (
         ('基本資訊', {'fields': ('schedule', 'status')}),
-        ('執行時間', {'fields': ('scheduled_time', 'started_at', 'completed_at')}),
-        ('執行結果', {'fields': ('success_count', 'failure_count', 'total_count')}),
-        ('執行詳情', {'fields': ('execution_log', 'error_messages')}),
-        ('發布詳情', {'fields': ('published_posts',)}),
-        ('統計數據', {'fields': ('reach_count', 'like_count', 'share_count', 'comment_count')}),
-        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
+        ('執行時間', {'fields': ('execution_time', 'execution_duration')}),
+        ('執行結果', {'fields': ('result_message', 'error_details')}),
+        ('時間資訊', {'fields': ('created_at',)}),
     )
-    
-    def get_execution_duration(self, obj):
-        duration = obj.get_execution_duration()
-        if duration:
-            return str(duration).split('.')[0]  # 移除微秒
-        return '-'
-    get_execution_duration.short_description = '執行持續時間'
-    
-    def get_success_rate(self, obj):
-        return f"{obj.get_success_rate():.1f}%"
-    get_success_rate.short_description = '成功率'
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('schedule', 'schedule__user')

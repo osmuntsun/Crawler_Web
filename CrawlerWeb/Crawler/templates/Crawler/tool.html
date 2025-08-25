@@ -489,79 +489,73 @@
 							<!-- 排程設定選項（預設隱藏） -->
 							<div id="schedulingOptions" class="scheduling-options" style="display: none;">
 								<div class="form-grid">
-																	<div class="form-row">
-									<label><i class="fas fa-play"></i> 開始時間</label>
-									<input type="datetime-local" name="schedule_start_time" id="scheduleStartTime" class="form-input" required step="60">
-									<small class="form-help">設定發文開始的時間（只能選擇當前時間之後）</small>
-								</div>
-									
-									<div class="form-row">
-										<label><i class="fas fa-clock"></i> 發文間隔</label>
-										<div class="interval-inputs">
-											<input type="number" name="interval_min" min="1" value="60" class="form-input" style="width: 80px;">
-											<select name="interval_unit" class="form-select" style="width: 120px;">
-												<option value="minutes">分鐘</option>
-												<option value="hours" selected>小時</option>
-												<option value="days">天</option>
-											</select>
-										</div>
-										<small class="form-help">設定每次發文之間的間隔時間</small>
-									</div>
-									
 									<div class="form-row">
 										<label><i class="fas fa-calendar-week"></i> 執行日期</label>
 										<div class="days-selection">
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="monday" checked>
-												<span>週一</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="tuesday" checked>
-												<span>週二</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="wednesday" checked>
-												<span>週三</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="thursday" checked>
-												<span>週四</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="friday" checked>
-												<span>週五</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="saturday">
-												<span>週六</span>
-											</label>
-											<label class="day-checkbox">
-												<input type="checkbox" name="days" value="sunday">
-												<span>週日</span>
-											</label>
+											<div class="btn-container">
+												<button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDaysBtn">
+													<i class="fas fa-calendar"></i> 每天
+												</button>
+												<button type="button" class="btn btn-outline-secondary btn-sm" id="selectWeekdaysBtn">
+													<i class="fas fa-briefcase"></i> 工作日
+												</button>
+												<button type="button" class="btn btn-outline-secondary btn-sm" id="clearDaysBtn">
+													<i class="fas fa-times"></i> 清空
+												</button>
+											</div>
+											<div class="days-checkboxes">
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="monday" checked>
+													<span>週一</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="tuesday" checked>
+													<span>週二</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="wednesday" checked>
+													<span>週三</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="thursday" checked>
+													<span>週四</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="friday" checked>
+													<span>週五</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="saturday">
+													<span>週六</span>
+												</label>
+												<label class="day-checkbox">
+													<input type="checkbox" name="days" value="sunday">
+													<span>週日</span>
+												</label>
+											</div>
 										</div>
 										<small class="form-help">選擇要執行自動發文的日期</small>
 									</div>
 									
-																	<!-- 額外圖片功能已移除 -->
-								
-								<!-- 排程實驗功能 -->
-								<div class="form-row">
-									<label><i class="fas fa-flask"></i> 排程實驗</label>
-									<div class="schedule-test-section">
-										<button type="button" class="btn btn-info" id="testScheduleBtn">
-											<i class="fas fa-play"></i> 測試排程設定
-										</button>
-										<div id="scheduleTestResult" class="schedule-test-result" style="display: none;">
-											<div class="test-result-header">
-												<i class="fas fa-info-circle"></i>
-												<span>排程測試結果</span>
+									<div class="form-row">
+										<label><i class="fas fa-clock"></i> 發文時間(一天)</label>
+										<div class="posting-times-container">
+											<div class="posting-times-list" id="postingTimesList">
+												<div class="posting-time-item">
+													<input type="time" name="posting_times[]" value="09:00" class="form-input time-input">
+													<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
+														<i class="fas fa-minus"></i>
+													</button>
+												</div>
 											</div>
-											<div id="testResultContent" class="test-result-content"></div>
+											<div class="add-time-controls">
+												<button type="button" class="btn btn-sm btn-success" id="addTimeBtn" onclick="addPostingTime()">
+													<i class="fas fa-plus"></i> 新增時間
+												</button>
+												<small class="form-help">每天至少需要設定一個發文時間</small>
+											</div>
 										</div>
 									</div>
-									<small class="form-help">點擊測試按鈕來驗證排程設定是否正確</small>
-								</div>
 									
 									<div class="form-actions">
 										<button type="button" class="btn btn-secondary" id="prevStepBtn">

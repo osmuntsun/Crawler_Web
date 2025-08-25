@@ -1095,132 +1095,77 @@ document.addEventListener('DOMContentLoaded', function() {
 		const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
 		const communitiesList = document.getElementById('communitiesList');
 		
-		// 更新按鈕狀態
+		if (!getCommunitiesBtn || !communitiesList) return;
+		
+		// 顯示載入狀態
 		getCommunitiesBtn.disabled = true;
 		getCommunitiesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 獲取中...';
-
-		try {
-			// 獲取 CSRF 令牌
-			const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-			
-			const response = await fetch('/crawler/api/facebook/', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRFToken': csrfToken,
-				},
-				body: JSON.stringify({
-					action: 'get_communities'
-				})
-			});
-
-			const result = await response.json();
-
-			if (response.ok && result.success) {
-				displayCommunities(result.communities);
+		communitiesList.innerHTML = '<div class="communities-loading"><i class="fas fa-spinner fa-spin"></i> 正在獲取社團列表...</div>';
+		
+		// 發送請求
+		fetch('/crawler/api/facebook/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': getCSRFToken()
+			},
+			body: JSON.stringify({
+				action: 'get_communities'
+			})
+		})
+		.then(response => response.json())
+		.then(data => {
+			if (data.success) {
+				// 顯示社團列表
+				displayCommunities(data.communities);
 				
-				// 顯示資料庫更新結果
-				let message = `成功獲取 ${result.communities.length} 個社團`;
-				if (result.message) {
-					message += `\n${result.message}`;
-				}
-				if (result.added_count !== undefined && result.deleted_count !== undefined) {
-					message += `\n新增：${result.added_count} 個，刪除：${result.deleted_count} 個`;
-				}
-				
-				showNotification(message, 'success');
-				
-				// 如果有更新結果，顯示詳細信息
-				if (result.added_count !== undefined || result.deleted_count !== undefined) {
-					const updateInfo = document.createElement('div');
-					updateInfo.className = 'update-info';
-					updateInfo.innerHTML = `
-						<div class="alert alert-info">
-							<i class="fas fa-info-circle"></i>
-							<strong>資料庫更新結果：</strong><br>
-							總社團數：${result.total_count || result.communities.length}<br>
-							${result.added_count !== undefined ? `新增：${result.added_count} 個<br>` : ''}
-							${result.deleted_count !== undefined ? `刪除：${result.deleted_count} 個<br>` : ''}
-							${result.message || ''}
-						</div>
-					`;
-					
-					// 在社團列表上方插入更新信息
-					const communitiesList = document.getElementById('communitiesList');
-					if (communitiesList && communitiesList.parentNode) {
-						communitiesList.parentNode.insertBefore(updateInfo, communitiesList);
-					}
+				// 顯示更新信息
+				if (data.added_count > 0 || data.deleted_count > 0) {
+					showNotification(data.message, 'success');
 				}
 			} else {
-				throw new Error(result.error || '獲取社團失敗');
+				communitiesList.innerHTML = `<div class="text-danger">${data.error}</div>`;
+				showNotification(data.error, 'error');
 			}
-		} catch (error) {
-			communitiesList.innerHTML = `
-				<div class="status-message error">
-					<i class="fas fa-exclamation-circle"></i> 獲取社團失敗：${error.message}
-				</div>
-			`;
-			showNotification('獲取社團失敗：' + error.message, 'error');
-		} finally {
+		})
+		.catch(error => {
+			console.error('獲取社團列表失敗:', error);
+			communitiesList.innerHTML = '<div class="text-danger">獲取社團列表失敗</div>';
+			showNotification('獲取社團列表失敗', 'error');
+		})
+		.finally(() => {
 			// 恢復按鈕狀態
 			getCommunitiesBtn.disabled = false;
-			getCommunitiesBtn.innerHTML = '<i class="fas fa-sync"></i> 獲取社團列表';
-		}
+			getCommunitiesBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 獲取社團列表';
+		});
 	}
-
-	// 顯示社團列表
+	
 	function displayCommunities(communities) {
 		const communitiesList = document.getElementById('communitiesList');
+		if (!communitiesList) return;
 		
 		if (!communities || communities.length === 0) {
-			communitiesList.innerHTML = '<p class="text-muted">沒有找到社團</p>';
+			communitiesList.innerHTML = '<div class="text-muted">沒有找到任何社團</div>';
 			return;
 		}
-
-		// 使用新的多行佈局，只顯示社團名稱
-		let html = '<div class="community-checkbox-group">';
-		communities.forEach((community, index) => {
+		
+		let html = '';
+		communities.forEach(community => {
 			html += `
-				<div class="community-checkbox-item">
-					<input type="checkbox" class="community-checkbox" 
-						   id="community_${index}" value="${community.url}" 
-						   data-name="${community.name}">
-					<label for="community_${index}" title="${community.name}">${community.name}</label>
+				<div class="community-item" data-community-id="${community.url}">
+					<input type="checkbox" name="communities" value="${community.url}" onchange="updateCommunitySelectionStyles(); updateSelectionButtonIcons();">
+					<div class="community-info">
+						<div class="community-name">${community.name}</div>
+						<div class="community-url">${community.url}</div>
+					</div>
 				</div>
 			`;
 		});
-		html += '</div>';
 		
 		communitiesList.innerHTML = html;
 		
-		// 綁定全選和取消全選按鈕事件
-		const selectAllBtn = document.getElementById('selectAllCommunitiesBtn');
-		const deselectAllBtn = document.getElementById('deselectAllCommunitiesBtn');
-		
-		if (selectAllBtn) {
-			selectAllBtn.addEventListener('click', selectAllCommunities);
-		}
-		if (deselectAllBtn) {
-			deselectAllBtn.addEventListener('click', deselectAllCommunities);
-		}
-	}
-
-	// 全選 Facebook 社團
-	function selectAllCommunities() {
-		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
-		checkboxes.forEach(checkbox => {
-			checkbox.checked = true;
-		});
-		console.log(`已全選 ${checkboxes.length} 個 Facebook 社團`);
-	}
-
-	// 取消全選 Facebook 社團
-	function deselectAllCommunities() {
-		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
-		checkboxes.forEach(checkbox => {
-			checkbox.checked = false;
-		});
-		console.log(`已取消全選 ${checkboxes.length} 個 Facebook 社團`);
+		// 初始化按鈕圖標
+		updateSelectionButtonIcons();
 	}
 
 	// 處理圖片上傳
@@ -2869,6 +2814,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	window.handleClearTemplate = handleClearTemplate;
 	window.addPostingTime = addPostingTime;
 	window.removePostingTime = removePostingTime;
+	window.getFacebookCommunities = getFacebookCommunities;
+	window.selectAllCommunities = selectAllCommunities;
+	window.deselectAllCommunities = deselectAllCommunities;
 
 	// 發文方式選擇功能
 	function initializePostingMethodSelection() {
@@ -3541,6 +3489,74 @@ document.addEventListener('DOMContentLoaded', function() {
 			updateRemoveButtonsState();
 		}, 100);
 	});
+
+	// 社團選擇功能
+	function selectAllCommunities() {
+		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
+		checkboxes.forEach(checkbox => {
+			checkbox.checked = true;
+		});
+		
+		// 更新按鈕圖標
+		updateSelectionButtonIcons();
+		
+		// 更新選中的社團樣式
+		updateCommunitySelectionStyles();
+		
+		console.log('已全選所有社團');
+	}
+	
+	function deselectAllCommunities() {
+		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
+		checkboxes.forEach(checkbox => {
+			checkbox.checked = false;
+		});
+		
+		// 更新按鈕圖標
+		updateSelectionButtonIcons();
+		
+		// 更新選中的社團樣式
+		updateCommunitySelectionStyles();
+		
+		console.log('已取消全選所有社團');
+	}
+	
+	function updateSelectionButtonIcons() {
+		const selectAllBtn = document.getElementById('selectAllCommunitiesBtn');
+		const deselectAllBtn = document.getElementById('deselectAllCommunitiesBtn');
+		
+		if (!selectAllBtn || !deselectAllBtn) return;
+		
+		const checkboxes = document.querySelectorAll('#communitiesList input[type="checkbox"]');
+		const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+		const totalCount = checkboxes.length;
+		
+		if (checkedCount === 0) {
+			// 沒有選中任何社團
+			selectAllBtn.innerHTML = '<i class="fas fa-square"></i> 全選';
+			deselectAllBtn.innerHTML = '<i class="fas fa-square"></i> 取消全選';
+		} else if (checkedCount === totalCount) {
+			// 全選了
+			selectAllBtn.innerHTML = '<i class="fas fa-check-square"></i> 全選';
+			deselectAllBtn.innerHTML = '<i class="fas fa-square"></i> 取消全選';
+		} else {
+			// 部分選中
+			selectAllBtn.innerHTML = '<i class="fas fa-square"></i> 全選';
+			deselectAllBtn.innerHTML = '<i class="fas fa-square"></i> 取消全選';
+		}
+	}
+	
+	function updateCommunitySelectionStyles() {
+		const communityItems = document.querySelectorAll('#communitiesList .community-item');
+		communityItems.forEach(item => {
+			const checkbox = item.querySelector('input[type="checkbox"]');
+			if (checkbox.checked) {
+				item.classList.add('selected');
+			} else {
+				item.classList.remove('selected');
+			}
+		});
+	}
 });
 
 

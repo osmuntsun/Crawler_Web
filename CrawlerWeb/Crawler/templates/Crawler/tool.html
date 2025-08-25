@@ -423,20 +423,27 @@
 								<!-- Facebook 社團選擇（僅在選擇 Facebook 時顯示） -->
 								<div class="form-row" id="facebookCommunitiesRow" style="display: none;">
 									<label><i class="fas fa-users"></i> 選擇 Facebook 社團（可多選）</label>
-									<div class="communities-controls">
-										<button type="button" class="btn btn-sm btn-outline-primary" id="selectAllCommunitiesBtn">
-											<i class="fas fa-check-square"></i> 全選
-										</button>
-										<button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllCommunitiesBtn">
-											<i class="fas fa-square"></i> 取消全選
-										</button>
+									<div class="communities-selection-container">
+										<div class="communities-header">
+											<button type="button" class="btn btn-outline-primary btn-sm" id="getCommunitiesBtn" onclick="getFacebookCommunities()">
+												<i class="fas fa-sync-alt"></i> 獲取社團列表
+											</button>
+											<div class="selection-controls">
+												<button type="button" class="btn btn-outline-success btn-sm" id="selectAllCommunitiesBtn" onclick="selectAllCommunities()">
+													<i class="fas fa-check-square"></i> 全選
+												</button>
+												<button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllCommunitiesBtn" onclick="deselectAllCommunities()">
+													<i class="fas fa-square"></i> 取消全選
+												</button>
+											</div>
+										</div>
+										<div class="communities-list" id="communitiesList">
+											<div class="communities-loading">
+												<i class="fas fa-spinner fa-spin"></i> 正在載入社團列表...
+											</div>
+										</div>
+										<small class="form-help">選擇要發布內容的 Facebook 社團</small>
 									</div>
-									<div id="communitiesList" class="communities-list">
-										<p class="text-muted">請先登入 Facebook 並獲取社團列表</p>
-									</div>
-									<button type="button" class="btn btn-info" id="getCommunitiesBtn">
-										<i class="fas fa-sync"></i> 獲取社團列表
-									</button>
 								</div>
 								
 								<div class="form-actions">

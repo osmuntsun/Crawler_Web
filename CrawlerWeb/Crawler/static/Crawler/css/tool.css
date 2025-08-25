@@ -2185,3 +2185,135 @@ body {
     }
 }
 
+/* 社團選擇界面樣式 */
+.communities-selection-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.communities-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.communities-header .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.communities-header .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.selection-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.selection-controls .btn {
+    min-width: 80px;
+}
+
+.communities-list {
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    padding: 15px;
+}
+
+.communities-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #6b7280;
+    font-style: italic;
+    height: 100px;
+}
+
+.communities-loading .fa-spinner {
+    color: #3b82f6;
+}
+
+.community-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.community-item:hover {
+    background-color: #f8fafc;
+}
+
+.community-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.community-item .community-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.community-item .community-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.community-item .community-url {
+    font-size: 12px;
+    color: #6b7280;
+    word-break: break-all;
+}
+
+.community-item.selected {
+    background-color: #eff6ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.community-item.selected .community-name {
+    color: #1e40af;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .communities-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .selection-controls {
+        justify-content: center;
+    }
+    
+    .communities-list {
+        max-height: 250px;
+    }
+}
+

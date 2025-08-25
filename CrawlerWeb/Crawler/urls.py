@@ -13,6 +13,9 @@ urlpatterns = [
 	path('api/communities/', views.CommunitiesView.as_view(), name='communities_api'),
 	path('api/posting/', views.PostingView.as_view(), name='posting'),
 	path('api/templates/', views.PostTemplateView.as_view(), name='post_templates'),
+	path('api/templates/<int:template_id>/', views.PostTemplateDetailView.as_view(), name='post_template_detail'),
+	path('api/templates/<int:template_id>/update/', views.PostTemplateUpdateView.as_view(), name='post_template_update'),
+	path('api/templates/<int:template_id>/delete/', views.PostTemplateDeleteView.as_view(), name='post_template_delete'),
 	
 	# 排程相關 API
 	path('api/schedule/', views.ScheduleView.as_view(), name='schedule_api'),

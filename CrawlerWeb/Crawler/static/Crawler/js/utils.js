@@ -293,51 +293,104 @@ function handleDrop(e) {
 
 function processTemplateImages(files) {
 	const imageUploadArea = document.getElementById('imageUploadArea');
+	const imageSortingRow = document.getElementById('imageSortingRow');
+	const imageSortingContainer = document.getElementById('imageSortingContainer');
+	
 	if (!imageUploadArea) return;
 	
 	// 清空上傳區域
 	imageUploadArea.innerHTML = '';
 	
-	// 創建圖片預覽
+	// 更新全局變數 - 將新上傳的圖片添加到現有圖片中
+	if (!window.templateImages) {
+		window.templateImages = [];
+	}
+	
+	// 為每個新上傳的圖片創建對象
 	files.forEach((file, index) => {
 		const reader = new FileReader();
 		reader.onload = function(e) {
-			const imgContainer = document.createElement('div');
-			imgContainer.className = 'template-image-preview';
-			imgContainer.innerHTML = `
-				<img src="${e.target.result}" alt="模板圖片 ${index + 1}">
-				<button type="button" class="remove-template-image" onclick="removeTemplateImage(${index})">
-					<i class="fas fa-times"></i>
-				</button>
-			`;
-			imageUploadArea.appendChild(imgContainer);
+			// 創建圖片對象
+			const imageObj = {
+				url: e.target.result,
+				order: window.templateImages.length,
+				file: file, // 保存文件對象，用於後續上傳
+				isNewUpload: true // 標記為新上傳的圖片
+			};
+			
+			// 添加到全局圖片數組
+			window.templateImages.push(imageObj);
+			
+			// 如果這是第一張圖片，顯示排序區域
+			if (window.templateImages.length === 1 && imageSortingRow) {
+				imageSortingRow.style.display = 'block';
+			}
+			
+			// 重新渲染圖片排序區域
+			if (window.renderImageSortingArea) {
+				window.renderImageSortingArea();
+			}
+			
+			// 初始化拖拽排序功能
+			if (window.initializeImageSorting) {
+				window.initializeImageSorting();
+			}
+			
+			// 更新上傳區域顯示
+			if (window.updateImageUploadAreaDisplay) {
+				window.updateImageUploadAreaDisplay();
+			}
+			
+			// 檢查表單狀態
+			if (window.checkFormEmptyAndUpdateButtons) {
+				window.checkFormEmptyAndUpdateButtons();
+			}
 		};
 		reader.readAsDataURL(file);
 	});
-	
-	// 更新全局變數
-	window.templateImages = files;
-	
-	// 檢查表單狀態
-	window.checkFormEmptyAndUpdateButtons();
 }
 
-function removeTemplateImage(index) {
+function removeTemplateImageFromUpload(index) {
 	const imageUploadArea = document.getElementById('imageUploadArea');
 	if (!imageUploadArea) return;
 	
-	const imageContainers = imageUploadArea.querySelectorAll('.template-image-preview');
-	if (imageContainers[index]) {
-		imageContainers[index].remove();
-	}
-	
-	// 更新全局變數
+	// 從全局圖片數組中移除圖片
 	if (window.templateImages && window.templateImages.length > index) {
 		window.templateImages.splice(index, 1);
+		
+		// 更新剩餘圖片的order屬性
+		window.templateImages.forEach((image, newIndex) => {
+			image.order = newIndex;
+		});
+		
+		// 重新渲染圖片排序區域
+		if (window.renderImageSortingArea) {
+			window.renderImageSortingArea();
+		}
+		
+		// 重新初始化拖拽排序功能
+		if (window.initializeImageSorting) {
+			window.initializeImageSorting();
+		}
+		
+		// 更新圖片上傳區域顯示
+		if (window.updateImageUploadAreaDisplay) {
+			window.updateImageUploadAreaDisplay();
+		}
+		
+		// 如果沒有圖片了，隱藏排序區域
+		if (window.templateImages.length === 0) {
+			const imageSortingRow = document.getElementById('imageSortingRow');
+			if (imageSortingRow) {
+				imageSortingRow.style.display = 'none';
+			}
+		}
+		
+		// 檢查表單狀態
+		if (window.checkFormEmptyAndUpdateButtons) {
+			window.checkFormEmptyAndUpdateButtons();
+		}
 	}
-	
-	// 檢查表單狀態
-	window.checkFormEmptyAndUpdateButtons();
 }
 
 // 導出全局函數
@@ -353,4 +406,4 @@ window.handleTemplateImageUpload = handleTemplateImageUpload;
 window.handleDragOver = handleDragOver;
 window.handleDragLeave = handleDragLeave;
 window.handleDrop = handleDrop;
-window.removeTemplateImage = removeTemplateImage;
+window.removeTemplateImage = removeTemplateImageFromUpload;

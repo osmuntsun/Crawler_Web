@@ -42,12 +42,12 @@ function initCrawlerTools() {
 	const templateImageUpload = document.getElementById('templateImageUpload');
 	const imageUploadArea = document.getElementById('imageUploadArea');
 	if (templateImageUpload && imageUploadArea) {
-		templateImageUpload.addEventListener('change', handleTemplateImageUpload);
+		templateImageUpload.addEventListener('change', window.handleTemplateImageUpload);
 		
 		// 拖拽上傳
-		imageUploadArea.addEventListener('dragover', handleDragOver);
-		imageUploadArea.addEventListener('dragleave', handleDragLeave);
-		imageUploadArea.addEventListener('drop', handleDrop);
+		imageUploadArea.addEventListener('dragover', window.handleDragOver);
+		imageUploadArea.addEventListener('dragleave', window.handleDragLeave);
+		imageUploadArea.addEventListener('drop', window.handleDrop);
 	}
 
 	// 儲存模板按鈕

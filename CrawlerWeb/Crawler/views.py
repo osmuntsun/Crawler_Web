@@ -1053,6 +1053,49 @@ class PostTemplateView(View):
 	貼文模板管理視圖
 	"""
 	
+	def _is_same_image(self, image1, image2):
+		"""
+		檢查兩個圖片是否相同
+		支援比較實際圖片文件和複製的圖片URL
+		"""
+		try:
+			# 如果兩個圖片都有實際文件，比較文件路徑
+			if (image1.image and hasattr(image1.image, 'path') and 
+				image2.image and hasattr(image2.image, 'path')):
+				import os
+				path1 = os.path.basename(image1.image.path)
+				path2 = os.path.basename(image2.image.path)
+				return path1 == path2
+			
+			# 如果一個有實際文件，一個有URL，比較文件名
+			elif (image1.image and hasattr(image1.image, 'path') and 
+				  image2.alt_text and image2.alt_text.startswith('/media/')):
+				import os
+				path1 = os.path.basename(image1.image.path)
+				path2 = os.path.basename(image2.alt_text)
+				return path1 == path2
+			
+			# 如果一個有URL，一個有實際文件，比較文件名
+			elif (image1.alt_text and image1.alt_text.startswith('/media/') and 
+				  image2.image and hasattr(image2.image, 'path')):
+				import os
+				path1 = os.path.basename(image1.alt_text)
+				path2 = os.path.basename(image2.image.path)
+				return path1 == path2
+			
+			# 如果兩個都是URL，比較文件名
+			elif (image1.alt_text and image1.alt_text.startswith('/media/') and 
+				  image2.alt_text and image2.alt_text.startswith('/media/')):
+				import os
+				path1 = os.path.basename(image1.alt_text)
+				path2 = os.path.basename(image2.alt_text)
+				return path1 == path2
+			
+			return False
+		except Exception as e:
+			print(f"比較圖片時出錯: {e}")
+			return False
+	
 	def get(self, request):
 		"""獲取用戶的貼文模板列表或單個模板"""
 		if not request.user.is_authenticated:
@@ -1285,63 +1328,42 @@ class PostTemplateView(View):
 				images_to_delete = []  # 記錄要刪除的圖片路徑
 				
 				for image in template.images.all():
-					if image.image and hasattr(image.image, 'path'):
-						try:
-							import os
-							# 檢查這張圖片文件是否被其他模板使用
-							# 通過比較文件名來檢查，這樣更可靠
-							image_path = image.image.path
-							image_filename = os.path.basename(image_path)
-							
-							print(f"檢查圖片: {image_filename}")  # 調試信息
-							
-							# 檢查這張圖片是否被其他模板使用
-							# 需要檢查實際圖片文件和複製的圖片URL
-							other_templates_using_same_file = False
-							
-							# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片文件
-							print(f"開始檢查其他模板是否使用圖片: {image_filename}")
-							for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
-								print(f"檢查模板 {other_template.id}: {other_template.title}")
-								for other_image in other_template.images.all():
-									print(f"  檢查圖片記錄: image={other_image.image}, alt_text={other_image.alt_text}")
-									
-									# 檢查實際圖片文件
-									if (other_image.image and 
-										hasattr(other_image.image, 'path') and 
-										os.path.basename(other_image.image.path) == image_filename):
-										other_templates_using_same_file = True
-										print(f"發現其他模板 {other_template.id} 使用相同圖片文件: {image_filename}")
-										break
-									# 檢查複製的圖片URL（存儲在alt_text中）
-									elif (other_image.alt_text and 
-										  other_image.alt_text.startswith('/media/')):
-										# 從alt_text中提取文件名進行比較
-										alt_text_filename = os.path.basename(other_image.alt_text)
-										print(f"  比較文件名: {alt_text_filename} vs {image_filename}")
-										if alt_text_filename == image_filename:
-											other_templates_using_same_file = True
-											print(f"發現其他模板 {other_template.id} 使用複製圖片: {image_filename}")
-											break
-								if other_templates_using_same_file:
+					try:
+						import os
+						
+						# 檢查這張圖片是否被其他模板使用
+						other_templates_using_same_image = False
+						
+						# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片
+						for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
+							print(f"檢查模板 {other_template.id}: {other_template.title}")  # 調試信息
+							for other_image in other_template.images.all():
+								# 檢查是否為相同的圖片
+								if self._is_same_image(image, other_image):
+									other_templates_using_same_image = True
+									print(f"發現其他模板 {other_template.id} 使用相同圖片")
 									break
-							
-							print(f"其他模板使用此圖片: {other_templates_using_same_file}")  # 調試信息
-							
-							if not other_templates_using_same_file:
-								# 沒有其他模板使用這張圖片，記錄為要刪除
-								images_to_delete.append(image_path)
-								print(f"圖片文件將被刪除: {image_path}")
-							else:
-								# 有其他模板使用這張圖片，保留文件
-								print(f"圖片文件被其他模板使用，保留: {image_path}")
-						except Exception as e:
-							print(f"處理圖片文件失敗: {e}")
-					else:
-						print(f"圖片對象無效: image={image.image}, hasattr={hasattr(image.image, 'path') if image.image else False}")  # 調試信息
+							if other_templates_using_same_image:
+								break
+						
+						# 如果沒有其他模板使用這張圖片，且圖片有實際文件，則記錄為要刪除
+						if not other_templates_using_same_image and image.image and hasattr(image.image, 'path'):
+							image_path = image.image.path
+							images_to_delete.append(image_path)
+							print(f"圖片文件將被刪除: {image_path}")
+						elif not other_templates_using_same_image:
+							print(f"圖片沒有實際文件，不需要刪除文件")
+						else:
+							print(f"圖片被其他模板使用，保留文件")
+						
+					except Exception as e:
+						print(f"處理圖片失敗: {e}")
+				
+				print(f"準備刪除的圖片文件數量: {len(images_to_delete)}")  # 調試信息
 				
 				# 刪除模板（會自動刪除相關的圖片記錄）
 				template.delete()
+				print(f"模板 {template_id} 已刪除")  # 調試信息
 				
 				# 現在安全地刪除不再被使用的圖片文件
 				for image_path in images_to_delete:
@@ -1353,9 +1375,6 @@ class PostTemplateView(View):
 							print(f"圖片文件不存在: {image_path}")
 					except Exception as e:
 						print(f"刪除圖片文件失敗: {image_path}, 錯誤: {e}")
-				
-				# 清理孤立的圖片文件
-				self.cleanup_orphaned_images()
 				
 				return JsonResponse({
 					'success': True,
@@ -1744,6 +1763,274 @@ class ScheduleToggleView(View):
                 'success': False,
                 'error': f'切換排程狀態失敗: {str(e)}'
             })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PostTemplateDetailView(View):
+	"""
+	貼文模板詳情視圖
+	"""
+	
+	def get(self, request, template_id):
+		"""獲取單個模板的詳細信息"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			template = PostTemplate.objects.get(
+				id=template_id,
+				user=request.user,
+				is_active=True
+			)
+			
+			# 獲取模板的圖片
+			images = template.images.all().order_by('order')
+			images_data = []
+			for image in images:
+				# 檢查圖片是否有實際文件
+				if image.image and hasattr(image.image, 'url'):
+					image_url = image.image.url
+				elif image.alt_text and (image.alt_text.startswith('http') or image.alt_text.startswith('/media/')):
+					# 如果是複製的圖片，使用alt_text中的URL
+					image_url = image.alt_text
+				else:
+					# 如果既沒有圖片文件也沒有URL，跳過
+					continue
+				
+				images_data.append({
+					'id': image.id,
+					'url': image_url,
+					'order': image.order,
+					'alt_text': image.alt_text
+				})
+			
+			template_data = {
+				'id': template.id,
+				'title': template.title,
+				'content': template.content,
+				'hashtags': template.hashtags,
+				'images': images_data,
+				'image_count': len(images_data),
+				'created_at': template.created_at.isoformat(),
+				'updated_at': template.updated_at.isoformat()
+			}
+			
+			return JsonResponse({
+				'success': True,
+				'template': template_data
+			})
+			
+		except PostTemplate.DoesNotExist:
+			return JsonResponse({'error': '找不到指定的模板'}, status=404)
+		except Exception as e:
+			return JsonResponse({'error': f'獲取模板詳情失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PostTemplateDeleteView(View):
+	"""
+	貼文模板刪除視圖
+	"""
+	
+	def _is_same_image(self, image1, image2):
+		"""
+		檢查兩個圖片是否相同
+		支援比較實際圖片文件和複製的圖片URL
+		"""
+		try:
+			# 如果兩個圖片都有實際文件，比較文件路徑
+			if (image1.image and hasattr(image1.image, 'path') and 
+				image2.image and hasattr(image2.image, 'path')):
+				import os
+				path1 = os.path.basename(image1.image.path)
+				path2 = os.path.basename(image2.image.path)
+				return path1 == path2
+			
+			# 如果一個有實際文件，一個有URL，比較文件名
+			elif (image1.image and hasattr(image1.image, 'path') and 
+				  image2.alt_text and image2.alt_text.startswith('/media/')):
+				import os
+				path1 = os.path.basename(image1.image.path)
+				path2 = os.path.basename(image2.alt_text)
+				return path1 == path2
+			
+			# 如果一個有URL，一個有實際文件，比較文件名
+			elif (image1.alt_text and image1.alt_text.startswith('/media/') and 
+				  image2.image and hasattr(image2.image, 'path')):
+				import os
+				path1 = os.path.basename(image1.alt_text)
+				path2 = os.path.basename(image2.image.path)
+				return path1 == path2
+			
+			# 如果兩個都是URL，比較文件名
+			elif (image1.alt_text and image1.alt_text.startswith('/media/') and 
+				  image2.alt_text and image2.alt_text.startswith('/media/')):
+				import os
+				path1 = os.path.basename(image1.alt_text)
+				path2 = os.path.basename(image2.alt_text)
+				return path1 == path2
+			
+			return False
+		except Exception as e:
+			print(f"比較圖片時出錯: {e}")
+			return False
+	
+	def post(self, request, template_id):
+		"""刪除指定的模板"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			template = PostTemplate.objects.get(
+				id=template_id,
+				user=request.user,
+				is_active=True
+			)
+			
+			print(f"開始刪除模板: {template_id} - {template.title}")  # 調試信息
+			print(f"模板的圖片數量: {template.images.count()}")  # 調試信息
+			
+			# 檢查模板的圖片
+			for i, image in enumerate(template.images.all()):
+				print(f"圖片 {i}: image={image.image}, alt_text={image.alt_text}")  # 調試信息
+				if image.image:
+					print(f"  圖片文件路徑: {image.image.path if hasattr(image.image, 'path') else 'N/A'}")  # 調試信息
+			
+			# 智能刪除圖片：只有當沒有其他模板使用時才刪除圖片文件
+			images_to_delete = []  # 記錄要刪除的圖片路徑
+			
+			for image in template.images.all():
+				try:
+					import os
+					
+					# 檢查這張圖片是否被其他模板使用
+					other_templates_using_same_image = False
+					
+					# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片
+					for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
+						print(f"檢查模板 {other_template.id}: {other_template.title}")  # 調試信息
+						for other_image in other_template.images.all():
+							if self._is_same_image(image, other_image):
+								other_templates_using_same_image = True
+								print(f"發現其他模板 {other_template.id} 使用相同圖片")
+								break
+						if other_templates_using_same_image:
+							break
+					
+					# 如果沒有其他模板使用這張圖片，記錄為要刪除
+					if not other_templates_using_same_image:
+						# 檢查是否有實際圖片文件
+						if image.image and hasattr(image.image, 'path'):
+							# 原創圖片：有實際文件
+							image_path = image.image.path
+							images_to_delete.append(image_path)
+							print(f"原創圖片文件將被刪除: {image_path}")
+						elif image.alt_text and image.alt_text.startswith('/media/'):
+							# 複製圖片：檢查URL對應的實際文件
+							from django.conf import settings
+							relative_path = image.alt_text.replace('/media/', '')
+							actual_file_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+							
+							if os.path.exists(actual_file_path):
+								images_to_delete.append(actual_file_path)
+								print(f"複製圖片對應的實際文件將被刪除: {actual_file_path}")
+							else:
+								print(f"複製圖片對應的實際文件不存在: {actual_file_path}")
+						else:
+							print(f"圖片沒有實際文件，不需要刪除文件")
+					else:
+						print(f"圖片被其他模板使用，保留文件")
+					
+				except Exception as e:
+					print(f"處理圖片失敗: {e}")
+			
+			print(f"準備刪除的圖片文件數量: {len(images_to_delete)}")  # 調試信息
+			
+			# 刪除模板（會自動刪除相關的圖片記錄）
+			template.delete()
+			print(f"模板 {template_id} 已刪除")  # 調試信息
+			
+			# 現在安全地刪除不再被使用的圖片文件
+			for image_path in images_to_delete:
+				try:
+					if os.path.exists(image_path):
+						os.remove(image_path)
+						print(f"已刪除未使用的圖片文件: {image_path}")
+					else:
+						print(f"圖片文件不存在: {image_path}")
+				except Exception as e:
+					print(f"刪除圖片文件失敗: {image_path}, 錯誤: {e}")
+			
+			return JsonResponse({
+				'success': True,
+				'message': '模板已刪除'
+			})
+			
+		except PostTemplate.DoesNotExist:
+			return JsonResponse({'error': '找不到指定的模板'}, status=404)
+		except Exception as e:
+			return JsonResponse({'error': f'刪除模板失敗: {str(e)}'}, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PostTemplateUpdateView(View):
+	"""
+	貼文模板更新視圖
+	"""
+	
+	def post(self, request, template_id):
+		"""更新指定的模板"""
+		if not request.user.is_authenticated:
+			return JsonResponse({'error': '請先登入'}, status=401)
+		
+		try:
+			import json
+			data = json.loads(request.body)
+			
+			template = PostTemplate.objects.get(
+				id=template_id,
+				user=request.user,
+				is_active=True
+			)
+			
+			# 更新模板基本信息
+			if 'title' in data:
+				template.title = data['title']
+			if 'content' in data:
+				template.content = data['content']
+			if 'hashtags' in data:
+				template.hashtags = data['hashtags']
+			
+			# 保存模板
+			template.save()
+			
+			# 處理圖片更新（如果需要）
+			if 'images' in data and isinstance(data['images'], list):
+				# 清空現有圖片
+				template.images.all().delete()
+				
+				# 添加新圖片
+				for index, image_data in enumerate(data['images']):
+					if 'url' in image_data:
+						PostTemplateImage.objects.create(
+							template=template,
+							order=index,
+							alt_text=image_data.get('url', ''),
+							image=None  # 如果是URL，不存儲實際文件
+						)
+			
+			return JsonResponse({
+				'success': True,
+				'message': '模板更新成功',
+				'template_id': template.id
+			})
+			
+		except PostTemplate.DoesNotExist:
+			return JsonResponse({'error': '找不到指定的模板'}, status=404)
+		except json.JSONDecodeError:
+			return JsonResponse({'error': '無效的JSON數據'}, status=400)
+		except Exception as e:
+			return JsonResponse({'error': f'更新模板失敗: {str(e)}'}, status=500)
 
 
 

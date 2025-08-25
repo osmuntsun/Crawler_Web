@@ -454,15 +454,68 @@ function handlePreviewTemplate() {
 		return;
 	}
 	
-	// 創建預覽內容
-	let previewContent = `標題：${title}\n\n內容：${content}`;
+	// 顯示預覽 modal，包括圖片信息
+	showPreviewModal(title, content, hashtags, window.templateImages || []);
+}
+
+// 顯示預覽 Modal
+function showPreviewModal(title, content, hashtags, images = []) {
+	// 更新 modal 內容
+	document.getElementById('modalPreviewTitle').textContent = title;
+	document.getElementById('modalPreviewContent').textContent = content;
+	
+	// 處理標籤
 	if (hashtags) {
-		previewContent += `\n\n標籤：${hashtags}`;
+		document.getElementById('modalPreviewHashtags').innerHTML = `
+			<i class="fas fa-hashtag"></i> ${hashtags}
+		`;
+		document.getElementById('modalPreviewHashtags').style.display = 'block';
+	} else {
+		document.getElementById('modalPreviewHashtags').style.display = 'none';
 	}
 	
-	// 顯示預覽（這裡可以彈出一個模態框或更新預覽區域）
-	window.showNotification('模板預覽功能開發中...', 'info');
-	console.log('模板預覽:', previewContent);
+	// 處理圖片
+	if (images && images.length > 0) {
+		const imagesGrid = document.getElementById('modalPreviewImagesGrid');
+		imagesGrid.innerHTML = '';
+		
+		images.forEach((image, index) => {
+			const imageUrl = image.url || image.alt_text || '';
+			if (imageUrl) {
+				const imageItem = document.createElement('div');
+				imageItem.className = 'preview-image-item';
+				imageItem.innerHTML = `
+					<img src="${imageUrl}" alt="預覽圖片 ${index + 1}">
+					<div class="preview-image-order">${index + 1}</div>
+				`;
+				imagesGrid.appendChild(imageItem);
+			}
+		});
+		
+		document.getElementById('modalPreviewImages').style.display = 'block';
+	} else {
+		document.getElementById('modalPreviewImages').style.display = 'none';
+	}
+	
+	// 顯示 modal
+	document.getElementById('templatePreviewModal').style.display = 'block';
+	
+	// 防止背景滾動
+	document.body.style.overflow = 'hidden';
+}
+
+// 關閉預覽 Modal
+function closePreviewModal() {
+	document.getElementById('templatePreviewModal').style.display = 'none';
+	// 恢復背景滾動
+	document.body.style.overflow = 'auto';
+}
+
+// 使用預覽內容
+function usePreviewContent() {
+	// 這裡可以添加邏輯來將預覽的內容應用到發文表單
+	window.showNotification('預覽內容已準備就緒', 'success');
+	closePreviewModal();
 }
 
 function handleClearTemplate() {
@@ -717,15 +770,16 @@ function previewTemplate(templateId) {
 		.then(response => response.json())
 		.then(template => {
 			if (template.success) {
-				// 創建預覽內容
-				let previewContent = `標題：${template.template.title}\n\n內容：${template.template.content}`;
-				if (template.template.hashtags) {
-					previewContent += `\n\n標籤：${template.template.hashtags}`;
-				}
+				// 顯示預覽 modal，包括圖片信息
+				showPreviewModal(
+					template.template.title,
+					template.template.content,
+					template.template.hashtags,
+					template.template.images || []
+				);
 				
-				// 顯示預覽（這裡可以彈出一個模態框）
-				window.showNotification('模板預覽功能開發中...', 'info');
-				console.log('模板預覽:', previewContent);
+				// 顯示成功通知
+				window.showNotification('模板預覽已載入', 'success');
 			} else {
 				window.showNotification('預覽模板失敗：' + (template.error || '未知錯誤'), 'error');
 			}
@@ -959,3 +1013,7 @@ window.handleImageSortDragLeave = handleImageSortDragLeave;
 window.renderImageSortingArea = renderImageSortingArea;
 window.removeTemplateImage = removeTemplateImage;
 window.updateImageUploadAreaDisplay = updateImageUploadAreaDisplay;
+window.createNewTemplateFromCopy = createNewTemplateFromCopy;
+window.showPreviewModal = showPreviewModal;
+window.closePreviewModal = closePreviewModal;
+window.usePreviewContent = usePreviewContent;

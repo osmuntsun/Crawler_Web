@@ -834,6 +834,44 @@
 	<!-- 通知區域 -->
 	<div id="notifications" class="notifications"></div>
 
+	<!-- 模板預覽 Modal -->
+	<div id="templatePreviewModal" class="template-preview-modal" style="display: none;">
+		<div class="template-preview-overlay">
+			<div class="template-preview-content">
+				<div class="template-preview-header">
+					<h3><i class="fas fa-eye"></i> 發文預覽</h3>
+					<button type="button" class="close-preview-btn" onclick="closePreviewModal()">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				
+				<div class="template-preview-body">
+					<div class="preview-title" id="modalPreviewTitle"></div>
+					
+					<div class="preview-content" id="modalPreviewContent"></div>
+					
+					<div class="preview-images" id="modalPreviewImages" style="display: none;">
+						<div class="preview-images-title">
+							<i class="fas fa-images"></i> 圖片預覽
+						</div>
+						<div class="preview-images-grid" id="modalPreviewImagesGrid"></div>
+					</div>
+					
+					<div class="preview-hashtags" id="modalPreviewHashtags" style="display: none;"></div>
+				</div>
+				
+				<div class="template-preview-footer">
+					<button type="button" class="btn btn-secondary" onclick="closePreviewModal()">
+						關閉
+					</button>
+					<button type="button" class="btn btn-primary" onclick="usePreviewContent()">
+						<i class="fas fa-check"></i> 使用此內容
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<script>window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};</script>
 	
 	<!-- 載入分離的JavaScript模組 -->

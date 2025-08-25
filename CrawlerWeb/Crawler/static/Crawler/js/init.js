@@ -201,7 +201,7 @@ function updateCopyPreview() {
 		copyPreview.innerHTML = `
 			<div class="template-preview">
 				<div class="preview-content">
-					${processedContent}
+					<div class="content-text">${processedContent}</div>
 				</div>
 			</div>
 		`;
@@ -215,21 +215,64 @@ function updateCopyPreview() {
 // 綁定事件監聽器
 function bindEventListeners() {
 	// 文案模板選擇變化時更新預覽
-	const copyTemplateSelect = document.getElementById('copyTemplate');
+	const copyTemplateSelect = document.getElementById('templateSelect');
 	if (copyTemplateSelect) {
 		copyTemplateSelect.addEventListener('change', function() {
 			const copyPreview = document.getElementById('copyPreview');
 			if (this.value) {
-				// 這裡可以從後端獲取文案內容
-				const templates = JSON.parse(localStorage.getItem('copyTemplates') || '[]');
-				const template = templates.find(t => t.id === this.value);
-				
-				if (template) {
-					// 使用通用函數處理文字內容
-					const finalContent = window.processTemplateContent(template.template);
-					copyPreview.textContent = finalContent;
-					copyPreview.classList.add('preview-active');
-				}
+				// 從後端獲取模板詳細信息
+				fetch(`/crawler/api/templates/${this.value}/`)
+					.then(response => response.json())
+					.then(template => {
+						if (template.success) {
+							// 創建預覽內容（不包含標籤和標題）
+							let previewContent = `
+								<div class="template-preview">
+									<div class="preview-content">
+										<div class="content-text">${template.template.content.replace(/\n/g, '<br>')}</div>
+									</div>
+							`;
+							
+							// 如果有圖片，顯示圖片預覽
+							if (template.template.images && template.template.images.length > 0) {
+								previewContent += `
+									<div class="preview-images-grid">
+								`;
+								
+								template.template.images.forEach((image, index) => {
+									const imageUrl = image.url || image.alt_text || '';
+									if (imageUrl) {
+										previewContent += `
+											<div class="preview-image-item">
+												<img src="${imageUrl}" alt="預覽圖片 ${index + 1}">
+												<div class="preview-image-order">${index + 1}</div>
+											</div>
+										`;
+									}
+								});
+								
+								previewContent += `
+									</div>
+								`;
+							}
+							
+							previewContent += `
+								</div>
+							`;
+							
+							// 顯示預覽內容
+							copyPreview.innerHTML = previewContent;
+							copyPreview.classList.add('preview-active');
+						} else {
+							copyPreview.innerHTML = '<p class="text-muted">載入模板失敗</p>';
+							copyPreview.classList.remove('preview-active');
+						}
+					})
+					.catch(error => {
+						console.error('載入模板失敗:', error);
+						copyPreview.innerHTML = '<p class="text-muted">載入模板失敗</p>';
+						copyPreview.classList.remove('preview-active');
+					});
 			} else {
 				copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
 				copyPreview.classList.remove('preview-active');

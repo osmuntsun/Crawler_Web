@@ -236,7 +236,12 @@ body {
 .form-row {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 6px;
+	margin-bottom: 12px; /* 添加底部間距控制 */
+}
+
+.form-row:last-child {
+	margin-bottom: 0; /* 最後一行不需要底部間距 */
 }
 
 .form-row label {
@@ -1240,18 +1245,169 @@ body {
 
 /* 文案預覽 */
 .copy-preview {
-	background: #f8f9fa;
-	border: 2px solid #e1e5e9;
-	border-radius: 12px;
-	padding: 12px 16px;
-	min-height: 80px;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	padding: 0;
+	min-height: auto;
 	max-height: none;
 	overflow-y: visible;
 	white-space: pre-wrap;
 	font-family: inherit;
-	line-height: 1.5;
-	font-size: 0.95em;
-	margin-bottom: 4px;
+	line-height: 1.6;
+	font-size: 1.1em;
+	margin: 0;
+	word-break: break-word;
+	text-indent: 0 !important;
+	text-align: left;
+}
+
+.copy-preview * {
+	white-space: pre-wrap !important;
+	text-indent: 0 !important;
+}
+
+/* 強制移除文字開頭的空白 */
+.copy-preview::first-line {
+	text-indent: 0 !important;
+}
+
+/* 處理空白字符顯示 */
+.copy-preview {
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+/* 文案預覽中的圖片樣式 */
+.copy-preview img {
+	border-radius: 12px;
+	max-width: 100%;
+	height: auto;
+	margin: 0;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	transition: transform 0.3s ease;
+}
+
+.copy-preview img:hover {
+	transform: scale(1.02);
+}
+
+/* 文案預覽中的圖片網格 */
+.copy-preview .preview-images-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+}
+
+.copy-preview .preview-image-item {
+	position: relative;
+	width: 200px;
+	height: 200px;
+	border-radius: 0;
+	overflow: visible;
+	box-shadow: none;
+	transition: none;
+	margin: 0;
+	border: none;
+	background: none;
+}
+
+.copy-preview .preview-image-item:hover {
+	transform: none;
+	box-shadow: none;
+	border-color: transparent;
+}
+
+.copy-preview .preview-image-item img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	margin: 0;
+	border-radius: 0;
+	transition: none;
+}
+
+.copy-preview .preview-image-item:hover img {
+	transform: none;
+}
+
+/* 圖片順序標籤樣式簡化 */
+.copy-preview .preview-image-order {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75em;
+	font-weight: bold;
+	border: none;
+	transition: none;
+	z-index: 10;
+}
+
+.copy-preview .preview-image-item:hover .preview-image-order {
+	transform: none;
+	box-shadow: none;
+}
+
+/* 模板預覽的佈局調整 */
+.copy-preview .template-preview {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	margin: 0;
+	padding: 0;
+}
+
+.copy-preview .preview-content {
+	flex: 7; /* 文字佔 7 份 */
+	min-width: 0; /* 允許內容收縮 */
+	margin: 0;
+	padding: 0;
+	line-height: 1.6;
+}
+
+.copy-preview .preview-images-grid {
+	flex: 3; /* 圖片佔 3 份 */
+	min-width: 0; /* 允許內容收縮 */
+	justify-content: flex-end; /* 圖片靠右對齊 */
+	margin: 0;
+	padding: 0;
+	align-self: flex-start;
+}
+
+/* 移除所有可能的空白 */
+.copy-preview .content-text {
+	margin: 0;
+	padding: 0;
+}
+
+.copy-preview .preview-section {
+	margin: 0;
+	padding: 0;
+}
+
+/* 確保文字內容緊貼容器邊緣 */
+.copy-preview .preview-content > *:first-child {
+	margin-top: 0;
+}
+
+.copy-preview .preview-content > *:last-child {
+	margin-bottom: 0;
+}
+
+/* 移除圖片網格的頂部空白 */
+.copy-preview .preview-images-grid > *:first-child {
+	margin-top: 0;
 }
 
 /* Facebook 社團選項的顯示/隱藏過渡效果 */
@@ -1482,18 +1638,21 @@ body {
 
 /* 圖片預覽網格 */
 .image-preview-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-	gap: 8px;
-	margin-top: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 12px;
 }
 
 .preview-image-item {
 	position: relative;
-	border-radius: 8px;
+	width: 80px;
+	height: 80px;
+	border-radius: 10px;
 	overflow: hidden;
-	border: 2px solid #e1e5e9;
-	transition: all 0.2s ease;
+	border: 2px solid #e2e8f0;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .preview-image-item:hover {
@@ -1504,9 +1663,10 @@ body {
 
 .preview-thumbnail {
 	width: 100%;
-	height: 80px;
+	height: 100%;
 	object-fit: cover;
 	display: block;
+	border-radius: 8px;
 }
 
 .image-order {
@@ -1515,23 +1675,24 @@ body {
 	right: 4px;
 	background: rgba(102, 126, 234, 0.9);
 	color: white;
-	font-size: 0.75em;
+	font-size: 0.7em;
 	font-weight: 600;
 	padding: 2px 6px;
 	border-radius: 10px;
-	min-width: 20px;
+	min-width: 18px;
 	text-align: center;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* 響應式設計 */
 @media (max-width: 768px) {
 	.image-preview-grid {
-		grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-		gap: 6px;
+		gap: 10px;
 	}
 	
-	.preview-thumbnail {
-		height: 60px;
+	.preview-image-item {
+		width: 70px;
+		height: 70px;
 	}
 	
 	.template-preview .preview-content {
@@ -1541,6 +1702,23 @@ body {
 	.template-preview .preview-section {
 		margin-bottom: 12px;
 		padding-bottom: 8px;
+	}
+}
+
+@media (max-width: 480px) {
+	.image-preview-grid {
+		gap: 8px;
+	}
+	
+	.preview-image-item {
+		width: 60px;
+		height: 60px;
+	}
+	
+	.image-order {
+		font-size: 0.65em;
+		min-width: 16px;
+		padding: 1px 4px;
 	}
 }
 
@@ -2519,5 +2697,120 @@ body {
     background: #6b7280;
     border: none;
     color: white;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+	.copy-preview .template-preview {
+		flex-direction: column;
+		gap: 12px;
+	}
+	
+	.copy-preview .preview-content {
+		flex: none;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+	}
+	
+	.copy-preview .preview-images-grid {
+		flex: none;
+		width: 100%;
+		justify-content: flex-start;
+		margin: 0;
+		padding: 0;
+	}
+	
+	.copy-preview .preview-image-item {
+		width: 180px;
+		height: 180px;
+		border-radius: 0;
+	}
+	
+	.copy-preview .preview-image-item img {
+		border-radius: 0;
+	}
+	
+	.copy-preview .preview-image-order {
+		width: 22px;
+		height: 22px;
+		font-size: 0.7em;
+		top: 6px;
+		left: 6px;
+	}
+	
+	.image-preview-grid {
+		gap: 10px;
+	}
+	
+	.preview-image-item {
+		width: 70px;
+		height: 70px;
+	}
+	
+	.template-preview .preview-content {
+		padding: 0;
+	}
+	
+	.template-preview .preview-section {
+		margin: 0;
+		padding: 0;
+	}
+}
+
+@media (max-width: 480px) {
+	.copy-preview .template-preview {
+		gap: 8px;
+	}
+	
+	.copy-preview .preview-image-item {
+		width: 160px;
+		height: 160px;
+		border-radius: 0;
+	}
+	
+	.copy-preview .preview-image-item img {
+		border-radius: 0;
+	}
+	
+	.copy-preview .preview-image-order {
+		width: 20px;
+		height: 20px;
+		font-size: 0.65em;
+		top: 6px;
+		left: 6px;
+	}
+	
+	.image-preview-grid {
+		gap: 8px;
+	}
+	
+	.preview-image-item {
+		width: 60px;
+		height: 60px;
+	}
+	
+	.image-order {
+		font-size: 0.65em;
+		min-width: 16px;
+		padding: 1px 4px;
+	}
+}
+
+/* 文案預覽中的內容樣式 */
+.copy-preview .preview-content {
+	font-size: 0.95em;
+	line-height: 1.5;
+	color: #4a5568;
+	margin: 0;
+	padding: 0;
+}
+
+.copy-preview .content-text {
+	font-size: 0.9em;
+	line-height: 1.4;
+	color: #4a5568;
+	margin: 0;
+	padding: 0;
 }
 

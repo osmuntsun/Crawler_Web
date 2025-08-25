@@ -1900,49 +1900,36 @@ class PostTemplateDeleteView(View):
 			images_to_delete = []  # 記錄要刪除的圖片路徑
 			
 			for image in template.images.all():
-				try:
-					import os
-					
-					# 檢查這張圖片是否被其他模板使用
-					other_templates_using_same_image = False
-					
-					# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片
-					for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
-						print(f"檢查模板 {other_template.id}: {other_template.title}")  # 調試信息
-						for other_image in other_template.images.all():
-							if self._is_same_image(image, other_image):
-								other_templates_using_same_image = True
-								print(f"發現其他模板 {other_template.id} 使用相同圖片")
+					try:
+						import os
+						
+						# 檢查這張圖片是否被其他模板使用
+						other_templates_using_same_image = False
+						
+						# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片
+						for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
+							print(f"檢查模板 {other_template.id}: {other_template.title}")  # 調試信息
+							for other_image in other_template.images.all():
+								# 檢查是否為相同的圖片
+								if self._is_same_image(image, other_image):
+									other_templates_using_same_image = True
+									print(f"發現其他模板 {other_template.id} 使用相同圖片")
+									break
+							if other_templates_using_same_image:
 								break
-						if other_templates_using_same_image:
-							break
-					
-					# 如果沒有其他模板使用這張圖片，記錄為要刪除
-					if not other_templates_using_same_image:
-						# 檢查是否有實際圖片文件
-						if image.image and hasattr(image.image, 'path'):
-							# 原創圖片：有實際文件
+						
+						# 如果沒有其他模板使用這張圖片，且圖片有實際文件，則記錄為要刪除
+						if not other_templates_using_same_image and image.image and hasattr(image.image, 'path'):
 							image_path = image.image.path
 							images_to_delete.append(image_path)
-							print(f"原創圖片文件將被刪除: {image_path}")
-						elif image.alt_text and image.alt_text.startswith('/media/'):
-							# 複製圖片：檢查URL對應的實際文件
-							from django.conf import settings
-							relative_path = image.alt_text.replace('/media/', '')
-							actual_file_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-							
-							if os.path.exists(actual_file_path):
-								images_to_delete.append(actual_file_path)
-								print(f"複製圖片對應的實際文件將被刪除: {actual_file_path}")
-							else:
-								print(f"複製圖片對應的實際文件不存在: {actual_file_path}")
-						else:
+							print(f"圖片文件將被刪除: {image_path}")
+						elif not other_templates_using_same_image:
 							print(f"圖片沒有實際文件，不需要刪除文件")
-					else:
-						print(f"圖片被其他模板使用，保留文件")
-					
-				except Exception as e:
-					print(f"處理圖片失敗: {e}")
+						else:
+							print(f"圖片被其他模板使用，保留文件")
+						
+					except Exception as e:
+						print(f"處理圖片失敗: {e}")
 			
 			print(f"準備刪除的圖片文件數量: {len(images_to_delete)}")  # 調試信息
 			

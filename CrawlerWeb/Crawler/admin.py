@@ -126,11 +126,49 @@ class SocialMediaPostAdmin(admin.ModelAdmin):
     get_engagement_summary.short_description = '互動摘要'
 
 
+class ExecutionDaysFilter(admin.SimpleListFilter):
+    """執行日期篩選器"""
+    title = '執行日期'
+    parameter_name = 'execution_days'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('monday', '週一'),
+            ('tuesday', '週二'),
+            ('wednesday', '週三'),
+            ('thursday', '週四'),
+            ('friday', '週五'),
+            ('saturday', '週六'),
+            ('sunday', '週日'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value():
+            # 使用字符串查詢，兼容所有數據庫
+            from django.db.models import Q
+            return queryset.filter(execution_days__icontains=self.value())
+        return queryset
+
+class UserFilter(admin.SimpleListFilter):
+    """使用者篩選器"""
+    title = '使用者'
+    parameter_name = 'user'
+
+    def lookups(self, request, model_admin):
+        # 獲取所有有排程的使用者
+        users = model_admin.model.objects.values_list('user__id', 'user__username').distinct()
+        return [(str(user_id), username) for user_id, username in users if user_id and username]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(user__id=self.value())
+        return queryset
+
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
     """排程發文設定管理"""
     list_display = ('name', 'user', 'platform', 'status', 'is_active', 'execution_days_display', 'posting_times_display', 'total_executions', 'created_at')
-    list_filter = ('status', 'is_active', 'platform', 'created_at')
+    list_filter = (UserFilter, ExecutionDaysFilter, 'status', 'is_active', 'platform', 'created_at')
     search_fields = ('name', 'user__username', 'platform')
     readonly_fields = ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time', 'created_at', 'updated_at')
     

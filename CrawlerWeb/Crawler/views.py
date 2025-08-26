@@ -50,14 +50,10 @@ def tool(request):
 		}
 		
 		# 添加調試信息
-		print(f"tool視圖被調用")
-		print(f"用戶: {request.user}")
-		print(f"用戶已認證: {request.user.is_authenticated}")
-		print(f"can_use_tool: {can_use_tool}")
+		# 調試訊息已移除
 		
 		return render(request, 'Crawler/tool.html', context)
 	except Exception as e:
-		print(f"tool視圖錯誤: {str(e)}")
 		raise Http404(f"爬蟲工具頁面不存在: {str(e)}")
 
 
@@ -86,19 +82,18 @@ class FacebookAutomationView(View):
 	def human_delay(self, min_seconds=0.5, max_seconds=2.0):
 		"""人類化的隨機延遲"""
 		delay = random.uniform(min_seconds, max_seconds)
-		print(f"人類化延遲: {delay:.2f} 秒")
+		# 調試訊息已移除
 		time.sleep(delay)
 	
 	def human_type(self, element, text, min_delay=0.05, max_delay=0.15):
 		"""人類化的打字速度"""
-		print(f"開始人類化輸入文字: {text[:30]}...")
+		# 調試訊息已移除
 		for char in text:
 			element.send_keys(char)
 			# 隨機延遲，模擬人類打字速度
 			delay = random.uniform(min_delay, max_delay)
 			time.sleep(delay)
-		print("文字輸入完成")
-	
+
 	def human_scroll(self, driver, direction="down", distance=None):
 		"""人類化的滾動行為"""
 		if distance is None:
@@ -109,7 +104,7 @@ class FacebookAutomationView(View):
 		elif direction == "up":
 			driver.execute_script(f"window.scrollBy(0, -{distance});")
 		
-		print(f"人類化滾動: {direction} {distance}px")
+		# 調試訊息已移除
 		self.human_delay(0.3, 1.0)
 	
 	def human_move_mouse(self, driver, element):
@@ -118,7 +113,7 @@ class FacebookAutomationView(View):
 		# 隨機移動到元素
 		actions.move_to_element(element)
 		actions.perform()
-		print("人類化鼠標移動完成")
+
 		self.human_delay(0.2, 0.8)
 	
 	def random_human_behavior(self, driver):
@@ -132,14 +127,10 @@ class FacebookAutomationView(View):
 		# 30% 機率執行隨機行為
 		if random.random() < 0.3:
 			random.choice(behaviors)()
-			print("執行了隨機人類行為")
-	
+
 	def post(self, request):
 		"""處理 Facebook 自動化請求"""
-		print(f"收到Facebook自動化請求: {request.method}")
-		print(f"用戶: {request.user}")
-		print(f"用戶已認證: {request.user.is_authenticated}")
-		print(f"用戶是付費用戶: {getattr(request.user, 'is_premium_active', 'N/A')}")
+		# 調試訊息已移除
 		
 		if not request.user.is_authenticated:
 			return JsonResponse({'error': '請先登入'}, status=401)
@@ -150,16 +141,12 @@ class FacebookAutomationView(View):
 		
 		try:
 			# 添加調試信息
-			print(f"請求內容類型: {request.content_type}")
-			print(f"請求方法: {request.method}")
-			print(f"請求體長度: {len(request.body) if request.body else 0}")
-			print(f"請求體內容: {request.body[:500] if request.body else 'None'}")  # 只顯示前500個字符
+					# 調試訊息已移除
 			
 			data = json.loads(request.body)
 			action = data.get('action')
 			
-			print(f"解析後的數據: {data}")
-			print(f"操作類型: {action}")
+					# 調試訊息已移除
 			
 			if action == 'login_and_save_cookies':
 				return self.login_and_save_cookies(request, data)
@@ -177,8 +164,7 @@ class FacebookAutomationView(View):
 	
 	def login_and_save_cookies(self, request, data):
 		"""登入社群平台並保存 Cookie"""
-		print(f"開始執行login_and_save_cookies")
-		print(f"請求數據: {data}")
+		# 調試訊息已移除
 		
 		try:
 			platform = data.get('platform', 'facebook')
@@ -243,15 +229,13 @@ class FacebookAutomationView(View):
 			# 如果是 Facebook，自動獲取並保存社團
 			communities = []
 			if platform == 'facebook':
-				print("開始獲取 Facebook 社團...")
+
 				communities = self._get_facebook_communities(driver, filtered_cookies)
-				print(f"獲取到 {len(communities)} 個社團")
 				if communities:
 					saved_count = self._save_communities_to_db(request.user, communities)
-					print(f"成功保存 {saved_count} 個社團到資料庫")
 				else:
-					print("沒有獲取到任何社團")
-			
+					pass
+
 			driver.quit()
 			
 			# 準備回應訊息
@@ -346,12 +330,10 @@ class FacebookAutomationView(View):
 				)
 				deleted_count = deleted_communities.count()
 				deleted_communities.delete()
-				print(f"刪除了 {deleted_count} 個不再存在的社團")
-			
+
 			# 添加新的社團
 			added_count = self._save_communities_to_db(request.user, communities)
-			print(f"新增了 {added_count} 個社團")
-			
+
 			driver.quit()
 			
 			return JsonResponse({
@@ -466,20 +448,18 @@ class FacebookAutomationView(View):
 					
 					# 上傳圖片（如果有的話）
 					if all_image_paths:
-						print(f"準備上傳 {len(all_image_paths)} 張圖片")
+
 						try:
 							# 查找圖片上傳按鈕
 							post_img = driver.find_element(
 								By.XPATH,
 								'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
 							)
-							print("成功找到圖片上傳按鈕")
-							
+
 							# 處理每張圖片
 							for i, img_path in enumerate(all_image_paths):
 								try:
-									print(f"處理第 {i+1} 張圖片: {img_path}")
-									
+
 									# 轉換圖片路徑為絕對路徑
 									if img_path.startswith('/media/'):
 										# 相對路徑，轉換為絕對路徑
@@ -490,40 +470,38 @@ class FacebookAutomationView(View):
 										relative_path = relative_path.replace('/', os.sep)
 										# 構建絕對路徑
 										absolute_path = os.path.join(settings.BASE_DIR, 'media', relative_path)
-										
-										print(f"轉換路徑: {img_path} -> {absolute_path}")
-										
+
 										# 檢查文件是否存在
 										if os.path.exists(absolute_path):
-											print(f"圖片文件存在，大小: {os.path.getsize(absolute_path)} bytes")
+
 											# 上傳圖片
 											post_img.send_keys(absolute_path)
-											print(f"成功發送圖片路徑: {absolute_path}")
-											print("等待圖片上傳完成...")
+
+
 											self.human_delay(0.8, 1.5)  # 人類化的等待時間
 										else:
-											print(f"圖片文件不存在: {absolute_path}")
+
 											continue
 									else:
 										# 已經是絕對路徑，直接使用
-										print(f"使用絕對路徑: {img_path}")
+
 										post_img.send_keys(img_path)
-										print(f"成功發送圖片路徑: {img_path}")
-										print("等待圖片上傳完成...")
+
+
 										self.human_delay(0.8, 1.5)  # 人類化的等待時間
 										
 								except Exception as single_img_error:
-									print(f"上傳第 {i+1} 張圖片失敗: {str(single_img_error)}")
+
 									continue
 									
 							# 所有圖片上傳完成後，再等待一下確保上傳穩定
 							if all_image_paths:
-								print(f"所有 {len(all_image_paths)} 張圖片上傳完成，等待確保穩定...")
+
 								self.human_delay(1.0, 2.0)  # 人類化的等待時間
 									
 						except Exception as img_error:
-							print(f"圖片上傳過程發生錯誤: {str(img_error)}")
 							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
+							pass
 					
 					# time.sleep(1)
 					
@@ -542,7 +520,7 @@ class FacebookAutomationView(View):
 					})
 					
 					# 人類化的等待時間
-					print("等待一下再發下一個社團...")
+
 					self.human_delay(2.0, 4.0)
 					
 				except Exception as e:
@@ -570,7 +548,7 @@ class FacebookAutomationView(View):
 	
 	def _setup_driver(self):
 		"""設置 Chrome 驅動程式"""
-		print("開始設置Chrome驅動程序...")
+
 		options = Options()
 		options.add_argument("--start-maximized")
 		options.add_argument("--disable-notifications")
@@ -583,14 +561,13 @@ class FacebookAutomationView(View):
 		options.add_experimental_option('excludeSwitches', ['enable-logging'])
 		
 		# 使用 webdriver_manager 自動管理 ChromeDriver
-		print("正在安裝ChromeDriver...")
+
 		service = Service(ChromeDriverManager().install())
-		print("正在創建Chrome驅動程序...")
+
 		driver = webdriver.Chrome(service=service, options=options)
-		print("Chrome驅動程序創建成功！")
-		
+
 		# 添加反檢測代碼，隱藏 webdriver 屬性
-		print("正在添加反檢測代碼...")
+
 		try:
 			driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
 				"source": """
@@ -599,9 +576,9 @@ class FacebookAutomationView(View):
 					})
 				"""
 			})
-			print("反檢測代碼添加成功！")
+
 		except Exception as e:
-			print(f"添加反檢測代碼失敗: {str(e)}")
+			pass
 		
 		return driver
 	
@@ -619,17 +596,15 @@ class FacebookAutomationView(View):
 	def _get_facebook_communities(self, driver, cookies):
 		"""獲取 Facebook 社團列表"""
 		try:
-			print("開始獲取 Facebook 社團...")
+
 			# 前往社團頁面
 			driver.get("https://www.facebook.com/groups/joins/?nav_source=tab&ordering=viewer_added")
 			time.sleep(5)  # 增加等待時間
-			print("已前往社團頁面")
-			
+
 			# 滾動到底部獲取所有社團
 			self._scroll_to_bottom(driver)
 			time.sleep(2)  # 滾動後再等待一下
-			print("已完成頁面滾動")
-			
+
 			# 獲取社團列表
 			communities = []
 			try:
@@ -651,14 +626,14 @@ class FacebookAutomationView(View):
 				
 				for i, xpath in enumerate(possible_xpaths):
 					try:
-						print(f"嘗試 XPath {i+1}: {xpath}")
+
 						elements = driver.find_elements(By.XPATH, xpath)
-						print(f"找到 {len(elements)} 個元素")
+
 						if elements:
 							for element in elements:
 								name = element.text.strip()
 								url = element.get_attribute('href')
-								print(f"檢查元素: {name} - {url}")
+
 								# 更嚴格的過濾條件
 								if (name and url and 
 									'groups' in url and 
@@ -677,14 +652,14 @@ class FacebookAutomationView(View):
 									name != '發現' and
 									not name.startswith('查看更多') and
 									not name.startswith('顯示更多')):
-									print(f"找到社團: {name} - {url}")
+
 									communities.append({
 										'name': name,
 										'url': url
 									})
 							break  # 如果找到元素，就跳出循環
 					except Exception as e:
-						print(f"XPath {i+1} 失敗: {str(e)}")
+
 						continue
 				
 				# 去重
@@ -698,13 +673,13 @@ class FacebookAutomationView(View):
 				return unique_communities
 				
 			except Exception as e:
-				print(f"獲取社團時發生錯誤: {str(e)}")
+
 				import traceback
 				traceback.print_exc()
 				return []
 				
 		except Exception as e:
-			print(f"前往社團頁面時發生錯誤: {str(e)}")
+
 			import traceback
 			traceback.print_exc()
 			return []
@@ -712,10 +687,10 @@ class FacebookAutomationView(View):
 	def _save_communities_to_db(self, user, communities):
 		"""保存社團到資料庫"""
 		try:
-			print(f"開始保存 {len(communities)} 個社團到資料庫")
+
 			saved_count = 0
 			for i, community_data in enumerate(communities):
-				print(f"處理社團 {i+1}: {community_data['name']}")
+
 				# 檢查是否已存在相同的社團
 				existing_community = Community.objects.filter(
 					user=user,
@@ -734,15 +709,14 @@ class FacebookAutomationView(View):
 						is_public=True
 					)
 					saved_count += 1
-					print(f"成功保存社團: {community_data['name']}")
+
 				else:
-					print(f"社團已存在: {community_data['name']}")
+					pass
 			
-			print(f"成功保存 {saved_count} 個新社團到資料庫")
 			return saved_count
 			
 		except Exception as e:
-			print(f"保存社團到資料庫時發生錯誤: {str(e)}")
+
 			import traceback
 			traceback.print_exc()
 			return 0
@@ -942,10 +916,9 @@ class CommunitiesView(View):
 					time.sleep(2)
 					
 					# 獲取最新的社團列表
-					print("開始重新獲取 Facebook 社團...")
+
 					new_communities = facebook_view._get_facebook_communities(driver, website_cookie.cookie_data)
-					print(f"重新獲取到 {len(new_communities)} 個社團")
-					
+
 					# 獲取資料庫中現有的社團
 					existing_communities = Community.objects.filter(
 						user=request.user,
@@ -967,12 +940,10 @@ class CommunitiesView(View):
 						)
 						deleted_count = deleted_communities.count()
 						deleted_communities.delete()
-						print(f"刪除了 {deleted_count} 個不再存在的社團")
-					
+
 					# 添加新的社團
 					added_count = facebook_view._save_communities_to_db(request.user, new_communities)
-					print(f"新增了 {added_count} 個社團")
-					
+
 					driver.quit()
 					
 					return JsonResponse({
@@ -1094,7 +1065,7 @@ class PostTemplateView(View):
 			
 			return False
 		except Exception as e:
-			print(f"比較圖片時出錯: {e}")
+
 			return False
 	
 	def get(self, request):
@@ -1163,7 +1134,7 @@ class PostTemplateView(View):
 			for template in templates:
 				# 獲取模板的圖片
 				images = template.images.all().order_by('order')
-				print(f"模板 {template.id} 的圖片數量: {images.count()}")  # 調試信息
+				# 調試訊息已移除
 				images_data = []
 				for image in images:
 					print(f"處理圖片: id={image.id}, image={image.image}, alt_text={image.alt_text}")  # 調試信息
@@ -1337,12 +1308,10 @@ class PostTemplateView(View):
 						
 						# 遍歷所有活躍的模板，檢查是否有其他模板使用相同的圖片
 						for other_template in PostTemplate.objects.filter(is_active=True).exclude(id=template_id):
-							print(f"檢查模板 {other_template.id}: {other_template.title}")  # 調試信息
 							for other_image in other_template.images.all():
 								# 檢查是否為相同的圖片
 								if self._is_same_image(image, other_image):
 									other_templates_using_same_image = True
-									print(f"發現其他模板 {other_template.id} 使用相同圖片")
 									break
 							if other_templates_using_same_image:
 								break
@@ -1351,31 +1320,24 @@ class PostTemplateView(View):
 						if not other_templates_using_same_image and image.image and hasattr(image.image, 'path'):
 							image_path = image.image.path
 							images_to_delete.append(image_path)
-							print(f"圖片文件將被刪除: {image_path}")
 						elif not other_templates_using_same_image:
-							print(f"圖片沒有實際文件，不需要刪除文件")
+							pass
 						else:
-							print(f"圖片被其他模板使用，保留文件")
+							pass
 						
 					except Exception as e:
-						print(f"處理圖片失敗: {e}")
-				
-				print(f"準備刪除的圖片文件數量: {len(images_to_delete)}")  # 調試信息
+						pass
 				
 				# 刪除模板（會自動刪除相關的圖片記錄）
 				template.delete()
-				print(f"模板 {template_id} 已刪除")  # 調試信息
 				
 				# 現在安全地刪除不再被使用的圖片文件
 				for image_path in images_to_delete:
 					try:
 						if os.path.exists(image_path):
 							os.remove(image_path)
-							print(f"已刪除未使用的圖片文件: {image_path}")
-						else:
-							print(f"圖片文件不存在: {image_path}")
 					except Exception as e:
-						print(f"刪除圖片文件失敗: {image_path}, 錯誤: {e}")
+						pass
 				
 				return JsonResponse({
 					'success': True,
@@ -1416,13 +1378,11 @@ class PostTemplateView(View):
 						# 不檢查文件是否存在，因為文件可能已經被刪除
 						# 我們只需要知道有模板在使用這個圖片
 						used_image_paths.add(alt_text_path)
-						print(f"添加複製圖片路徑到保護列表: {alt_text_path}")
-						
+
 						# 同時也添加標準化的路徑格式，以確保路徑匹配
 						normalized_path = os.path.normpath(alt_text_path)
 						used_image_paths.add(normalized_path)
-						print(f"添加標準化路徑到保護列表: {normalized_path}")
-			
+
 			# 檢查 media/templates 目錄中的文件
 			templates_dir = os.path.join(settings.MEDIA_ROOT, 'templates')
 			if os.path.exists(templates_dir):
@@ -1436,17 +1396,14 @@ class PostTemplateView(View):
 								if file_path not in used_image_paths:
 									try:
 										os.remove(file_path)
-										print(f"清理孤立圖片文件: {file_path}")
-									except Exception as e:
-										print(f"刪除孤立圖片文件失敗: {file_path}, 錯誤: {e}")
-								else:
-									print(f"圖片文件仍在使用: {file_path}")
-			
-			print("孤立圖片文件清理完成")
-			
-		except Exception as e:
-			print(f"清理孤立圖片文件時發生錯誤: {e}")
 
+									except Exception as e:
+										pass
+								else:
+									pass
+		
+		except Exception as e:
+			pass
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ScheduleView(View):
@@ -1900,7 +1857,7 @@ class PostTemplateDeleteView(View):
 			
 			return False
 		except Exception as e:
-			print(f"比較圖片時出錯: {e}")
+
 			return False
 	
 	def post(self, request, template_id):
@@ -1941,7 +1898,7 @@ class PostTemplateDeleteView(View):
 								# 檢查是否為相同的圖片
 								if self._is_same_image(image, other_image):
 									other_templates_using_same_image = True
-									print(f"發現其他模板 {other_template.id} 使用相同圖片")
+
 									break
 							if other_templates_using_same_image:
 								break
@@ -1950,15 +1907,14 @@ class PostTemplateDeleteView(View):
 						if not other_templates_using_same_image and image.image and hasattr(image.image, 'path'):
 							image_path = image.image.path
 							images_to_delete.append(image_path)
-							print(f"圖片文件將被刪除: {image_path}")
+
 						elif not other_templates_using_same_image:
-							print(f"圖片沒有實際文件，不需要刪除文件")
+							pass
 						else:
-							print(f"圖片被其他模板使用，保留文件")
-						
+							pass
 					except Exception as e:
-						print(f"處理圖片失敗: {e}")
-			
+						pass
+
 			print(f"準備刪除的圖片文件數量: {len(images_to_delete)}")  # 調試信息
 			
 			# 刪除模板（會自動刪除相關的圖片記錄）
@@ -1970,12 +1926,12 @@ class PostTemplateDeleteView(View):
 				try:
 					if os.path.exists(image_path):
 						os.remove(image_path)
-						print(f"已刪除未使用的圖片文件: {image_path}")
+
 					else:
-						print(f"圖片文件不存在: {image_path}")
+						pass
 				except Exception as e:
-					print(f"刪除圖片文件失敗: {image_path}, 錯誤: {e}")
-			
+					pass
+
 			return JsonResponse({
 				'success': True,
 				'message': '模板已刪除'

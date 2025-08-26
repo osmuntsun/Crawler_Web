@@ -169,65 +169,43 @@ class SocialMediaPost(models.Model):
 
 
 class Schedule(models.Model):
-    """排程設定"""
+    """排程發文設定"""
     STATUS_CHOICES = [
         ('active', '啟用'),
         ('paused', '暫停'),
-        ('completed', '完成'),
         ('cancelled', '取消'),
     ]
     
-    FREQUENCY_CHOICES = [
-        ('daily', '每日'),
-        ('weekly', '每週'),
-        ('monthly', '每月'),
-        ('custom', '自定義'),
-    ]
-    
+    # 基本資訊
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='使用者')
     name = models.CharField(max_length=200, verbose_name='排程名稱')
     description = models.TextField(blank=True, verbose_name='排程描述')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name='狀態')
     is_active = models.BooleanField(default=True, verbose_name='是否啟用')
     
-    # 舊字段（保留用於向後兼容）
-    start_time = models.DateTimeField(verbose_name='開始時間', null=True, blank=True)
-    end_time = models.DateTimeField(null=True, blank=True, verbose_name='結束時間')
-    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily', verbose_name='執行頻率')
-    interval_minutes = models.PositiveIntegerField(default=60, verbose_name='執行間隔(分鐘)')
-    next_execution = models.DateTimeField(null=True, blank=True, verbose_name='下次執行時間')
-    platforms = models.JSONField(default=list, blank=True, verbose_name='目標平台')
+    # 排程設定
+    execution_days = models.JSONField(default=list, verbose_name='執行日期', help_text='例如：["monday", "tuesday", "wednesday"]')
+    posting_times = models.JSONField(default=list, verbose_name='發文時間', help_text='例如：["09:00", "14:00", "18:00"]')
     
-    # 新字段
-    execution_days = models.JSONField(default=list, blank=True, verbose_name='執行日期')
-    posting_times = models.JSONField(default=list, blank=True, verbose_name='發文時間')
-    
-    # 內容設定
-    template = models.ForeignKey(PostTemplate, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='文案模板')
-    custom_content = models.TextField(blank=True, verbose_name='自定義內容')
-    custom_hashtags = models.TextField(blank=True, verbose_name='自定義標籤')
-    
-    # 圖片設定
-    use_template_images = models.BooleanField(default=True, verbose_name='使用模板圖片')
-    additional_images = models.JSONField(default=list, blank=True, verbose_name='額外圖片')
-    
-    # 發布設定
-    platform = models.CharField(max_length=20, verbose_name='社群平台', blank=True)
-    target_communities = models.JSONField(default=list, blank=True, verbose_name='目標社團/頁面')
+    # 發文內容
+    platform = models.CharField(max_length=20, verbose_name='社群平台')
+    message_content = models.TextField(verbose_name='發文內容')
+    template_images = models.JSONField(default=list, verbose_name='模板圖片', help_text='圖片URL和排序信息')
+    target_communities = models.JSONField(default=list, verbose_name='目標社團', help_text='社團信息列表')
     
     # 執行統計
     total_executions = models.PositiveIntegerField(default=0, verbose_name='總執行次數')
     successful_executions = models.PositiveIntegerField(default=0, verbose_name='成功執行次數')
     failed_executions = models.PositiveIntegerField(default=0, verbose_name='失敗執行次數')
-    last_execution_time = models.DateTimeField(null=True, blank=True, verbose_name='最後執行時間')
     
     # 時間資訊
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
+    last_execution_time = models.DateTimeField(null=True, blank=True, verbose_name='最後執行時間')
     
     class Meta:
-        verbose_name = '排程設定'
-        verbose_name_plural = '排程設定'
+        verbose_name = '排程發文設定'
+        verbose_name_plural = '排程發文設定'
         ordering = ['-created_at']
     
     def __str__(self):
@@ -238,6 +216,7 @@ class Schedule(models.Model):
         if not self.posting_times or not self.execution_days:
             return None
         
+        from datetime import datetime, timedelta
         now = timezone.now()
         current_time = now.time()
         current_weekday = now.strftime('%A').lower()
@@ -265,6 +244,15 @@ class Schedule(models.Model):
                 return timezone.make_aware(next_execution)
         
         return None
+    
+    def get_execution_summary(self):
+        """獲取執行摘要"""
+        return {
+            'total': self.total_executions,
+            'successful': self.successful_executions,
+            'failed': self.failed_executions,
+            'success_rate': (self.successful_executions / self.total_executions * 100) if self.total_executions > 0 else 0
+        }
 
 
 class ScheduleExecution(models.Model):
@@ -277,90 +265,64 @@ class ScheduleExecution(models.Model):
         ('cancelled', '已取消'),
     ]
     
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, verbose_name='排程設定')
+    # 基本資訊
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, verbose_name='排程設定', related_name='executions')
     status = models.CharField(max_length=20, choices=EXECUTION_STATUS_CHOICES, default='pending', verbose_name='執行狀態')
     
-    # 舊字段（保留用於向後兼容）
-    scheduled_time = models.DateTimeField(verbose_name='預定執行時間', null=True, blank=True)
+    # 執行時間
+    scheduled_time = models.DateTimeField(verbose_name='預定執行時間')
     started_at = models.DateTimeField(null=True, blank=True, verbose_name='開始執行時間')
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name='完成時間')
-    success_count = models.PositiveIntegerField(default=0, verbose_name='成功發布數')
-    failure_count = models.PositiveIntegerField(default=0, verbose_name='失敗發布數')
-    total_count = models.PositiveIntegerField(default=0, verbose_name='總發布數')
-    execution_log = models.JSONField(default=dict, blank=True, verbose_name='執行日誌')
-    error_messages = models.JSONField(default=list, blank=True, verbose_name='錯誤訊息')
-    published_posts = models.JSONField(default=list, blank=True, verbose_name='已發布貼文')
-    reach_count = models.PositiveIntegerField(default=0, verbose_name='觸及人數')
-    like_count = models.PositiveIntegerField(default=0, verbose_name='按讚數')
-    share_count = models.PositiveIntegerField(default=0, verbose_name='分享數')
-    comment_count = models.PositiveIntegerField(default=0, verbose_name='留言數')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
     
-    # 新字段
-    execution_time = models.DateTimeField(verbose_name='執行時間', default=timezone.now)
+    # 執行結果
     result_message = models.TextField(blank=True, verbose_name='執行結果訊息')
     error_details = models.TextField(blank=True, verbose_name='錯誤詳情')
     execution_duration = models.PositiveIntegerField(null=True, blank=True, verbose_name='執行時長(秒)')
     
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
-    
-    class Meta:
-        verbose_name = '排程執行記錄'
-        verbose_name_plural = '排程執行記錄'
-        ordering = ['-execution_time']
-    
-    def __str__(self):
-        return f"{self.schedule.name} - {self.execution_time.strftime('%Y-%m-%d %H:%M')}"
-
-
-class ScheduleTemplate(models.Model):
-    """排程模板模型"""
-    TEMPLATE_TYPE_CHOICES = [
-        ('daily_posting', '每日發文'),
-        ('weekly_campaign', '每週活動'),
-        ('monthly_report', '每月報告'),
-        ('custom', '自定義'),
-    ]
-    
-    name = models.CharField(max_length=200, verbose_name='模板名稱')
-    description = models.TextField(blank=True, verbose_name='模板描述')
-    template_type = models.CharField(max_length=20, choices=TEMPLATE_TYPE_CHOICES, default='custom', verbose_name='模板類型')
-    
-    # 預設設定
-    default_frequency = models.CharField(max_length=20, choices=[
-        ('once', '單次'),
-        ('hourly', '每小時'),
-        ('daily', '每天'),
-        ('weekly', '每週'),
-        ('monthly', '每月'),
-        ('custom', '自定義'),
-    ], default='daily', verbose_name='預設頻率')
-    default_interval_minutes = models.PositiveIntegerField(default=60, verbose_name='預設間隔(分鐘)')
-    
-    # 預設內容
-    default_content_template = models.TextField(blank=True, verbose_name='預設內容模板')
-    default_hashtags = models.JSONField(default=list, blank=True, verbose_name='預設標籤')
-    
-    # 預設平台和社團
-    default_platforms = models.JSONField(default=list, blank=True, verbose_name='預設平台')
-    default_communities = models.JSONField(default=list, blank=True, verbose_name='預設社團')
-    
-    # 使用統計
-    usage_count = models.PositiveIntegerField(default=0, verbose_name='使用次數')
+    # 發布統計
+    posts_published = models.PositiveIntegerField(default=0, verbose_name='成功發布貼文數')
+    posts_failed = models.PositiveIntegerField(default=0, verbose_name='失敗發布貼文數')
     
     # 時間戳記
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='創建時間')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新時間')
     
     class Meta:
-        verbose_name = '排程模板'
-        verbose_name_plural = '排程模板'
-        ordering = ['-usage_count', '-created_at']
+        verbose_name = '排程執行記錄'
+        verbose_name_plural = '排程執行記錄'
+        ordering = ['-scheduled_time']
     
     def __str__(self):
-        return self.name
+        return f"{self.schedule.name} - {self.scheduled_time.strftime('%Y-%m-%d %H:%M')} - {self.status}"
     
-    def increment_usage(self):
-        """增加使用次數"""
-        self.usage_count += 1
+    def mark_as_started(self):
+        """標記為開始執行"""
+        self.status = 'running'
+        self.started_at = timezone.now()
+        self.save()
+    
+    def mark_as_completed(self, success_count=0, failure_count=0, message=""):
+        """標記為完成"""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.posts_published = success_count
+        self.posts_failed = failure_count
+        self.result_message = message
+        
+        if self.started_at:
+            duration = (self.completed_at - self.started_at).total_seconds()
+            self.execution_duration = int(duration)
+        
+        self.save()
+    
+    def mark_as_failed(self, error_message=""):
+        """標記為失敗"""
+        self.status = 'failed'
+        self.completed_at = timezone.now()
+        self.error_details = error_message
+        
+        if self.started_at:
+            duration = (self.completed_at - self.started_at).total_seconds()
+            self.execution_duration = int(duration)
+        
         self.save()

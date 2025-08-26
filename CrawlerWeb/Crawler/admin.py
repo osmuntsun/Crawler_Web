@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Community, PostTemplate, PostTemplateImage, SocialMediaPost,
-    Schedule, ScheduleExecution, ScheduleTemplate
+    Schedule, ScheduleExecution
 )
 
 
@@ -128,62 +128,78 @@ class SocialMediaPostAdmin(admin.ModelAdmin):
 
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
-    """排程設定管理界面"""
-    list_display = ('name', 'user', 'platform', 'status', 'execution_days', 'posting_times', 'total_executions', 'created_at')
-    list_filter = ('platform', 'status', 'is_active', 'created_at')
-    search_fields = ('name', 'user__username', 'description', 'platform')
-    ordering = ('-created_at',)
+    """排程發文設定管理"""
+    list_display = ('name', 'user', 'platform', 'status', 'is_active', 'execution_days_display', 'posting_times_display', 'total_executions', 'created_at')
+    list_filter = ('status', 'is_active', 'platform', 'created_at')
+    search_fields = ('name', 'user__username', 'platform')
     readonly_fields = ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time', 'created_at', 'updated_at')
     
     fieldsets = (
-        ('基本資訊', {'fields': ('user', 'name', 'description')}),
-        ('排程狀態', {'fields': ('status', 'is_active')}),
-        ('執行設定', {'fields': ('execution_days', 'posting_times')}),
-        ('內容設定', {'fields': ('template', 'custom_content', 'custom_hashtags')}),
-        ('圖片設定', {'fields': ('use_template_images', 'additional_images')}),
-        ('發布設定', {'fields': ('platform', 'target_communities')}),
-        ('執行統計', {'fields': ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time')}),
-        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
+        ('基本資訊', {
+            'fields': ('user', 'name', 'description', 'status', 'is_active')
+        }),
+        ('排程設定', {
+            'fields': ('execution_days', 'posting_times')
+        }),
+        ('發文內容', {
+            'fields': ('platform', 'message_content', 'template_images', 'target_communities')
+        }),
+        ('執行統計', {
+            'fields': ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time'),
+            'classes': ('collapse',)
+        }),
+        ('時間資訊', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
     )
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user', 'template')
+    def execution_days_display(self, obj):
+        """顯示執行日期"""
+        if obj.execution_days:
+            day_names = {
+                'monday': '週一', 'tuesday': '週二', 'wednesday': '週三',
+                'thursday': '週四', 'friday': '週五', 'saturday': '週六', 'sunday': '週日'
+            }
+            return ', '.join([day_names.get(day, day) for day in obj.execution_days])
+        return '未設定'
+    execution_days_display.short_description = '執行日期'
+    
+    def posting_times_display(self, obj):
+        """顯示發文時間"""
+        if obj.posting_times:
+            return ', '.join(obj.posting_times)
+        return '未設定'
+    posting_times_display.short_description = '發文時間'
 
 
 @admin.register(ScheduleExecution)
 class ScheduleExecutionAdmin(admin.ModelAdmin):
-    """排程執行記錄管理界面"""
-    list_display = ('schedule', 'status', 'execution_time', 'result_message', 'execution_duration', 'created_at')
-    list_filter = ('status', 'execution_time', 'created_at')
+    """排程執行記錄管理"""
+    list_display = ('schedule', 'status', 'scheduled_time', 'posts_published', 'posts_failed', 'execution_duration', 'created_at')
+    list_filter = ('status', 'scheduled_time', 'created_at')
     search_fields = ('schedule__name', 'schedule__user__username')
-    ordering = ('-execution_time',)
-    readonly_fields = ('schedule', 'execution_time', 'result_message', 'error_details', 'execution_duration', 'created_at')
+    readonly_fields = ('schedule', 'scheduled_time', 'created_at', 'updated_at')
     
     fieldsets = (
-        ('基本資訊', {'fields': ('schedule', 'status')}),
-        ('執行時間', {'fields': ('execution_time', 'execution_duration')}),
-        ('執行結果', {'fields': ('result_message', 'error_details')}),
-        ('時間資訊', {'fields': ('created_at',)}),
+        ('基本資訊', {
+            'fields': ('schedule', 'status')
+        }),
+        ('執行時間', {
+            'fields': ('scheduled_time', 'started_at', 'completed_at')
+        }),
+        ('執行結果', {
+            'fields': ('result_message', 'error_details', 'execution_duration')
+        }),
+        ('發布統計', {
+            'fields': ('posts_published', 'posts_failed')
+        }),
+        ('時間資訊', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
     )
     
     def get_queryset(self, request):
+        """優化查詢"""
         return super().get_queryset(request).select_related('schedule', 'schedule__user')
-
-
-@admin.register(ScheduleTemplate)
-class ScheduleTemplateAdmin(admin.ModelAdmin):
-    """排程模板管理界面"""
-    list_display = ('name', 'template_type', 'default_frequency', 'default_interval_minutes', 'usage_count', 'created_at')
-    list_filter = ('template_type', 'default_frequency', 'created_at')
-    search_fields = ('name', 'description')
-    ordering = ('-usage_count', '-created_at')
-    readonly_fields = ('usage_count', 'created_at', 'updated_at')
-    
-    fieldsets = (
-        ('基本資訊', {'fields': ('name', 'description', 'template_type')}),
-        ('預設設定', {'fields': ('default_frequency', 'default_interval_minutes')}),
-        ('預設內容', {'fields': ('default_content_template', 'default_hashtags')}),
-        ('預設平台和社團', {'fields': ('default_platforms', 'default_communities')}),
-        ('使用統計', {'fields': ('usage_count',)}),
-        ('時間資訊', {'fields': ('created_at', 'updated_at')}),
-    )

@@ -4,21 +4,6 @@
 let currentStep = 1;
 let postingData = {};
 
-// 下一步按鈕事件
-document.addEventListener('click', function(e) {
-	if (e.target.id === 'nextStepBtn') {
-		nextStep();
-	} else if (e.target.id === 'nextStepBtn2') {
-		nextStep();
-	} else if (e.target.id === 'prevStepBtn') {
-		prevStep();
-	} else if (e.target.id === 'prevStepBtn2') {
-		prevStep();
-	} else if (e.target.id === 'confirmPostingBtn') {
-		confirmPosting();
-	}
-});
-
 // 初始化步驟系統
 document.addEventListener('DOMContentLoaded', function() {
 	// 確保步驟1顯示，其他步驟隱藏
@@ -29,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	// 設置步驟2的開始時間默認值
 	setDefaultStartTime();
+
+	// 綁定發文方式選擇事件
+	bindPostingMethodEvents();
 });
 
 // 設置默認開始時間
@@ -79,6 +67,22 @@ function bindStepButtons() {
 
 	// 綁定步驟指示器點擊事件
 	bindStepIndicators();
+}
+
+// 綁定步驟2的按鈕事件
+function bindStep2Buttons() {
+	const prevStepBtnImmediate = document.getElementById('prevStepBtnImmediate');
+	const nextStepBtnImmediate = document.getElementById('nextStepBtnImmediate');
+	
+	// 移除舊的事件監聽器（如果存在）
+	if (prevStepBtnImmediate) {
+		prevStepBtnImmediate.removeEventListener('click', prevStep);
+		prevStepBtnImmediate.addEventListener('click', prevStep);
+	}
+	if (nextStepBtnImmediate) {
+		nextStepBtnImmediate.removeEventListener('click', nextStep);
+		nextStepBtnImmediate.addEventListener('click', nextStep);
+	}
 }
 
 // 綁定步驟指示器點擊事件
@@ -183,15 +187,12 @@ function showStep(step) {
 		fillConfirmationSummary();
 	}
 	
-	// 如果是第二步，重新初始化發文方式選擇和排程實驗
+	// 如果是第二步，重新初始化發文方式選擇
 	if (step === 2) {
-		reinitializePostingMethodSelection();
-		initializeScheduleTest();
-		// 初始化日期選擇按鈕
-		setTimeout(() => {
-			initializeDateSelectionButtons();
-			addDateCheckboxListeners();
-		}, 100);
+		// 綁定步驟2的按鈕事件
+		bindStep2Buttons();
+		// 初始化發文方式選擇
+		handlePostingMethodChange();
 	}
 	
 	// 顯示步驟切換通知
@@ -301,27 +302,42 @@ function validateStep1() {
 
 // 驗證步驟2
 function validateStep2() {
-	const startTime = document.getElementById('scheduleStartTime').value;
-	const intervalMin = document.querySelector('input[name="interval_min"]').value;
-	const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
-	const selectedDays = document.querySelectorAll('input[name="days"]:checked');
-
-	if (!startTime) {
-		window.showNotification('請設定開始時間', 'warning');
-		return false;
+	const postingMethod = document.querySelector('input[name="posting_method"]:checked').value;
+	
+	if (postingMethod === 'immediate') {
+		// 立即發文不需要額外驗證
+		console.log('立即發文模式，驗證通過');
+		return true;
+	} else if (postingMethod === 'scheduled') {
+		// 排程發文只需要驗證執行日期和發文時間
+		const selectedDays = document.querySelectorAll('input[name="days"]:checked');
+		const postingTimes = document.querySelectorAll('input[name="posting_times[]"]');
+		
+		// 檢查執行日期
+		if (selectedDays.length === 0) {
+			window.showNotification('請至少選擇一個執行日期', 'warning');
+			return false;
+		}
+		
+		// 檢查發文時間
+		let hasValidTime = false;
+		postingTimes.forEach(timeInput => {
+			if (timeInput.value && timeInput.value.trim() !== '') {
+				hasValidTime = true;
+			}
+		});
+		
+		if (!hasValidTime) {
+			window.showNotification('請至少設定一個發文時間', 'warning');
+			return false;
+		}
+		
+		console.log('排程發文模式，驗證通過');
+		return true;
 	}
-
-	if (!intervalMin || intervalMin < 1) {
-		window.showNotification('請設定有效的發文間隔', 'warning');
-		return false;
-	}
-
-	if (selectedDays.length === 0) {
-		window.showNotification('請至少選擇一個執行日期', 'warning');
-		return false;
-	}
-
-	return true;
+	
+	console.error('未知的發文方式:', postingMethod);
+	return false;
 }
 
 // 收集步驟1數據
@@ -343,12 +359,13 @@ function collectStep1Data() {
 
 	// 如果是Facebook，收集社團信息
 	if (platform === 'facebook') {
-		const selectedCommunities = Array.from(document.querySelectorAll('.community-checkbox:checked'))
+		const selectedCommunities = Array.from(document.querySelectorAll('#communitiesList input[name="communities"]:checked'))
 			.map(checkbox => ({
 				url: checkbox.value,
-				name: checkbox.dataset.name
+				name: checkbox.closest('.community-item')?.querySelector('.community-name')?.textContent || '未知社團'
 			}));
 		postingData.communities = selectedCommunities;
+		console.log('收集到的社團信息:', selectedCommunities);
 	}
 }
 
@@ -364,19 +381,30 @@ function collectStep2Data() {
 		
 		console.log('立即發文模式，步驟2數據收集完成:', postingData.step2);
 	} else {
-		// 排程發文，收集所有排程設定
-		const startTime = document.getElementById('scheduleStartTime').value;
-		const intervalMin = document.querySelector('input[name="interval_min"]').value;
-		const intervalUnit = document.querySelector('select[name="interval_unit"]').value;
+		// 排程發文，收集執行日期和發文時間
 		const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked'))
 			.map(checkbox => checkbox.value);
+		
+		const postingTimes = [];
+		document.querySelectorAll('input[name="posting_times[]"]').forEach(timeInput => {
+			if (timeInput.value && timeInput.value.trim() !== '') {
+				postingTimes.push(timeInput.value);
+			}
+		});
+		
+		// 檢查是否有重複的日期
+		const uniqueDays = [...new Set(selectedDays)];
+		if (selectedDays.length !== uniqueDays.length) {
+			console.warn('檢測到重複的日期選擇，已自動去重:', {
+				original: selectedDays,
+				unique: uniqueDays
+			});
+		}
 			
 		postingData.step2 = {
 			method: 'scheduled',
-			startTime,
-			intervalMin,
-			intervalUnit,
-			selectedDays
+			selectedDays: uniqueDays, // 使用去重後的日期
+			postingTimes
 		};
 		
 		console.log('排程發文模式，步驟2數據收集完成:', postingData.step2);
@@ -399,7 +427,7 @@ function fillConfirmationSummary() {
 		document.getElementById('confirmSchedule').textContent = '立即發文';
 	} else if (postingData.step2 && postingData.step2.method === 'scheduled') {
 		const schedule = postingData.step2;
-		const scheduleText = `開始時間：${new Date(schedule.startTime).toLocaleString()}，間隔：${schedule.intervalMin} ${schedule.intervalUnit}，執行日期：${schedule.selectedDays.join(', ')}`;
+		const scheduleText = `執行日期：${schedule.selectedDays.join(', ')}，發文時間：${schedule.postingTimes.join(', ')}`;
 		document.getElementById('confirmSchedule').textContent = scheduleText;
 	} else {
 		document.getElementById('confirmSchedule').textContent = '未設定';
@@ -425,12 +453,10 @@ function preparePostingData() {
 			// 立即發文：不需要額外圖片
 			postData.method = 'immediate';
 		} else if (postingData.step2.method === 'scheduled') {
-			// 排程發文：添加排程設定
+			// 排程發文：添加執行日期和發文時間
 			postData.schedule = {
-				startTime: postingData.step2.startTime,
-				intervalMin: postingData.step2.intervalMin,
-				intervalUnit: postingData.step2.intervalUnit,
-				selectedDays: postingData.step2.selectedDays
+				selectedDays: postingData.step2.selectedDays,
+				postingTimes: postingData.step2.postingTimes
 			};
 			postData.method = 'scheduled';
 		}
@@ -495,37 +521,26 @@ async function executeImmediatePosting(postData) {
 	}
 }
 
-// 保存排程發文設定
+// 保存排程發文
 async function saveScheduledPosting() {
 	try {
-		// 收集發文時間數據
-		const postingTimes = collectPostingTimesData();
-		if (postingTimes.length === 0) {
-			window.showNotification('請至少設定一個發文時間', 'error');
+		console.log('開始保存排程發文...');
+		
+		// 檢查是否有步驟2數據
+		if (!postingData.step2 || postingData.step2.method !== 'scheduled') {
+			window.showNotification('排程設定數據不完整', 'error');
 			return;
 		}
 		
-		// 收集執行日期數據
-		const executionDays = [];
-		const dayCheckboxes = document.querySelectorAll('input[name="days"]:checked');
-		dayCheckboxes.forEach(checkbox => {
-			executionDays.push(checkbox.value);
-		});
-		
-		if (executionDays.length === 0) {
-			window.showNotification('請至少選擇一個執行日期', 'error');
-			return;
-		}
-		
-		// 準備排程數據
+		// 使用已經收集好的數據
 		const scheduleData = {
 			action: 'save_scheduled_posting',
 			platform: postingData.platform,
-			message: postingData.message,
+			message: postingData.messageContent,
 			communities: postingData.communities,
-			template_images: postingData.template_images || [],
-			posting_times: postingTimes,
-			execution_days: executionDays
+			template_images: postingData.templateImages || [],
+			execution_days: postingData.step2.selectedDays,
+			posting_times: postingData.step2.postingTimes
 		};
 		
 		console.log('準備保存排程發文:', scheduleData);
@@ -592,13 +607,13 @@ async function confirmPosting() {
 
 // 重置到步驟1
 function resetToStep1() {
+	console.log('重置到步驟1，清空所有數據...');
+	
 	currentStep = 1;
 	postingData = {};
-	showStep(1);
-			
+	
 	// 清空表單
 	document.getElementById('postingForm').reset();
-	document.getElementById('imagePreview').innerHTML = '';
 	document.getElementById('copyPreview').innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
 
 	// 隱藏Facebook社團選擇
@@ -606,6 +621,43 @@ function resetToStep1() {
 	if (facebookCommunitiesRow) {
 		facebookCommunitiesRow.style.display = 'none';
 	}
+	
+	// 重置發文方式選擇
+	const immediatePosting = document.getElementById('immediate_posting');
+	const scheduledPosting = document.getElementById('scheduled_posting');
+	if (immediatePosting) immediatePosting.checked = true;
+	if (scheduledPosting) scheduledPosting.checked = false;
+	
+	// 隱藏排程選項
+	const schedulingOptions = document.getElementById('schedulingOptions');
+	if (schedulingOptions) schedulingOptions.style.display = 'none';
+	
+	// 顯示立即發文按鈕
+	const immediatePostingActions = document.getElementById('immediatePostingActions');
+	if (immediatePostingActions) immediatePostingActions.style.display = 'none';
+	
+	// 重置日期選擇
+	document.querySelectorAll('input[name="days"]').forEach(checkbox => {
+		checkbox.checked = false;
+	});
+	
+	// 重置發文時間
+	const postingTimesList = document.getElementById('postingTimesList');
+	if (postingTimesList) {
+		postingTimesList.innerHTML = `
+			<div class="posting-time-item">
+				<input type="time" name="posting_times[]" value="09:00" class="form-input time-input">
+				<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
+					<i class="fas fa-minus"></i>
+				</button>
+			</div>
+		`;
+	}
+	
+	console.log('重置完成，所有數據已清空');
+	
+	// 顯示步驟1
+	showStep(1);
 }
 
 // 處理發文（保留原有邏輯，但改為內部調用）
@@ -616,10 +668,109 @@ async function handlePosting(e) {
 	nextStep();
 }
 
+// 處理發文方式選擇
+function handlePostingMethodChange() {
+	const immediatePosting = document.getElementById('immediate_posting');
+	const scheduledPosting = document.getElementById('scheduled_posting');
+	const immediateActions = document.getElementById('immediatePostingActions');
+	const schedulingOptions = document.getElementById('schedulingOptions');
+	
+	if (immediatePosting.checked) {
+		// 顯示立即發文的按鈕
+		immediateActions.style.display = 'block';
+		schedulingOptions.style.display = 'none';
+		console.log('選擇立即發文，顯示立即發文按鈕');
+	} else if (scheduledPosting.checked) {
+		// 顯示排程設定選項
+		immediateActions.style.display = 'none';
+		schedulingOptions.style.display = 'block';
+		console.log('選擇排程發文，顯示排程設定選項');
+	}
+}
+
+// 綁定發文方式選擇事件
+function bindPostingMethodEvents() {
+	const immediatePosting = document.getElementById('immediate_posting');
+	const scheduledPosting = document.getElementById('scheduled_posting');
+	
+	if (immediatePosting) {
+		immediatePosting.addEventListener('change', handlePostingMethodChange);
+	}
+	
+	if (scheduledPosting) {
+		scheduledPosting.addEventListener('change', handlePostingMethodChange);
+	}
+	
+	// 初始化時觸發一次
+	handlePostingMethodChange();
+}
+
 // 獲取 CSRF Token
 function getCSRFToken() {
 	return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
 		   document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+}
+
+// 日期選擇按鈕功能
+function selectAllDays() {
+	const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+	dayCheckboxes.forEach(checkbox => {
+		checkbox.checked = true;
+	});
+	console.log('已選中所有日期');
+}
+
+function selectWeekdays() {
+	const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+	dayCheckboxes.forEach(checkbox => {
+		// 週一到週五 (monday, tuesday, wednesday, thursday, friday)
+		if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(checkbox.value)) {
+			checkbox.checked = true;
+		} else {
+			checkbox.checked = false;
+		}
+	});
+	console.log('已選中工作日（週一到週五）');
+}
+
+function clearDays() {
+	const dayCheckboxes = document.querySelectorAll('input[name="days"]');
+	dayCheckboxes.forEach(checkbox => {
+		checkbox.checked = false;
+	});
+	console.log('已清空所有日期選擇');
+}
+
+// 發文時間管理功能
+function addPostingTime() {
+	const postingTimesList = document.getElementById('postingTimesList');
+	if (!postingTimesList) return;
+	
+	const newTimeItem = document.createElement('div');
+	newTimeItem.className = 'posting-time-item';
+	newTimeItem.innerHTML = `
+		<input type="time" name="posting_times[]" value="09:00" class="form-input time-input">
+		<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
+			<i class="fas fa-minus"></i>
+		</button>
+	`;
+	
+	postingTimesList.appendChild(newTimeItem);
+	console.log('已新增發文時間');
+}
+
+function removePostingTime(button) {
+	const timeItem = button.closest('.posting-time-item');
+	if (timeItem) {
+		// 確保至少保留一個時間輸入框
+		const timeItems = document.querySelectorAll('.posting-time-item');
+		if (timeItems.length > 1) {
+			timeItem.remove();
+			console.log('已移除發文時間');
+		} else {
+			console.log('至少需要保留一個發文時間');
+		}
+	}
 }
 
 // 導出全局函數
@@ -637,3 +788,8 @@ window.saveScheduledPosting = saveScheduledPosting;
 window.confirmPosting = confirmPosting;
 window.resetToStep1 = resetToStep1;
 window.handlePosting = handlePosting;
+window.selectAllDays = selectAllDays;
+window.selectWeekdays = selectWeekdays;
+window.clearDays = clearDays;
+window.addPostingTime = addPostingTime;
+window.removePostingTime = removePostingTime;

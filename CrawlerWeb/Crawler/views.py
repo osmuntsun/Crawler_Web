@@ -24,6 +24,7 @@ from selenium.webdriver.common.keys import Keys
 from .models import Schedule, ScheduleExecution
 from django.utils import timezone
 import logging
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -1526,26 +1527,16 @@ class ScheduleView(View):
         try:
             user = request.user
             
-            # 收集發文時間數據
-            posting_times = []
-            time_inputs = request.POST.getlist('posting_times[]')
-            for time_str in time_inputs:
-                if time_str and time_str.strip():
-                    posting_times.append(time_str.strip())
-            
+            # 從 JSON 數據中獲取發文時間
+            posting_times = data.get('posting_times', [])
             if not posting_times:
                 return JsonResponse({
                     'success': False,
                     'error': '請至少設定一個發文時間'
                 })
             
-            # 收集執行日期數據
-            execution_days = []
-            days_inputs = request.POST.getlist('days')
-            for day in days_inputs:
-                if day and day.strip():
-                    execution_days.append(day.strip())
-            
+            # 從 JSON 數據中獲取執行日期
+            execution_days = data.get('execution_days', [])
             if not execution_days:
                 return JsonResponse({
                     'success': False,
@@ -1553,24 +1544,61 @@ class ScheduleView(View):
                 })
             
             # 創建排程記錄
+            from django.utils import timezone
+            
+            # 計算開始時間（從下一個執行時間開始）
+            next_execution_time = None
+            if execution_days and posting_times:
+                # 找到下一個執行時間
+                from datetime import datetime, timedelta
+                now = timezone.now()
+                current_time = now.time()
+                current_weekday = now.strftime('%A').lower()
+                
+                # 檢查今天是否在執行日期中
+                if current_weekday in execution_days:
+                    # 找到今天下一個要執行的時間
+                    for time_str in sorted(posting_times):
+                        time_obj = datetime.strptime(time_str, '%H:%M').time()
+                        if time_obj > current_time:
+                            # 今天還有時間要執行
+                            next_execution_time = datetime.combine(now.date(), time_obj)
+                            next_execution_time = timezone.make_aware(next_execution_time)
+                            break
+                
+                if not next_execution_time:
+                    # 找到下一個執行日期和時間
+                    for i in range(1, 8):  # 最多檢查7天
+                        next_date = now.date() + timedelta(days=i)
+                        next_weekday = next_date.strftime('%A').lower()
+                        
+                        if next_weekday in execution_days:
+                            # 找到下一個執行日期，使用第一個時間
+                            first_time = sorted(posting_times)[0]
+                            time_obj = datetime.strptime(first_time, '%H:%M').time()
+                            next_execution_time = datetime.combine(next_date, time_obj)
+                            next_execution_time = timezone.make_aware(next_execution_time)
+                            break
+            
             schedule = Schedule.objects.create(
                 user=user,
                 name=f"排程發文 - {data['platform']} - {timezone.now().strftime('%Y-%m-%d %H:%M')}",
                 description=f"自動發布到 {len(data['communities'])} 個社群",
+                status='active',
+                is_active=True,
                 execution_days=execution_days,
                 posting_times=posting_times,
                 platform=data['platform'],
-                target_communities=data['communities'],
-                custom_content=data['message'],
-                additional_images=data.get('template_images', [])
+                message_content=data['message'],
+                template_images=data.get('template_images', []),
+                target_communities=data['communities']
             )
             
             # 創建執行記錄
-            next_execution = schedule.get_next_execution_time()
-            if next_execution:
+            if next_execution_time:
                 ScheduleExecution.objects.create(
                     schedule=schedule,
-                    execution_time=next_execution,
+                    scheduled_time=next_execution_time,
                     status='pending'
                 )
             
@@ -1578,7 +1606,7 @@ class ScheduleView(View):
                 'success': True,
                 'message': '排程發文設定已保存',
                 'schedule_id': schedule.id,
-                'next_execution': next_execution.isoformat() if next_execution else None
+                'next_execution': next_execution_time.isoformat() if next_execution_time else None
             })
             
         except Exception as e:

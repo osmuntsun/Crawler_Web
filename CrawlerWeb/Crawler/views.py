@@ -79,7 +79,7 @@ class FacebookAutomationView(View):
 	Facebook 自動化視圖
 	"""
 	
-	def human_delay(self, min_seconds=0.5, max_seconds=2.0):
+	def human_delay(self, min_seconds=1, max_seconds=3.0):
 		"""人類化的隨機延遲"""
 		delay = random.uniform(min_seconds, max_seconds)
 		# 調試訊息已移除
@@ -546,28 +546,39 @@ class FacebookAutomationView(View):
 				driver.quit()
 			return JsonResponse({'error': f'發文失敗: {str(e)}'}, status=500)
 	
-	def _setup_driver(self):
+	def _setup_driver(self, headless=False):
 		"""設置 Chrome 驅動程式"""
-
+		
 		options = Options()
-		options.add_argument("--start-maximized")
-		options.add_argument("--disable-notifications")
-		options.add_argument("--disable-gpu")
-		options.add_argument("--no-sandbox")
-		options.add_argument("--disable-dev-shm-usage")
+		
+		# Headless 模式設定（背景執行，不顯示視窗）
+		if headless:
+			options.add_argument("--headless=new")  # 使用新的 headless 模式
+			options.add_argument("--disable-gpu")  # 禁用 GPU 加速
+			options.add_argument("--no-sandbox")  # 禁用沙盒模式
+			options.add_argument("--disable-dev-shm-usage")  # 禁用共享內存
+			options.add_argument("--window-size=1920,1080")  # 設定視窗大小
+			options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")  # 設定用戶代理
+		else:
+			options.add_argument("--start-maximized")  # 最大化視窗（非 headless 模式）
+		
+		# 通用設定
+		options.add_argument("--disable-notifications")  # 禁用通知
+		options.add_argument("--disable-extensions")  # 禁用擴展
+		options.add_argument("--disable-plugins")  # 禁用插件
+		
 		# 抑制 Chrome 日誌輸出
 		options.add_argument("--log-level=3")  # 只顯示致命錯誤
 		options.add_argument("--silent")
 		options.add_experimental_option('excludeSwitches', ['enable-logging'])
+		options.add_experimental_option('useAutomationExtension', False)  # 禁用自動化擴展
 		
 		# 使用 webdriver_manager 自動管理 ChromeDriver
-
 		service = Service(ChromeDriverManager().install())
-
+		
 		driver = webdriver.Chrome(service=service, options=options)
-
+		
 		# 添加反檢測代碼，隱藏 webdriver 屬性
-
 		try:
 			driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
 				"source": """
@@ -576,7 +587,6 @@ class FacebookAutomationView(View):
 					})
 				"""
 			})
-
 		except Exception as e:
 			pass
 		

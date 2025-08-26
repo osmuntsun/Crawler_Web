@@ -203,7 +203,7 @@ class Command(BaseCommand):
                 return 0
             
             # 設置驅動程式
-            driver = facebook_view._setup_driver()
+            driver = facebook_view._setup_driver(headless=True)  # 排程發文使用 headless 模式，背景執行
             
             try:
                 # 登入 Facebook
@@ -237,7 +237,7 @@ class Command(BaseCommand):
                             success_count += 1
                         
                         # 人類化延遲
-                        facebook_view.human_delay(1.5, 3.0)
+                        facebook_view.human_delay(2, 3.0)
                         
                     except Exception as e:
                         logger.error(f'向社群 {community_data.get("name", "未知")} 發布失敗: {str(e)}')
@@ -265,7 +265,7 @@ class Command(BaseCommand):
             driver.refresh()
             
             # 等待發文按鈕出現
-            WebDriverWait(driver, 30).until(
+            WebDriverWait(driver, 3000).until(
                 EC.presence_of_element_located((
                     By.XPATH, 
                     '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
@@ -283,7 +283,7 @@ class Command(BaseCommand):
             post_button.click()
             
             # 等待發文表單出現
-            WebDriverWait(driver, 30).until(
+            WebDriverWait(driver, 3000).until(
                 EC.presence_of_element_located((
                     By.XPATH,
                     '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[2]/div[1]/div[1]/div[1]/div[1]/div/div/div[1]/p'
@@ -352,7 +352,7 @@ class Command(BaseCommand):
                         
                         if os.path.exists(absolute_path):
                             post_img.send_keys(absolute_path)
-                            facebook_view.human_delay(1.0, 2.0)
+                            facebook_view.human_delay(2.0, 4.0)
                 except Exception as e:
                     logger.error(f'上傳圖片失敗: {str(e)}')
                     continue

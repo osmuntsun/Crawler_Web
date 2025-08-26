@@ -155,9 +155,16 @@ class UserFilter(admin.SimpleListFilter):
     parameter_name = 'user'
 
     def lookups(self, request, model_admin):
-        # 獲取所有有排程的使用者
-        users = model_admin.model.objects.values_list('user__id', 'user__username').distinct()
-        return [(str(user_id), username) for user_id, username in users if user_id and username]
+        # 獲取所有有排程的使用者，使用 Python 去重確保唯一性
+        users = model_admin.model.objects.values('user__id', 'user__username')
+        unique_users = {}
+        for user in users:
+            user_id = user['user__id']
+            username = user['user__username']
+            if user_id and username and user_id not in unique_users:
+                unique_users[user_id] = username
+        
+        return [(str(user_id), username) for user_id, username in unique_users.items()]
 
     def queryset(self, request, queryset):
         if self.value():
@@ -211,11 +218,33 @@ class ScheduleAdmin(admin.ModelAdmin):
     posting_times_display.short_description = '發文時間'
 
 
+class ScheduleExecutionUserFilter(admin.SimpleListFilter):
+    """排程執行記錄使用者篩選器"""
+    title = '使用者'
+    parameter_name = 'user'
+
+    def lookups(self, request, model_admin):
+        # 獲取所有有執行記錄的使用者，使用 Python 去重確保唯一性
+        users = model_admin.model.objects.values('schedule__user__id', 'schedule__user__username')
+        unique_users = {}
+        for user in users:
+            user_id = user['schedule__user__id']
+            username = user['schedule__user__username']
+            if user_id and username and user_id not in unique_users:
+                unique_users[user_id] = username
+        
+        return [(str(user_id), username) for user_id, username in unique_users.items()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(schedule__user__id=self.value())
+        return queryset
+
 @admin.register(ScheduleExecution)
 class ScheduleExecutionAdmin(admin.ModelAdmin):
     """排程執行記錄管理"""
     list_display = ('schedule', 'status', 'scheduled_time', 'posts_published', 'posts_failed', 'execution_duration', 'created_at')
-    list_filter = ('status', 'scheduled_time', 'created_at')
+    list_filter = (ScheduleExecutionUserFilter, 'status', 'scheduled_time', 'created_at')
     search_fields = ('schedule__name', 'schedule__user__username')
     readonly_fields = ('schedule', 'scheduled_time', 'created_at', 'updated_at')
     

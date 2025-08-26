@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model
 from Crawler.models import Schedule, ScheduleExecution
 from datetime import datetime, timedelta
 import logging
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -265,22 +268,23 @@ class Command(BaseCommand):
             driver.refresh()
             
             # 等待發文按鈕出現
-            WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located((
-                    By.XPATH, 
-                    '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-                ))
+            element = WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[4]/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div/div[1]'
+                    )),
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
+                    ))
+                )
             )
             
-            # 點擊發文按鈕
-            post_button = driver.find_element(
-                By.XPATH,
-                '/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-            )
             
             # 人類化的鼠標移動
-            facebook_view.human_move_mouse(driver, post_button)
-            post_button.click()
+            facebook_view.human_move_mouse(driver, element)
+            element.click()
             
             # 等待發文表單出現
             WebDriverWait(driver, 30).until(
@@ -331,9 +335,25 @@ class Command(BaseCommand):
             from django.conf import settings
             
             # 查找圖片上傳按鈕
-            post_img = driver.find_element(
-                By.XPATH,
-                '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+            post_img = WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]'
+                    )),
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div'
+                    )),
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]'
+                    )),
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+                    )),
+                )
             )
             
             # 處理每張圖片

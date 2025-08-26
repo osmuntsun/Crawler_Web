@@ -411,20 +411,22 @@ class FacebookAutomationView(View):
 					driver.refresh()
 					
 					# 等待發文按鈕出現
-					WebDriverWait(driver, 30).until(
-						EC.presence_of_element_located((
-							By.XPATH, 
-							'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-						))
+					# 等待任一發文按鈕出現
+					element = WebDriverWait(driver, 30).until(
+						EC.any_of(
+							EC.presence_of_element_located((
+								By.XPATH, 
+								'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[4]/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div/div[1]'
+							)),
+							EC.presence_of_element_located((
+								By.XPATH, 
+								'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
+							))
+						)
 					)
-					
 					# 點擊發文按鈕
-					post_button = driver.find_element(
-						By.XPATH,
-						'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div[4]/div/div[2]/div/div/div/div[1]/div/div/div/div[1]/div/div[1]/span'
-					)
-					post_button.click()
-					
+					element.click()
+
 					# 等待發文表單出現
 					WebDriverWait(driver, 30).until(
 						EC.presence_of_element_located((
@@ -448,22 +450,35 @@ class FacebookAutomationView(View):
 					
 					# 上傳圖片（如果有的話）
 					if all_image_paths:
-
 						try:
 							# 查找圖片上傳按鈕
-							post_img = driver.find_element(
-								By.XPATH,
-								'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+							post_img = WebDriverWait(driver, 30).until(
+								EC.any_of(
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]'
+									)),
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div'
+									)),
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]'
+									)),
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+									)),
+								)
 							)
 
 							# 處理每張圖片
 							for i, img_path in enumerate(all_image_paths):
 								try:
-
 									# 轉換圖片路徑為絕對路徑
 									if img_path.startswith('/media/'):
 										# 相對路徑，轉換為絕對路徑
-										
 										# 移除開頭的 /media/
 										relative_path = img_path.replace('/media/', '')
 										# 轉換為 Windows 路徑分隔符
@@ -473,37 +488,29 @@ class FacebookAutomationView(View):
 
 										# 檢查文件是否存在
 										if os.path.exists(absolute_path):
-
 											# 上傳圖片
 											post_img.send_keys(absolute_path)
-
-
-											self.human_delay(0.8, 1.5)  # 人類化的等待時間
+											self.human_delay(2, 2.5)  # 人類化的等待時間
 										else:
-
 											continue
 									else:
 										# 已經是絕對路徑，直接使用
-
 										post_img.send_keys(img_path)
-
-
-										self.human_delay(0.8, 1.5)  # 人類化的等待時間
+										self.human_delay(2, 2.5)  # 人類化的等待時間
 										
 								except Exception as single_img_error:
-
 									continue
 									
 							# 所有圖片上傳完成後，再等待一下確保上傳穩定
 							if all_image_paths:
-
-								self.human_delay(1.0, 2.0)  # 人類化的等待時間
+								self.human_delay(1.5, 2.5)  # 人類化的等待時間
 									
 						except Exception as img_error:
 							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
+							print(f"圖片上傳失敗: {str(single_img_error)}")
 							pass
 					
-					# time.sleep(1)
+					time.sleep(1)
 					
 					# 點擊發文按鈕
 					submit_button = driver.find_element(

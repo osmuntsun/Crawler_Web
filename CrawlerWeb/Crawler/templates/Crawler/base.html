@@ -132,7 +132,12 @@
 		</div>
 	</div>
 
-	<script>window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};</script>
+	<script>
+		window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};
+		{% if current_page %}
+		window.CRAWLER_CURRENT_PAGE = '{{ current_page }}';
+		{% endif %}
+	</script>
 	
 	<!-- 載入分離的JavaScript模組 -->
 	<script src="{% static 'Crawler/js/main.js' %}"></script>

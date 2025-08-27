@@ -641,7 +641,7 @@ function editTemplate(templateId) {
 				}
 				
 				// 自動滾動到"文案設定"標題
-				const copyHeader = document.querySelector('#tab-copy .content-header h2');
+				const copyHeader = document.querySelector('.content-header h2');
 				if (copyHeader) {
 					// 使用平滑滾動效果，滾動到"文案設定"標題
 					copyHeader.scrollIntoView({ 

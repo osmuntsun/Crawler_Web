@@ -117,7 +117,11 @@ class AjaxNavigation {
 	 * 載入帳號設定內容
 	 */
 	async loadAccountContent() {
-		const response = await fetch('/crawler/account/');
+		const response = await fetch('/crawler/account/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -128,7 +132,11 @@ class AjaxNavigation {
 	 * 載入帳號管理內容
 	 */
 	async loadAccountManagementContent() {
-		const response = await fetch('/crawler/account-management/');
+		const response = await fetch('/crawler/account-management/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -139,7 +147,11 @@ class AjaxNavigation {
 	 * 載入文案設定內容
 	 */
 	async loadCopyContent() {
-		const response = await fetch('/crawler/copy/');
+		const response = await fetch('/crawler/copy/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -150,7 +162,11 @@ class AjaxNavigation {
 	 * 載入發文設定內容
 	 */
 	async loadPostContent() {
-		const response = await fetch('/crawler/post/');
+		const response = await fetch('/crawler/post/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -161,7 +177,11 @@ class AjaxNavigation {
 	 * 載入排程設定內容
 	 */
 	async loadScheduleContent() {
-		const response = await fetch('/crawler/schedule/');
+		const response = await fetch('/crawler/schedule/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -172,7 +192,11 @@ class AjaxNavigation {
 	 * 載入自動養號內容
 	 */
 	async loadAutoFeedContent() {
-		const response = await fetch('/crawler/auto-feed/');
+		const response = await fetch('/crawler/auto-feed/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -183,7 +207,11 @@ class AjaxNavigation {
 	 * 載入社團拍賣商品內容
 	 */
 	async loadGroupSaleContent() {
-		const response = await fetch('/crawler/group-sale/');
+		const response = await fetch('/crawler/group-sale/', {
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		});
 		if (response.ok) {
 			return await response.text();
 		}
@@ -547,8 +575,13 @@ class AjaxNavigation {
 	 */
 	async loadInitialContent() {
 		try {
-			// 頁面載入時，自動載入帳號設定頁面作為預設頁面
-			const defaultTab = 'account';
+			// 檢查是否有預設頁面（從 Django 傳遞過來）
+			let defaultTab = 'account';
+			if (window.CRAWLER_CURRENT_PAGE) {
+				defaultTab = window.CRAWLER_CURRENT_PAGE;
+				console.log('檢測到預設頁面:', defaultTab);
+			}
+			
 			this.currentTab = defaultTab;
 			this.updateSidebarState(defaultTab);
 			

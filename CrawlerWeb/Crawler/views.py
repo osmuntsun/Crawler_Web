@@ -2026,6 +2026,9 @@ def account(request):
 	"""
 	帳號設定頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2041,7 +2044,14 @@ def account(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/account.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/account.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為帳號設定
+			context['current_page'] = 'account'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"帳號設定頁面不存在: {str(e)}")
 
@@ -2050,6 +2060,9 @@ def account_management(request):
 	"""
 	帳號管理頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2065,7 +2078,14 @@ def account_management(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/account_management.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/account_management.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為帳號管理
+			context['current_page'] = 'account-management'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"帳號管理頁面不存在: {str(e)}")
 
@@ -2074,6 +2094,9 @@ def copy(request):
 	"""
 	文案設定頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2089,7 +2112,14 @@ def copy(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/copy.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/copy.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為文案設定
+			context['current_page'] = 'copy'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"文案設定頁面不存在: {str(e)}")
 
@@ -2098,6 +2128,9 @@ def post(request):
 	"""
 	發文設定頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2113,7 +2146,14 @@ def post(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/post.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/post.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為發文設定
+			context['current_page'] = 'post'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"發文設定頁面不存在: {str(e)}")
 
@@ -2122,6 +2162,9 @@ def schedule(request):
 	"""
 	排程設定頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2137,7 +2180,14 @@ def schedule(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/schedule.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/schedule.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為排程設定
+			context['current_page'] = 'schedule'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"排程設定頁面不存在: {str(e)}")
 
@@ -2146,6 +2196,9 @@ def auto_feed(request):
 	"""
 	自動養號頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2161,7 +2214,14 @@ def auto_feed(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/auto_feed.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/auto_feed.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為自動養號
+			context['current_page'] = 'auto-feed'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"自動養號頁面不存在: {str(e)}")
 
@@ -2170,6 +2230,9 @@ def group_sale(request):
 	"""
 	社團拍賣商品頁面
 	"""
+	# 檢查是否為 AJAX 請求
+	is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+	
 	try:
 		can_use_tool = False
 		is_premium = False
@@ -2185,7 +2248,14 @@ def group_sale(request):
 			'is_premium': is_premium,
 		}
 		
-		return render(request, 'Crawler/group_sale.html', context)
+		if is_ajax:
+			# AJAX 請求：返回頁面片段
+			return render(request, 'Crawler/group_sale.html', context)
+		else:
+			# 直接訪問：返回完整的 base.html，並設置當前頁面為社團拍賣商品
+			context['current_page'] = 'group-sale'
+			return render(request, 'Crawler/base.html', context)
+			
 	except Exception as e:
 		raise Http404(f"社團拍賣商品頁面不存在: {str(e)}")
 

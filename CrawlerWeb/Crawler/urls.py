@@ -30,6 +30,9 @@ urlpatterns = [
 	path('api/schedule/', views.ScheduleView.as_view(), name='schedule_api'),
 	path('api/schedule/<int:schedule_id>/', views.ScheduleDetailView.as_view(), name='schedule_detail'),
 	path('api/schedule/<int:schedule_id>/toggle/', views.ScheduleToggleView.as_view(), name='schedule_toggle'),
+	
+	# 用戶模板選項 API
+	path('api/user/templates/', views.UserTemplatesView.as_view(), name='user_templates'),
 ]
 
 

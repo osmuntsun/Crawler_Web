@@ -29,7 +29,7 @@ class CommunityAdmin(admin.ModelAdmin):
 @admin.register(PostTemplate)
 class PostTemplateAdmin(admin.ModelAdmin):
     """貼文模板管理界面"""
-    list_display = ('title', 'user', 'get_image_count', 'is_active', 'created_at', 'updated_at')
+    list_display = ('title', 'user', 'get_image_count', 'get_related_schedules_count', 'is_active', 'created_at', 'updated_at')
     list_filter = ('is_active', 'created_at', 'updated_at')
     search_fields = ('title', 'content', 'user__username', 'hashtags')
     ordering = ('-updated_at',)
@@ -44,6 +44,30 @@ class PostTemplateAdmin(admin.ModelAdmin):
     def get_image_count(self, obj):
         return obj.get_image_count()
     get_image_count.short_description = '圖片數量'
+    
+    def get_related_schedules_count(self, obj):
+        """獲取相關排程數量"""
+        related_schedules = obj.get_related_schedules()
+        count = len(related_schedules)
+        if count > 0:
+            return f'📅 {count} 個排程'
+        return '0 個排程'
+    get_related_schedules_count.short_description = '相關排程'
+    
+    def get_queryset(self, request):
+        """優化查詢"""
+        return super().get_queryset(request).select_related('user')
+    
+    def delete_model(self, request, obj):
+        """刪除模板時顯示警告"""
+        related_schedules = obj.get_related_schedules()
+        if related_schedules:
+            schedule_names = [schedule.name for schedule in related_schedules]
+            messages.warning(
+                request, 
+                f'警告：刪除此模板將同時刪除 {len(related_schedules)} 個相關排程：{", ".join(schedule_names)}'
+            )
+        super().delete_model(request, obj)
 
 
 @admin.register(PostTemplateImage)
@@ -174,9 +198,9 @@ class UserFilter(admin.SimpleListFilter):
 @admin.register(Schedule)
 class ScheduleAdmin(admin.ModelAdmin):
     """排程發文設定管理"""
-    list_display = ('name', 'user', 'platform', 'status', 'is_active', 'execution_days_display', 'posting_times_display', 'total_executions', 'created_at')
-    list_filter = (UserFilter, ExecutionDaysFilter, 'status', 'is_active', 'platform', 'created_at')
-    search_fields = ('name', 'user__username', 'platform')
+    list_display = ('name', 'user', 'platform', 'get_template_display', 'status', 'is_active', 'execution_days_display', 'posting_times_display', 'total_executions', 'created_at')
+    list_filter = (UserFilter, ExecutionDaysFilter, 'status', 'is_active', 'platform', 'template', 'created_at')
+    search_fields = ('name', 'user__username', 'platform', 'template__title')
     readonly_fields = ('total_executions', 'successful_executions', 'failed_executions', 'last_execution_time', 'created_at', 'updated_at')
     
     fieldsets = (
@@ -185,6 +209,10 @@ class ScheduleAdmin(admin.ModelAdmin):
         }),
         ('排程設定', {
             'fields': ('execution_days', 'posting_times')
+        }),
+        ('模板選擇', {
+            'fields': ('template',),
+            'description': '選擇要使用的貼文模板，選擇後會自動更新發文內容和圖片'
         }),
         ('發文內容', {
             'fields': ('platform', 'message_content', 'template_images', 'target_communities')
@@ -216,6 +244,30 @@ class ScheduleAdmin(admin.ModelAdmin):
             return ', '.join(obj.posting_times)
         return '未設定'
     posting_times_display.short_description = '發文時間'
+    
+    def get_template_display(self, obj):
+        """顯示使用的模板"""
+        if obj.template:
+            status_icon = "✅" if obj.template.is_active else "❌"
+            return f"{status_icon} {obj.template.title}"
+        return "未選擇模板"
+    get_template_display.short_description = '使用的模板'
+    
+    def get_queryset(self, request):
+        """優化查詢"""
+        return super().get_queryset(request).select_related('user', 'template')
+    
+    def save_model(self, request, obj, form, change):
+        """保存模型時自動從模板更新內容"""
+        super().save_model(request, obj, form, change)
+        
+        # 如果選擇了模板，自動從模板更新內容
+        if obj.template and obj.template.is_active:
+            if obj.update_from_template():
+                self.message_user(
+                    request, 
+                    f'已自動從模板 "{obj.template.title}" 更新排程內容和圖片'
+                )
 
 
 class ScheduleExecutionUserFilter(admin.SimpleListFilter):

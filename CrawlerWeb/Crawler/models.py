@@ -83,6 +83,11 @@ class PostTemplate(models.Model):
     def get_image_count(self):
         """獲取圖片數量"""
         return self.images.count()
+    
+    def get_related_schedules(self):
+        """獲取使用此模板的排程"""
+        # 現在使用直接的外鍵關聯
+        return self.schedules.all()
 
 
 class PostTemplateImage(models.Model):
@@ -193,6 +198,17 @@ class Schedule(models.Model):
     template_images = models.JSONField(default=list, verbose_name='模板圖片', help_text='圖片URL和排序信息')
     target_communities = models.JSONField(default=list, verbose_name='目標社團', help_text='社團信息列表')
     
+    # 模板關聯
+    template = models.ForeignKey(
+        PostTemplate, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name='使用的模板',
+        related_name='schedules',
+        help_text='選擇要使用的貼文模板'
+    )
+    
     # 執行統計
     total_executions = models.PositiveIntegerField(default=0, verbose_name='總執行次數')
     successful_executions = models.PositiveIntegerField(default=0, verbose_name='成功執行次數')
@@ -253,6 +269,46 @@ class Schedule(models.Model):
             'failed': self.failed_executions,
             'success_rate': (self.successful_executions / self.total_executions * 100) if self.total_executions > 0 else 0
         }
+    
+    def get_template_info(self):
+        """獲取模板信息"""
+        if self.template:
+            return {
+                'id': self.template.id,
+                'title': self.template.title,
+                'content': self.template.content,
+                'hashtags': self.template.hashtags,
+                'image_count': self.template.get_image_count(),
+                'is_active': self.template.is_active
+            }
+        return None
+    
+    def update_from_template(self):
+        """從模板更新排程內容"""
+        if self.template and self.template.is_active:
+            # 更新發文內容
+            self.message_content = self.template.content
+            
+            # 更新模板圖片
+            template_images = []
+            for image in self.template.images.all().order_by('order'):
+                if image.image and hasattr(image.image, 'url'):
+                    template_images.append({
+                        'url': image.image.url,
+                        'order': image.order,
+                        'alt_text': image.alt_text or ''
+                    })
+                elif image.alt_text and image.alt_text.startswith('/media/'):
+                    template_images.append({
+                        'url': image.alt_text,
+                        'order': image.order,
+                        'alt_text': image.alt_text or ''
+                    })
+            
+            self.template_images = template_images
+            self.save()
+            return True
+        return False
 
 
 class ScheduleExecution(models.Model):
@@ -326,3 +382,37 @@ class ScheduleExecution(models.Model):
             self.execution_duration = int(duration)
         
         self.save()
+
+
+# Django 信號處理器
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+
+@receiver(pre_delete, sender=PostTemplate)
+def delete_related_schedules(sender, instance, **kwargs):
+    """
+    當模板被刪除時，自動刪除相關的排程
+    """
+    try:
+        # 獲取使用此模板的排程
+        related_schedules = instance.get_related_schedules()
+        
+        if related_schedules:
+            # 記錄要刪除的排程數量
+            schedule_count = len(related_schedules)
+            
+            # 刪除相關的排程（這會自動刪除相關的執行記錄）
+            for schedule in related_schedules:
+                schedule.delete()
+            
+            # 記錄日誌
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"模板 '{instance.title}' (ID: {instance.id}) 被刪除，同時刪除了 {schedule_count} 個相關排程")
+            
+    except Exception as e:
+        # 如果刪除排程時出錯，記錄錯誤但不阻止模板刪除
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"刪除模板 '{instance.title}' 的相關排程時出錯: {str(e)}")

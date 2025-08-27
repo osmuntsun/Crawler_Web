@@ -452,29 +452,52 @@ class FacebookAutomationView(View):
 					if all_image_paths:
 						try:
 							# 上傳圖片按鈕
-							post_img_but = WebDriverWait(driver, 30).until(
-								EC.any_of(
-									EC.presence_of_element_located((
-										By.XPATH, 
-										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[5]/div/span/div'
-									)),
-								)
-							)
-							post_img_but.click()
-							self.human_delay(2.0, 3.0)
+							# post_img_but = WebDriverWait(driver, 30).until(
+							# 	EC.any_of(
+							# 		EC.presence_of_element_located((
+							# 			By.XPATH, 
+							# 			'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[5]/div/span/div'
+							# 		)),
+							# 	)
+							# )
+							# post_img_but.click()
+							# self.human_delay(2.0, 3.0)
+							# 隨機點一個地方
+							# post_click = WebDriverWait(driver, 30).until(
+							# 	EC.any_of(
+							# 		EC.presence_of_element_located((
+							# 			By.XPATH, 
+							# 			'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[1]/h2'
+							# 		)),
+							# 	)
+							# ).click()
+
 							# 隨機點一個地方
 							post_click = WebDriverWait(driver, 30).until(
 								EC.any_of(
 									EC.presence_of_element_located((
 										By.XPATH, 
-										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[1]/h2'
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[1]/div[3]/div[2]/div[1]'
+									)),
+								)
+							).click()
+							post_click = WebDriverWait(driver, 30).until(
+								EC.any_of(
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[1]/div[1]/div[1]'
 									)),
 								)
 							).click()
 							
+
 							# 查找圖片上傳按鈕
 							post_img = WebDriverWait(driver, 30).until(
 								EC.any_of(
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[1]/input'
+									)),
 									EC.presence_of_element_located((
 										By.XPATH, 
 										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/input'
@@ -517,15 +540,15 @@ class FacebookAutomationView(View):
 							# 所有圖片上傳完成後，再等待一下確保上傳穩定
 							if all_image_paths:
 								self.human_delay(1.5, 2.5)  # 人類化的等待時間
-								post_img = WebDriverWait(driver, 30).until(
-									EC.any_of(
-										EC.presence_of_element_located((
-											By.XPATH, 
-											'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[3]/div'
-										)),
-									)
-								)
-								post_img.click()
+								# post_img = WebDriverWait(driver, 30).until(
+								# 	EC.any_of(
+								# 		EC.presence_of_element_located((
+								# 			By.XPATH, 
+								# 			'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[3]/div'
+								# 		)),
+								# 	)
+								# )
+								# post_img.click()
 								
 						except Exception as img_error:
 							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
@@ -590,6 +613,9 @@ class FacebookAutomationView(View):
 			options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")  # 設定用戶代理
 		else:
 			options.add_argument("--start-maximized")  # 最大化視窗（非 headless 模式）
+		
+		# 無痕模式設定
+		options.add_argument("--incognito")  # 啟用無痕模式
 		
 		# 通用設定
 		options.add_argument("--disable-notifications")  # 禁用通知
@@ -1459,7 +1485,7 @@ class ScheduleView(View):
             
             for schedule in schedules:
                 next_execution = schedule.get_next_execution_time()
-                schedule_list.append({
+                schedule_data = {
                     'id': schedule.id,
                     'name': schedule.name,
                     'description': schedule.description,
@@ -1476,7 +1502,22 @@ class ScheduleView(View):
                     'next_execution': next_execution.isoformat() if next_execution else None,
                     'created_at': schedule.created_at.isoformat(),
                     'updated_at': schedule.updated_at.isoformat()
-                })
+                }
+                
+                # 添加模板信息
+                if schedule.template:
+                    schedule_data['template'] = {
+                        'id': schedule.template.id,
+                        'title': schedule.template.title,
+                        'content': schedule.template.content,
+                        'hashtags': schedule.template.hashtags,
+                        'image_count': schedule.template.get_image_count(),
+                        'is_active': schedule.template.is_active
+                    }
+                else:
+                    schedule_data['template'] = None
+                
+                schedule_list.append(schedule_data)
             
             return JsonResponse({
                 'success': True,
@@ -1587,7 +1628,8 @@ class ScheduleView(View):
                 platform=data['platform'],
                 message_content=data['message'],
                 template_images=data.get('template_images', []),
-                target_communities=data['communities']
+                target_communities=data['communities'],
+                template_id=data.get('template_id')  # 添加模板ID
             )
             
             # 創建執行記錄
@@ -2282,5 +2324,58 @@ def group_sale(request):
 		raise Http404(f"社團拍賣商品頁面不存在: {str(e)}")
 
 
-
-
+@method_decorator(csrf_exempt, name='dispatch')
+class UserTemplatesView(View):
+    """獲取用戶的模板選項，用於排程選擇"""
+    
+    def get(self, request):
+        """獲取用戶的模板列表"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': '請先登入'}, status=401)
+        
+        try:
+            # 獲取用戶的所有活躍模板
+            templates = PostTemplate.objects.filter(
+                user=request.user,
+                is_active=True
+            ).order_by('-updated_at')
+            
+            templates_data = []
+            for template in templates:
+                # 獲取模板的圖片
+                images = template.images.all().order_by('order')
+                images_data = []
+                for image in images:
+                    if image.image and hasattr(image.image, 'url'):
+                        image_url = image.image.url
+                    elif image.alt_text and (image.alt_text.startswith('http') or image.alt_text.startswith('/media/')):
+                        image_url = image.alt_text
+                    else:
+                        continue
+                    
+                    images_data.append({
+                        'id': image.id,
+                        'url': image_url,
+                        'order': image.order,
+                        'alt_text': image.alt_text
+                    })
+                
+                templates_data.append({
+                    'id': template.id,
+                    'title': template.title,
+                    'content': template.content,
+                    'hashtags': template.hashtags,
+                    'images': images_data,
+                    'image_count': len(images_data),
+                    'created_at': template.created_at.isoformat(),
+                    'updated_at': template.updated_at.isoformat()
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'templates': templates_data,
+                'count': len(templates_data)
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': f'獲取模板列表失敗: {str(e)}'}, status=500)

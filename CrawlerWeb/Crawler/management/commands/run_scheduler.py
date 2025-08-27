@@ -205,9 +205,8 @@ class Command(BaseCommand):
                 self.stdout.write(f'用戶 {schedule.user.username} 沒有 {schedule.platform} 的 Cookie')
                 return 0
             
-            # 設置驅動程式
-            driver = facebook_view._setup_driver()
-            # driver = facebook_view._setup_driver(headless=True)
+            # 設置驅動程式（使用無痕模式）
+            driver = facebook_view._setup_driver(headless=True)  # 排程執行使用 headless 模式
             
             try:
                 # 登入 Facebook
@@ -334,6 +333,7 @@ class Command(BaseCommand):
             from selenium.webdriver.common.by import By
             import os
             from django.conf import settings
+            
             # 上傳圖片按鈕
             post_img_but = WebDriverWait(driver, 30).until(
                 EC.any_of(

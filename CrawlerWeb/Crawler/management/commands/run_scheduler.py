@@ -206,7 +206,8 @@ class Command(BaseCommand):
                 return 0
             
             # 設置驅動程式
-            driver = facebook_view._setup_driver(headless=True)
+            driver = facebook_view._setup_driver()
+            # driver = facebook_view._setup_driver(headless=True)
             
             try:
                 # 登入 Facebook
@@ -333,25 +334,33 @@ class Command(BaseCommand):
             from selenium.webdriver.common.by import By
             import os
             from django.conf import settings
-            
+            # 上傳圖片按鈕
+            post_img_but = WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[5]/div/span/div'
+                    )),
+                )
+            )
+            post_img_but.click()
+            facebook_view.human_delay(2.0, 3.0)
+            # 隨機點一個地方
+            post_click = WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[1]/h2'
+                    )),
+                )
+            ).click()
+
             # 查找圖片上傳按鈕
             post_img = WebDriverWait(driver, 30).until(
                 EC.any_of(
                     EC.presence_of_element_located((
                         By.XPATH, 
-                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]'
-                    )),
-                    EC.presence_of_element_located((
-                        By.XPATH, 
-                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div'
-                    )),
-                    EC.presence_of_element_located((
-                        By.XPATH, 
-                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]'
-                    )),
-                    EC.presence_of_element_located((
-                        By.XPATH, 
-                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div/div/div/div/span'
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/input'
                     )),
                     EC.presence_of_element_located((
                         By.XPATH, 
@@ -359,6 +368,7 @@ class Command(BaseCommand):
                     )),
                 )
             )
+
             
             # 處理每張圖片
             for img_data in template_images:
@@ -376,10 +386,22 @@ class Command(BaseCommand):
                         
                         if os.path.exists(absolute_path):
                             post_img.send_keys(absolute_path)
-                            facebook_view.human_delay(1.0, 2.0)
+                            facebook_view.human_delay(2.0, 3.0)
+                    
+
                 except Exception as e:
                     logger.error(f'上傳圖片失敗: {str(e)}')
                     continue
+            
+            post_img = WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[3]/div'
+                    )),
+                )
+            )
+            post_img.click()
                     
         except Exception as e:
             logger.error(f'圖片上傳過程失敗: {str(e)}')

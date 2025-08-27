@@ -223,30 +223,53 @@ function handleHashtagFilter() {
 
 // 更新文案模板選項
 async function updateCopyTemplateOptions() {
+	console.log('updateCopyTemplateOptions 被調用');
 	const copyTemplateSelect = document.getElementById('templateSelect');
-	if (!copyTemplateSelect) return;
+	if (!copyTemplateSelect) {
+		console.log('找不到 templateSelect 元素');
+		return;
+	}
 	
 	try {
+		console.log('開始調用 API: /crawler/api/templates/');
 		const response = await fetch('/crawler/api/templates/');
-		const result = await response.json();
+		console.log('API 響應狀態:', response.status, response.statusText);
 		
-		if (response.ok && result.success) {
+		if (!response.ok) {
+			throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
+		}
+		
+		const result = await response.json();
+		console.log('API 返回的數據:', result);
+		
+		if (result.success) {
 			// 清空現有選項
 			copyTemplateSelect.innerHTML = '<option value="">選擇要使用的文案模板</option>';
 			
-			// 添加模板選項
-			result.templates.forEach(template => {
-				const option = document.createElement('option');
-				option.value = template.id;
-				option.textContent = template.title;
-				option.dataset.template = JSON.stringify(template);
-				copyTemplateSelect.appendChild(option);
-			});
+			console.log(`模板數量: ${result.templates ? result.templates.length : 0}`);
 			
-			console.log(`已載入 ${result.templates.length} 個文案模板選項`);
+			// 添加模板選項
+			if (result.templates && result.templates.length > 0) {
+				result.templates.forEach(template => {
+					const option = document.createElement('option');
+					option.value = template.id;
+					option.textContent = template.title;
+					option.dataset.template = JSON.stringify(template);
+					copyTemplateSelect.appendChild(option);
+					console.log(`添加模板選項: ${template.id} - ${template.title}`);
+				});
+				
+				console.log(`成功添加 ${result.templates.length} 個文案模板選項`);
+			} else {
+				console.log('沒有找到任何模板');
+			}
+		} else {
+			console.error('API 返回失敗:', result.error || '未知錯誤');
 		}
 	} catch (error) {
 		console.error('載入文案模板選項失敗:', error);
+		console.error('錯誤詳情:', error.message);
+		console.error('錯誤堆疊:', error.stack);
 	}
 }
 

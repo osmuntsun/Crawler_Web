@@ -4,8 +4,10 @@
 let currentStep = 1;
 let postingData = {};
 
-// 初始化步驟系統
-document.addEventListener('DOMContentLoaded', function() {
+// 初始化步驟系統（只在發文設定頁面載入後執行）
+function initPostingSystem() {
+	console.log('初始化發文設定系統...');
+	
 	// 確保步驟1顯示，其他步驟隱藏
 	showStep(1);
 	
@@ -17,7 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 綁定發文方式選擇事件
 	bindPostingMethodEvents();
-});
+	
+	console.log('發文設定系統初始化完成');
+}
+
+// 將初始化函數暴露到全局，供 ajax_navigation.js 調用
+window.initPostingSystem = initPostingSystem;
 
 // 設置默認開始時間
 function setDefaultStartTime() {
@@ -261,12 +268,24 @@ function validateStep1() {
 	if (platform === 'facebook') {
 		// 檢查社團列表是否已載入
 		const communitiesList = document.getElementById('communitiesList');
-		if (communitiesList && communitiesList.querySelector('.communities-loading')) {
-			// 社團列表還在載入中，暫時允許通過
-			hasCommunities = true;
-		} else {
-			const selectedCommunities = document.querySelectorAll('#communitiesList input[name="communities"]:checked');
-			hasCommunities = selectedCommunities.length > 0;
+		if (communitiesList) {
+			// 檢查是否還在載入中
+			if (communitiesList.querySelector('.communities-loading')) {
+				// 社團列表還在載入中，暫時允許通過
+				hasCommunities = true;
+				console.log('社團列表還在載入中，暫時允許通過');
+			} else if (communitiesList.innerHTML.includes('請先登入 Facebook') || 
+					   communitiesList.innerHTML.includes('尚未獲取到 Facebook 社團') ||
+					   communitiesList.innerHTML.includes('載入社團列表失敗')) {
+				// 社團列表還沒有載入或載入失敗，暫時允許通過
+				hasCommunities = true;
+				console.log('社團列表還沒有載入，暫時允許通過');
+			} else {
+				// 社團列表已載入，檢查是否有選中的社團
+				const selectedCommunities = document.querySelectorAll('#communitiesList input[name="communities"]:checked');
+				hasCommunities = selectedCommunities.length > 0;
+				console.log('社團列表已載入，選中的社團數量:', selectedCommunities.length);
+			}
 		}
 		console.log('Facebook社團選擇:', { hasCommunities });
 	}
@@ -675,6 +694,12 @@ function handlePostingMethodChange() {
 	const immediateActions = document.getElementById('immediatePostingActions');
 	const schedulingOptions = document.getElementById('schedulingOptions');
 	
+	// 檢查元素是否存在
+	if (!immediatePosting || !scheduledPosting || !immediateActions || !schedulingOptions) {
+		console.log('發文方式選擇相關元素不存在，跳過處理');
+		return;
+	}
+	
 	if (immediatePosting.checked) {
 		// 顯示立即發文的按鈕
 		immediateActions.style.display = 'block';
@@ -701,14 +726,130 @@ function bindPostingMethodEvents() {
 		scheduledPosting.addEventListener('change', handlePostingMethodChange);
 	}
 	
-	// 初始化時觸發一次
-	handlePostingMethodChange();
+	// 初始化時觸發一次（只在元素存在時）
+	if (immediatePosting && scheduledPosting) {
+		handlePostingMethodChange();
+	} else {
+		console.log('發文方式選擇元素不存在，跳過初始化觸發');
+	}
 }
 
 // 獲取 CSRF Token
 function getCSRFToken() {
 	return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
 		   document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+}
+
+// 處理發文設定頁面的文案模板選擇變更
+async function handlePostingTemplateChange() {
+	console.log('handlePostingTemplateChange 被調用');
+	const templateSelect = document.getElementById('templateSelect');
+	const copyPreview = document.getElementById('copyPreview');
+	
+	if (!templateSelect || !copyPreview) {
+		console.log('找不到 templateSelect 或 copyPreview 元素');
+		return;
+	}
+	
+	const selectedTemplateId = templateSelect.value;
+	console.log('選中的模板ID:', selectedTemplateId);
+	
+	if (!selectedTemplateId) {
+		copyPreview.innerHTML = '<p class="text-muted">請先選擇文案模板</p>';
+		return;
+	}
+	
+	// 從選中的 option 元素的 dataset 獲取模板數據
+	const selectedOption = templateSelect.querySelector(`option[value="${selectedTemplateId}"]`);
+	if (selectedOption && selectedOption.dataset.template) {
+		try {
+			const template = JSON.parse(selectedOption.dataset.template);
+			console.log('從 dataset 獲取的模板數據:', template);
+			
+			// 更新文案預覽
+			let previewHTML = '';
+			
+			// 添加文案內容
+			if (template.content) {
+				previewHTML += `<div class="preview-content"><strong>文案內容：</strong><br>${template.content}</div>`;
+			}
+			
+			// 添加標籤
+			if (template.hashtags && template.hashtags.length > 0) {
+				previewHTML += `<div class="preview-hashtags"><strong>標籤：</strong><br>`;
+				template.hashtags.forEach(tag => {
+					previewHTML += `<span class="hashtag">${tag}</span> `;
+				});
+				previewHTML += '</div>';
+			}
+			
+			// 添加圖片預覽（如果有圖片的話）
+			if (template.images && template.images.length > 0) {
+				previewHTML += `<div class="preview-images"><strong>圖片：</strong><br>`;
+				template.images.forEach(image => {
+					if (image.url) {
+						previewHTML += `<img src="${image.url}" alt="模板圖片" class="preview-image" style="max-width: 100px; max-height: 100px; margin: 5px;">`;
+					}
+				});
+				previewHTML += '</div>';
+			}
+			
+			copyPreview.innerHTML = previewHTML;
+			console.log('文案預覽已更新');
+		} catch (error) {
+			console.error('解析模板數據失敗:', error);
+			copyPreview.innerHTML = '<p class="text-muted">解析模板數據失敗</p>';
+		}
+	} else {
+		console.log('找不到模板數據，嘗試從 API 獲取');
+		// 如果 dataset 中沒有數據，嘗試從 API 獲取
+		try {
+			const response = await fetch(`/crawler/api/templates/${selectedTemplateId}/`);
+			const result = await response.json();
+			
+			if (response.ok && result.success) {
+				const template = result.template;
+				console.log('從 API 獲取的模板數據:', template);
+				
+				// 更新文案預覽
+				let previewHTML = '';
+				
+				// 添加文案內容
+				if (template.content) {
+					previewHTML += `<div class="preview-content"><strong>文案內容：</strong><br>${template.content}</div>`;
+				}
+				
+				// 添加標籤
+				if (template.hashtags && template.hashtags.length > 0) {
+					previewHTML += `<div class="preview-hashtags"><strong>標籤：</strong><br>`;
+					template.hashtags.forEach(tag => {
+						previewHTML += `<span class="hashtag">${tag}</span> `;
+					});
+					previewHTML += '</div>';
+				}
+				
+				// 添加圖片預覽（如果有圖片的話）
+				if (template.images && template.images.length > 0) {
+					previewHTML += `<div class="preview-images"><strong>圖片：</strong><br>`;
+					template.images.forEach(image => {
+						if (image.url) {
+							previewHTML += `<img src="${image.url}" alt="模板圖片" class="preview-image" style="max-width: 100px; max-height: 100px; margin: 5px;">`;
+						}
+					});
+					previewHTML += '</div>';
+				}
+				
+				copyPreview.innerHTML = previewHTML;
+				console.log('從 API 獲取數據後，文案預覽已更新');
+			} else {
+				console.error('API 返回失敗:', result.error || '未知錯誤');
+				copyPreview.innerHTML = '<p class="text-muted">獲取模板數據失敗</p>';
+			}
+		} catch (error) {
+			console.error('從 API 獲取模板數據失敗:', error);
+			copyPreview.innerHTML = '<p class="text-muted">獲取模板數據失敗</p>';
+		}
+	}
 }
 
 // 日期選擇按鈕功能
@@ -788,6 +929,8 @@ window.saveScheduledPosting = saveScheduledPosting;
 window.confirmPosting = confirmPosting;
 window.resetToStep1 = resetToStep1;
 window.handlePosting = handlePosting;
+window.handlePostingMethodChange = handlePostingMethodChange;
+window.handlePostingTemplateChange = handlePostingTemplateChange;
 window.selectAllDays = selectAllDays;
 window.selectWeekdays = selectWeekdays;
 window.clearDays = clearDays;

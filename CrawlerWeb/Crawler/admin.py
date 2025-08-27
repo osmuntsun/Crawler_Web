@@ -240,13 +240,151 @@ class ScheduleExecutionUserFilter(admin.SimpleListFilter):
             return queryset.filter(schedule__user__id=self.value())
         return queryset
 
+
+class ScheduleExecutionScheduleFilter(admin.SimpleListFilter):
+    """排程執行記錄排程篩選器"""
+    title = '排程名稱'
+    parameter_name = 'schedule'
+
+    def lookups(self, request, model_admin):
+        # 獲取所有有執行記錄的排程，使用 Python 去重確保唯一性
+        schedules = model_admin.model.objects.values('schedule__id', 'schedule__name')
+        unique_schedules = {}
+        for schedule in schedules:
+            schedule_id = schedule['schedule__id']
+            schedule_name = schedule['schedule__name']
+            if schedule_id and schedule_name and schedule_id not in unique_schedules:
+                unique_schedules[schedule_id] = schedule_name
+        
+        return [(str(schedule_id), schedule_name) for schedule_id, schedule_name in unique_schedules.items()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(schedule__id=self.value())
+        return queryset
+
+
+class ScheduleExecutionDateRangeFilter(admin.SimpleListFilter):
+    """排程執行記錄日期範圍篩選器"""
+    title = '執行日期範圍'
+    parameter_name = 'date_range'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('today', '今天'),
+            ('yesterday', '昨天'),
+            ('this_week', '本週'),
+            ('last_week', '上週'),
+            ('this_month', '本月'),
+            ('last_month', '上月'),
+            ('last_7_days', '最近7天'),
+            ('last_30_days', '最近30天'),
+            ('last_90_days', '最近90天'),
+        )
+
+    def queryset(self, request, queryset):
+        from django.utils import timezone
+        from datetime import timedelta
+        import datetime
+        
+        now = timezone.now()
+        today = now.date()
+        
+        if self.value() == 'today':
+            return queryset.filter(scheduled_time__date=today)
+        elif self.value() == 'yesterday':
+            yesterday = today - timedelta(days=1)
+            return queryset.filter(scheduled_time__date=yesterday)
+        elif self.value() == 'this_week':
+            # 獲取本週的開始日期（週一）
+            start_of_week = today - timedelta(days=today.weekday())
+            return queryset.filter(scheduled_time__date__gte=start_of_week)
+        elif self.value() == 'last_week':
+            # 獲取上週的開始日期（週一）
+            start_of_last_week = today - timedelta(days=today.weekday() + 7)
+            end_of_last_week = start_of_last_week + timedelta(days=6)
+            return queryset.filter(scheduled_time__date__range=[start_of_last_week, end_of_last_week])
+        elif self.value() == 'this_month':
+            # 獲取本月的開始日期
+            start_of_month = today.replace(day=1)
+            return queryset.filter(scheduled_time__date__gte=start_of_month)
+        elif self.value() == 'last_month':
+            # 獲取上月的開始日期
+            if today.month == 1:
+                start_of_last_month = today.replace(year=today.year-1, month=12, day=1)
+            else:
+                start_of_last_month = today.replace(month=today.month-1, day=1)
+            
+            # 獲取上月的結束日期
+            if today.month == 1:
+                end_of_last_month = today.replace(year=today.year-1, month=12, day=31)
+            else:
+                if today.month == 2:
+                    end_of_last_month = today.replace(month=today.month-1, day=28)
+                elif today.month in [4, 6, 9, 11]:
+                    end_of_last_month = today.replace(month=today.month-1, day=30)
+                else:
+                    end_of_last_month = today.replace(month=today.month-1, day=31)
+            
+            return queryset.filter(scheduled_time__date__range=[start_of_last_month, end_of_last_month])
+        elif self.value() == 'last_7_days':
+            start_date = today - timedelta(days=7)
+            return queryset.filter(scheduled_time__date__gte=start_date)
+        elif self.value() == 'last_30_days':
+            start_date = today - timedelta(days=30)
+            return queryset.filter(scheduled_time__date__gte=start_date)
+        elif self.value() == 'last_90_days':
+            start_date = today - timedelta(days=90)
+            return queryset.filter(scheduled_time__date__gte=start_date)
+        
+        return queryset
+
+
+class ScheduleExecutionStatusFilter(admin.SimpleListFilter):
+    """排程執行記錄狀態篩選器"""
+    title = '執行狀態'
+    parameter_name = 'execution_status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('completed', '已完成'),
+            ('failed', '失敗'),
+            ('running', '執行中'),
+            ('pending', '等待中'),
+            ('cancelled', '已取消'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'completed':
+            return queryset.filter(status='completed')
+        elif self.value() == 'failed':
+            return queryset.filter(status='failed')
+        elif self.value() == 'running':
+            return queryset.filter(status='running')
+        elif self.value() == 'pending':
+            return queryset.filter(status='pending')
+        elif self.value() == 'cancelled':
+            return queryset.filter(status='cancelled')
+        
+        return queryset
+
 @admin.register(ScheduleExecution)
 class ScheduleExecutionAdmin(admin.ModelAdmin):
     """排程執行記錄管理"""
-    list_display = ('schedule', 'status', 'scheduled_time', 'posts_published', 'posts_failed', 'execution_duration', 'created_at')
-    list_filter = (ScheduleExecutionUserFilter, 'status', 'scheduled_time', 'created_at')
+    list_display = ('schedule', 'user_display', 'status_display', 'scheduled_time', 'posts_published', 'posts_failed', 'execution_duration', 'created_at')
+    list_filter = (
+        ScheduleExecutionUserFilter, 
+        ScheduleExecutionScheduleFilter,
+        ScheduleExecutionStatusFilter,
+        ScheduleExecutionDateRangeFilter,
+        'scheduled_time', 
+        'created_at'
+    )
     search_fields = ('schedule__name', 'schedule__user__username')
     readonly_fields = ('schedule', 'scheduled_time', 'created_at', 'updated_at')
+    list_per_page = 50
+    ordering = ('-scheduled_time',)
+    actions = ['retry_failed_executions', 'cancel_pending_executions']
     
     fieldsets = (
         ('基本資訊', {
@@ -270,3 +408,110 @@ class ScheduleExecutionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """優化查詢"""
         return super().get_queryset(request).select_related('schedule', 'schedule__user')
+    
+    def user_display(self, obj):
+        """顯示使用者名稱"""
+        if obj.schedule and obj.schedule.user:
+            return obj.schedule.user.username
+        return '-'
+    user_display.short_description = '使用者'
+    user_display.admin_order_field = 'schedule__user__username'
+    
+    def status_display(self, obj):
+        """顯示狀態（帶顏色和樣式）"""
+        from django.utils.html import mark_safe
+        
+        status_config = {
+            'pending': {
+                'color': '#ff8c00',
+                'bg_color': '#fff3e0',
+                'border_color': '#ffb74d',
+                'icon': '⏳'
+            },
+            'running': {
+                'color': '#1976d2',
+                'bg_color': '#e3f2fd',
+                'border_color': '#64b5f6',
+                'icon': '🔄'
+            },
+            'completed': {
+                'color': '#388e3c',
+                'bg_color': '#e8f5e8',
+                'border_color': '#81c784',
+                'icon': '✅'
+            },
+            'failed': {
+                'color': '#d32f2f',
+                'bg_color': '#ffebee',
+                'border_color': '#e57373',
+                'icon': '❌'
+            },
+            'cancelled': {
+                'color': '#757575',
+                'bg_color': '#f5f5f5',
+                'border_color': '#bdbdbd',
+                'icon': '🚫'
+            }
+        }
+        
+        config = status_config.get(obj.status, {
+            'color': '#000000',
+            'bg_color': '#ffffff',
+            'border_color': '#e0e0e0',
+            'icon': '❓'
+        })
+        
+        html = f'''
+        <span style="
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: {config['color']};
+            background-color: {config['bg_color']};
+            border: 1px solid {config['border_color']};
+            text-align: center;
+            min-width: 80px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        ">
+            {config['icon']} {obj.get_status_display()}
+        </span>
+        '''
+        return mark_safe(html)
+    status_display.short_description = '狀態'
+    status_display.admin_order_field = 'status'
+    
+    def retry_failed_executions(self, request, queryset):
+        """重試失敗的執行記錄"""
+        failed_executions = queryset.filter(status='failed')
+        count = failed_executions.count()
+        
+        if count == 0:
+            self.message_user(request, "沒有找到失敗的執行記錄", level='WARNING')
+            return
+        
+        # 這裡可以實現重試邏輯
+        for execution in failed_executions:
+            execution.status = 'pending'
+            execution.save()
+        
+        self.message_user(request, f"成功重試 {count} 個失敗的執行記錄")
+    retry_failed_executions.short_description = "重試失敗的執行記錄"
+    
+    def cancel_pending_executions(self, request, queryset):
+        """取消等待中的執行記錄"""
+        pending_executions = queryset.filter(status='pending')
+        count = pending_executions.count()
+        
+        if count == 0:
+            self.message_user(request, "沒有找到等待中的執行記錄", level='WARNING')
+            return
+        
+        for execution in pending_executions:
+            execution.status = 'cancelled'
+            execution.save()
+        
+        self.message_user(request, f"成功取消 {count} 個等待中的執行記錄")
+    cancel_pending_executions.short_description = "取消等待中的執行記錄"

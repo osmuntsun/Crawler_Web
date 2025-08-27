@@ -194,7 +194,7 @@ function displayCommunities(communities) {
 	communities.forEach(community => {
 		html += `
 			<div class="community-item" data-community-id="${community.url}">
-				<input type="checkbox" name="communities" value="${community.url}" onchange="updateCommunitySelectionStyles(); updateSelectionButtonIcons(); validateStep1();">
+				<input type="checkbox" name="communities" value="${community.url}">
 				<div class="community-info">
 					<div class="community-name" title="${community.name}">${community.name}</div>
 				</div>
@@ -206,6 +206,19 @@ function displayCommunities(communities) {
 	
 	// 初始化按鈕圖標
 	updateSelectionButtonIcons();
+	
+	// 為新生成的 checkbox 添加事件監聽器
+	const communityCheckboxes = document.querySelectorAll('#communitiesList input[name="communities"]');
+	communityCheckboxes.forEach(checkbox => {
+		checkbox.addEventListener('change', () => {
+			window.updateCommunitySelectionStyles();
+			window.updateSelectionButtonIcons();
+			// 觸發驗證
+			if (typeof window.validateStep1 === 'function') {
+				window.validateStep1();
+			}
+		});
+	});
 	
 	// 驗證第一步驟
 	if (typeof validateStep1 === 'function') {
@@ -229,16 +242,26 @@ async function loadFacebookCommunitiesFromDatabase() {
 			if (facebookCommunities.length > 0) {
 				displayCommunities(facebookCommunities);
 				console.log(`自動載入 ${facebookCommunities.length} 個 Facebook 社團`);
-			} else {
-				communitiesList.innerHTML = '<p class="text-muted">尚未獲取到 Facebook 社團，請點擊下方按鈕獲取</p>';
-			}
-		} else {
-			communitiesList.innerHTML = '<p class="text-muted">載入社團列表失敗，請點擊下方按鈕重新獲取</p>';
+					} else {
+			communitiesList.innerHTML = '<p class="text-muted">尚未獲取到 Facebook 社團，請點擊下方按鈕獲取</p>';
 		}
-	} catch (error) {
-		console.error('載入 Facebook 社團失敗:', error);
+	} else {
 		communitiesList.innerHTML = '<p class="text-muted">載入社團列表失敗，請點擊下方按鈕重新獲取</p>';
 	}
+	
+	// 載入完成後觸發驗證
+	if (typeof window.validateStep1 === 'function') {
+		window.validateStep1();
+	}
+} catch (error) {
+	console.error('載入 Facebook 社團失敗:', error);
+	communitiesList.innerHTML = '<p class="text-muted">載入社團列表失敗，請點擊下方按鈕重新獲取</p>';
+	
+	// 載入失敗後也觸發驗證
+	if (typeof window.validateStep1 === 'function') {
+		window.validateStep1();
+	}
+}
 }
 
 // 社團選擇功能

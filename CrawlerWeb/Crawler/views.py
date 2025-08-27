@@ -451,20 +451,33 @@ class FacebookAutomationView(View):
 					# 上傳圖片（如果有的話）
 					if all_image_paths:
 						try:
+							# 上傳圖片按鈕
+							post_img_but = WebDriverWait(driver, 30).until(
+								EC.any_of(
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[1]/div/div/div/div[3]/div[1]/div[2]/div[5]/div/span/div'
+									)),
+								)
+							)
+							post_img_but.click()
+							self.human_delay(2.0, 3.0)
+							# 隨機點一個地方
+							post_click = WebDriverWait(driver, 30).until(
+								EC.any_of(
+									EC.presence_of_element_located((
+										By.XPATH, 
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[1]/h2'
+									)),
+								)
+							).click()
+							
 							# 查找圖片上傳按鈕
 							post_img = WebDriverWait(driver, 30).until(
 								EC.any_of(
 									EC.presence_of_element_located((
 										By.XPATH, 
-										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]'
-									)),
-									EC.presence_of_element_located((
-										By.XPATH, 
-										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div'
-									)),
-									EC.presence_of_element_located((
-										By.XPATH, 
-										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]'
+										'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/input'
 									)),
 									EC.presence_of_element_located((
 										By.XPATH, 
@@ -490,13 +503,13 @@ class FacebookAutomationView(View):
 										if os.path.exists(absolute_path):
 											# 上傳圖片
 											post_img.send_keys(absolute_path)
-											self.human_delay(2, 2.5)  # 人類化的等待時間
+											self.human_delay(2, 3)  # 人類化的等待時間
 										else:
 											continue
 									else:
 										# 已經是絕對路徑，直接使用
 										post_img.send_keys(img_path)
-										self.human_delay(2, 2.5)  # 人類化的等待時間
+										self.human_delay(2, 3)  # 人類化的等待時間
 										
 								except Exception as single_img_error:
 									continue
@@ -504,7 +517,16 @@ class FacebookAutomationView(View):
 							# 所有圖片上傳完成後，再等待一下確保上傳穩定
 							if all_image_paths:
 								self.human_delay(1.5, 2.5)  # 人類化的等待時間
-									
+								post_img = WebDriverWait(driver, 30).until(
+									EC.any_of(
+										EC.presence_of_element_located((
+											By.XPATH, 
+											'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[1]/div[3]/div'
+										)),
+									)
+								)
+								post_img.click()
+								
 						except Exception as img_error:
 							# 如果圖片上傳失敗，繼續執行，但記錄錯誤
 							print(f"圖片上傳失敗: {str(single_img_error)}")

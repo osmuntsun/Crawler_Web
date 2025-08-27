@@ -519,37 +519,254 @@
 	margin: 0;
 }
 
-/* 社團選擇容器 */
-.communities-selection-container {
-	border: 1px solid rgba(102, 126, 234, 0.2);
-	border-radius: 8px;
-	padding: 15px;
-	background: rgba(255, 255, 255, 0.02);
-}
-
-.communities-header {
+/* 社團標籤行 */
+.communities-label-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 15px;
 }
 
+.communities-label-row label {
+	font-weight: 600;
+	color: #333;
+	font-size: 14px;
+	margin: 0;
+}
+
+.communities-label-row .btn {
+	font-size: 12px;
+	font-weight: 600;
+	padding: 8px 16px;
+	border-radius: 16px;
+	transition: all 0.3s ease;
+	border: 2px solid #667eea;
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+	color: #667eea;
+}
+
+.communities-label-row .btn:hover {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 社團選擇容器 */
+.communities-selection-container {
+	border: 2px solid rgba(102, 126, 234, 0.15);
+	border-radius: 12px;
+	padding: 20px;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(248, 250, 252, 0.1) 100%);
+	box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+	transition: all 0.3s ease;
+}
+
+.communities-selection-container:hover {
+	border-color: rgba(102, 126, 234, 0.25);
+	box-shadow: 0 6px 25px rgba(102, 126, 234, 0.15);
+}
+
+.communities-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+	position: relative;
+}
+
+/* 移除社團管理標籤 */
+/* .communities-header::before {
+	content: '📋 社團管理';
+	position: absolute;
+	top: -10px;
+	left: 20px;
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+} */
+
+.communities-header .btn {
+	font-size: 13px;
+	font-weight: 600;
+	padding: 10px 18px;
+	border-radius: 20px;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	border: 2px solid;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	position: relative;
+	overflow: hidden;
+}
+
+.communities-header .btn::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+	transition: left 0.5s;
+}
+
+.communities-header .btn:hover::before {
+	left: 100%;
+}
+
+.communities-header .btn-outline-primary {
+	color: #667eea;
+	border-color: #667eea;
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.communities-header .btn-outline-primary:hover {
+	color: white;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border-color: #667eea;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.communities-header .btn-outline-success {
+	color: #10b981;
+	border-color: #10b981;
+	background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+}
+
+.communities-header .btn-outline-success:hover {
+	color: white;
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	border-color: #10b981;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.communities-header .btn-outline-secondary {
+	color: #64748b;
+	border-color: #64748b;
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.communities-header .btn-outline-secondary:hover {
+	color: white;
+	background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+	border-color: #64748b;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(100, 116, 139, 0.3);
+}
+
+.communities-header .btn:active {
+	transform: translateY(0);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .selection-controls {
 	display: flex;
-	gap: 10px;
+	gap: 12px;
 }
 
 .communities-list {
-	min-height: 100px;
+	min-height: 120px;
+	padding: 15px;
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+	border-radius: 8px;
+	border: 1px solid #e2e8f0;
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 12px;
 }
 
 .communities-loading {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 10px;
-	color: #6c757d;
+	gap: 12px;
+	color: #64748b;
 	font-style: italic;
+	font-size: 14px;
+	padding: 20px;
+}
+
+.communities-loading i {
+	color: #667eea;
+	font-size: 16px;
+}
+
+/* 社團項目樣式 */
+.community-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 15px;
+	background: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	height: fit-content;
+}
+
+.community-item:hover {
+	background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+	border-color: #0ea5e9;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.community-item.selected {
+	background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+	border-color: #10b981;
+	box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.community-item.selected:hover {
+	background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+	border-color: #059669;
+	box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+}
+
+.community-item input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+	accent-color: #0ea5e9;
+	border-radius: 4px;
+}
+
+.community-item .community-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.community-item .community-name {
+	font-size: 14px;
+	font-weight: 600;
+	color: #334155;
+}
+
+.community-item .community-members {
+	font-size: 12px;
+	color: #64748b;
+}
+
+.community-item .community-description {
+	font-size: 12px;
+	color: #94a3b8;
+	font-style: italic;
+	line-height: 1.4;
 }
 
 /* 動畫 */
@@ -638,13 +855,50 @@
 		justify-content: center;
 	}
 	
-	.communities-header {
+	.communities-label-row {
 		flex-direction: column;
 		gap: 10px;
 		align-items: stretch;
 	}
 	
+	.communities-label-row .btn {
+		width: 100%;
+		justify-content: center;
+	}
+	
+	.communities-header {
+		flex-direction: column;
+		gap: 15px;
+		align-items: stretch;
+	}
+	
 	.selection-controls {
 		justify-content: center;
+		gap: 8px;
+	}
+	
+	.communities-header .btn {
+		font-size: 12px;
+		padding: 8px 14px;
+		border-radius: 16px;
+	}
+	
+	.communities-list {
+		padding: 12px;
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+	
+	.community-item {
+		padding: 10px 12px;
+	}
+	
+	.community-item .community-name {
+		font-size: 13px;
+	}
+	
+	.community-item .community-members,
+	.community-item .community-description {
+		font-size: 11px;
 	}
 }

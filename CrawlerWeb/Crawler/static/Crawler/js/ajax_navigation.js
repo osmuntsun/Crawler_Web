@@ -381,42 +381,123 @@ class AjaxNavigation {
 	 * 重新綁定發文設定頁面事件
 	 */
 	rebindPostEvents() {
+		console.log('rebindPostEvents 被調用');
+		
+		// 初始化發文設定系統
+		if (window.initPostingSystem) {
+			console.log('調用 window.initPostingSystem');
+			window.initPostingSystem();
+		} else {
+			console.log('window.initPostingSystem 不存在');
+		}
+		
 		// 載入發文平台選項
 		if (window.updatePostingPlatforms) {
+			console.log('調用 window.updatePostingPlatforms');
 			window.updatePostingPlatforms();
+		} else {
+			console.log('window.updatePostingPlatforms 不存在');
 		}
 
-		// 載入文案模板選項
-		if (window.loadTemplates) {
-			window.loadTemplates();
+		// 載入文案模板選項（為發文設定頁面的下拉選單）
+		if (window.updateCopyTemplateOptions) {
+			console.log('調用 window.updateCopyTemplateOptions');
+			window.updateCopyTemplateOptions();
+		} else {
+			console.log('window.updateCopyTemplateOptions 不存在');
 		}
 
 		// 發文設定表單處理
 		const postingForm = document.getElementById('postingForm');
 		if (postingForm) {
+			// 移除舊的事件監聽器（如果存在）
+			postingForm.removeEventListener('submit', window.handlePosting);
+			// 添加新的事件監聽器
 			postingForm.addEventListener('submit', window.handlePosting);
 		}
 
 		// 獲取社團列表按鈕
 		const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
 		if (getCommunitiesBtn) {
+			// 移除舊的事件監聽器（如果存在）
+			getCommunitiesBtn.removeEventListener('click', window.getFacebookCommunities);
+			// 添加新的事件監聽器
 			getCommunitiesBtn.addEventListener('click', window.getFacebookCommunities);
 		}
+
+		// 社團選擇控制按鈕
+		const selectAllCommunitiesBtn = document.getElementById('selectAllCommunitiesBtn');
+		const deselectAllCommunitiesBtn = document.getElementById('deselectAllCommunitiesBtn');
+		
+		if (selectAllCommunitiesBtn) {
+			selectAllCommunitiesBtn.removeEventListener('click', window.selectAllCommunities);
+			selectAllCommunitiesBtn.addEventListener('click', window.selectAllCommunities);
+		}
+		if (deselectAllCommunitiesBtn) {
+			deselectAllCommunitiesBtn.removeEventListener('click', window.deselectAllCommunities);
+			deselectAllCommunitiesBtn.addEventListener('click', window.deselectAllCommunities);
+		}
+
+		// 社團選擇 checkbox 事件
+		const communityCheckboxes = document.querySelectorAll('input[name="communities"]');
+		communityCheckboxes.forEach(checkbox => {
+			checkbox.removeEventListener('change', () => {
+				window.updateCommunitySelectionStyles();
+				window.updateSelectionButtonIcons();
+				if (typeof window.validateStep1 === 'function') {
+					window.validateStep1();
+				}
+			});
+			checkbox.addEventListener('change', () => {
+				window.updateCommunitySelectionStyles();
+				window.updateSelectionButtonIcons();
+				// 觸發驗證
+				if (typeof window.validateStep1 === 'function') {
+					window.validateStep1();
+				}
+			});
+		});
 
 		// 發文平台選擇器
 		const postingPlatformSelect = document.getElementById('platformSelect');
 		if (postingPlatformSelect) {
-			postingPlatformSelect.addEventListener('change', window.handlePostingPlatformChange);
+			// 移除舊的事件監聽器（如果存在）
+			postingPlatformSelect.removeEventListener('change', window.handlePostingPlatformChange);
+			// 添加新的事件監聽器
+			postingPlatformSelect.addEventListener('change', (e) => {
+				window.handlePostingPlatformChange(e);
+				// 觸發驗證
+				if (typeof window.validateStep1 === 'function') {
+					window.validateStep1();
+				}
+			});
 		}
 
 		// 文案模板選擇器
 		const copyTemplateSelect = document.getElementById('templateSelect');
 		if (copyTemplateSelect) {
-			copyTemplateSelect.addEventListener('change', window.handleCopyTemplateChange);
+			// 移除舊的事件監聽器（如果存在）
+			copyTemplateSelect.removeEventListener('change', window.handlePostingTemplateChange);
+			// 添加新的事件監聽器
+			copyTemplateSelect.addEventListener('change', (e) => {
+				window.handlePostingTemplateChange(e);
+				// 觸發驗證
+				if (typeof window.validateStep1 === 'function') {
+					window.validateStep1();
+				}
+			});
 		}
 
 		// 綁定步驟切換事件
 		this.bindPostingStepEvents();
+		
+		// 驗證第一步驟
+		if (typeof window.validateStep1 === 'function') {
+			console.log('調用 validateStep1 驗證第一步驟');
+			window.validateStep1();
+		} else {
+			console.log('validateStep1 函數不存在');
+		}
 	}
 
 	/**
@@ -426,35 +507,44 @@ class AjaxNavigation {
 		// 下一步按鈕
 		const nextStepBtn = document.getElementById('nextStepBtn');
 		if (nextStepBtn) {
-			nextStepBtn.addEventListener('click', () => this.switchToStep(2));
+			nextStepBtn.removeEventListener('click', () => window.switchToStep(2));
+			nextStepBtn.addEventListener('click', () => window.switchToStep(2));
 		}
 
 		const nextStepBtn2 = document.getElementById('nextStepBtn2');
 		if (nextStepBtn2) {
-			nextStepBtn2.addEventListener('click', () => this.switchToStep(3));
+			nextStepBtn2.removeEventListener('click', () => window.switchToStep(3));
+			nextStepBtn2.addEventListener('click', () => window.switchToStep(3));
 		}
 
 		// 上一步按鈕
 		const prevStepBtn = document.getElementById('prevStepBtn');
 		if (prevStepBtn) {
-			prevStepBtn.addEventListener('click', () => this.switchToStep(1));
+			prevStepBtn.removeEventListener('click', () => window.switchToStep(1));
+			prevStepBtn.addEventListener('click', () => window.switchToStep(1));
 		}
 
 		const prevStepBtn2 = document.getElementById('prevStepBtn2');
 		if (prevStepBtn2) {
-			prevStepBtn2.addEventListener('click', () => this.switchToStep(2));
+			prevStepBtn2.removeEventListener('click', () => window.switchToStep(2));
+			prevStepBtn2.addEventListener('click', () => window.switchToStep(2));
 		}
 
 		// 立即發文按鈕
 		const nextStepBtnImmediate = document.getElementById('nextStepBtnImmediate');
 		if (nextStepBtnImmediate) {
-			nextStepBtnImmediate.addEventListener('click', () => this.switchToStep(3));
+			nextStepBtnImmediate.removeEventListener('click', () => window.switchToStep(3));
+			nextStepBtnImmediate.addEventListener('click', () => window.switchToStep(3));
 		}
 
 		// 發文方式選擇
 		const immediatePosting = document.getElementById('immediate_posting');
 		const scheduledPosting = document.getElementById('scheduled_posting');
 		if (immediatePosting && scheduledPosting) {
+			// 移除舊的事件監聽器（如果存在）
+			immediatePosting.removeEventListener('change', window.handlePostingMethodChange);
+			scheduledPosting.removeEventListener('change', window.handlePostingMethodChange);
+			// 添加新的事件監聽器
 			immediatePosting.addEventListener('change', window.handlePostingMethodChange);
 			scheduledPosting.addEventListener('change', window.handlePostingMethodChange);
 		}
@@ -465,24 +555,36 @@ class AjaxNavigation {
 		const clearDaysBtn = document.getElementById('clearDaysBtn');
 		
 		if (selectAllDaysBtn) {
+			selectAllDaysBtn.removeEventListener('click', window.selectAllDays);
 			selectAllDaysBtn.addEventListener('click', window.selectAllDays);
 		}
 		if (selectWeekdaysBtn) {
+			selectWeekdaysBtn.removeEventListener('click', window.selectWeekdays);
 			selectWeekdaysBtn.addEventListener('click', window.selectWeekdays);
 		}
 		if (clearDaysBtn) {
+			clearDaysBtn.removeEventListener('click', window.clearDays);
 			clearDaysBtn.addEventListener('click', window.clearDays);
 		}
 
 		// 時間設定
 		const addTimeBtn = document.getElementById('addTimeBtn');
 		if (addTimeBtn) {
+			addTimeBtn.removeEventListener('click', window.addPostingTime);
 			addTimeBtn.addEventListener('click', window.addPostingTime);
 		}
+
+		// 移除時間按鈕（動態生成的按鈕）
+		const removeTimeBtns = document.querySelectorAll('.remove-time-btn');
+		removeTimeBtns.forEach(btn => {
+			btn.removeEventListener('click', () => window.removePostingTime(btn));
+			btn.addEventListener('click', () => window.removePostingTime(btn));
+		});
 
 		// 確認發布按鈕
 		const confirmPostingBtn = document.getElementById('confirmPostingBtn');
 		if (confirmPostingBtn) {
+			confirmPostingBtn.removeEventListener('click', window.confirmPosting);
 			confirmPostingBtn.addEventListener('click', window.confirmPosting);
 		}
 	}
@@ -512,6 +614,8 @@ class AjaxNavigation {
 			}
 		});
 	}
+
+
 
 
 
@@ -597,6 +701,30 @@ class AjaxNavigation {
 // 頁面載入完成後初始化
 document.addEventListener('DOMContentLoaded', () => {
 	window.ajaxNavigation = new AjaxNavigation();
+	
+	// 將 switchToStep 函數暴露到 window 對象
+	window.switchToStep = (stepNumber) => {
+		// 隱藏所有步驟內容
+		document.querySelectorAll('.posting-step-content').forEach(content => {
+			content.style.display = 'none';
+		});
+
+		// 顯示指定步驟內容
+		const stepContent = document.getElementById(`step${stepNumber}-content`);
+		if (stepContent) {
+			stepContent.style.display = 'block';
+		}
+
+		// 更新步驟指示器
+		document.querySelectorAll('.step-item').forEach((item, index) => {
+			item.classList.remove('active', 'completed');
+			if (index + 1 === stepNumber) {
+				item.classList.add('active');
+			} else if (index + 1 < stepNumber) {
+				item.classList.add('completed');
+			}
+		});
+	};
 });
 
 // 導出類別供其他模組使用

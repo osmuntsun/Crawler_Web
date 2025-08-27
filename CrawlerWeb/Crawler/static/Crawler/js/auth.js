@@ -260,7 +260,7 @@ async function checkAndHideLoggedInPlatforms() {
 		// 查找平台選擇元素
 		const platformSelect = document.querySelector('select[name="login_platform"]');
 		if (!platformSelect) {
-			console.error('找不到平台選擇元素: select[name="login_platform"]');
+			console.log('當前頁面沒有平台選擇元素，跳過檢查已登入平台');
 			return;
 		}
 		

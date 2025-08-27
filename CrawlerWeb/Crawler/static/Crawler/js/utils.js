@@ -163,25 +163,45 @@ function removePostingImage(index) {
 
 // 更新發文平台選項
 async function updatePostingPlatforms() {
+	console.log('updatePostingPlatforms 被調用');
 	const postingPlatformSelect = document.getElementById('platformSelect');
 	const facebookCommunitiesRow = document.getElementById('facebookCommunitiesRow');
 	
-	if (!postingPlatformSelect) return;
+	if (!postingPlatformSelect) {
+		console.log('找不到 platformSelect 元素');
+		return;
+	}
 
 	try {
+		console.log('開始調用 API: /crawler/api/accounts/status/');
 		const response = await fetch('/crawler/api/accounts/status/');
+		console.log('API 響應狀態:', response.status, response.statusText);
+		
+		if (!response.ok) {
+			throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
+		}
+		
 		const accounts = await response.json();
+		console.log('API 返回的帳號數據:', accounts);
 		
 		// 清空現有選項
 		postingPlatformSelect.innerHTML = '<option value="">選擇要發文的社群平台</option>';
 		
+		// 過濾活躍帳號
+		const activeAccounts = accounts.filter(acc => acc.is_active);
+		console.log('活躍帳號數量:', activeAccounts.length);
+		console.log('活躍帳號詳情:', activeAccounts);
+		
 		// 只顯示已登入的平台
-		accounts.filter(acc => acc.is_active).forEach(account => {
+		activeAccounts.forEach(account => {
 			const option = document.createElement('option');
 			option.value = account.website;
 			option.textContent = window.getPlatformDisplayName(account.website);
 			postingPlatformSelect.appendChild(option);
+			console.log(`添加平台選項: ${account.website} - ${window.getPlatformDisplayName(account.website)}`);
 		});
+		
+		console.log(`成功添加 ${activeAccounts.length} 個平台選項`);
 		
 		// 檢查是否有 Facebook 帳號登入
 		const hasFacebook = accounts.some(account => 
@@ -190,13 +210,21 @@ async function updatePostingPlatforms() {
 		
 		if (hasFacebook && facebookCommunitiesRow) {
 			facebookCommunitiesRow.style.display = 'block';
+			console.log('Facebook 帳號已登入，顯示社團選擇區域');
 			// 自動載入 Facebook 社團
-			await window.loadFacebookCommunitiesFromDatabase();
+			if (window.loadFacebookCommunitiesFromDatabase) {
+				await window.loadFacebookCommunitiesFromDatabase();
+			} else {
+				console.log('loadFacebookCommunitiesFromDatabase 函數不存在');
+			}
 		} else if (facebookCommunitiesRow) {
 			facebookCommunitiesRow.style.display = 'none';
+			console.log('沒有 Facebook 帳號登入，隱藏社團選擇區域');
 		}
 	} catch (error) {
 		console.error('更新發文平台選項失敗:', error);
+		console.error('錯誤詳情:', error.message);
+		console.error('錯誤堆疊:', error.stack);
 	}
 }
 
@@ -213,7 +241,13 @@ function handlePostingPlatformChange() {
 		facebookCommunitiesRow.style.display = 'block';
 		// 如果還沒有載入社團，則自動載入
 		const communitiesList = document.getElementById('communitiesList');
-		if (communitiesList && communitiesList.innerHTML.includes('請先登入 Facebook')) {
+		if (communitiesList && (
+			communitiesList.innerHTML.includes('請先登入 Facebook') ||
+			communitiesList.innerHTML.includes('尚未獲取到 Facebook 社團') ||
+			communitiesList.innerHTML.includes('載入社團列表失敗') ||
+			communitiesList.querySelector('.communities-loading')
+		)) {
+			console.log('自動載入 Facebook 社團');
 			window.loadFacebookCommunitiesFromDatabase();
 		}
 	} else {

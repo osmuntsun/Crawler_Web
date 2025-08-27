@@ -2,105 +2,117 @@
 
 // 爬蟲工具功能初始化
 function initCrawlerTools() {
-	// 帳號登入表單處理
-	const accountLoginForm = document.getElementById('accountLoginForm');
-	if (accountLoginForm) {
-		accountLoginForm.addEventListener('submit', window.handleAccountLogin);
-	}
+	// 帳號登入表單處理 - 現在由 ajax_navigation.js 統一管理
+	// const accountLoginForm = document.getElementById('accountLoginForm');
+	// if (accountLoginForm) {
+	// 	accountLoginForm.addEventListener('submit', window.handleAccountLogin);
+	// }
 
-	// 文案設定表單處理
-	const copyForm = document.querySelector('#tab-copy form');
-	if (copyForm) {
-		copyForm.addEventListener('submit', window.handleCopySave);
-	}
+	// 文案設定表單處理 - 現在由 ajax_navigation.js 統一管理
+	// const copyForm = document.querySelector('#tab-copy form');
+	// if (copyForm) {
+	// 	copyForm.addEventListener('submit', window.handleCopySave);
+	// }
 
-	// 發文設定表單處理
-	const postingForm = document.getElementById('postingForm');
-	if (postingForm) {
-		postingForm.addEventListener('submit', window.handlePosting);
-	}
+	// 發文設定表單處理 - 現在由 ajax_navigation.js 統一管理
+	// const postingForm = document.getElementById('postingForm');
+	// if (postingForm) {
+	// 	postingForm.addEventListener('submit', window.handlePosting);
+	// }
 
-	// 獲取社團列表按鈕
-	const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
-	if (getCommunitiesBtn) {
-		getCommunitiesBtn.addEventListener('click', window.getFacebookCommunities);
-	}
+	// 獲取社團列表按鈕 - 現在由 ajax_navigation.js 統一管理
+	// const getCommunitiesBtn = document.getElementById('getCommunitiesBtn');
+	// if (getCommunitiesBtn) {
+	// 	getCommunitiesBtn.addEventListener('click', window.getFacebookCommunities);
+	// }
 
-	// 圖片上傳處理
-	const postingImageUpload = document.getElementById('postingImageUpload');
-	if (postingImageUpload) {
-		postingImageUpload.addEventListener('change', window.handleImageUpload);
-	}
+	// 圖片上傳處理 - 現在由 ajax_navigation.js 統一管理
+	// const postingImageUpload = document.getElementById('postingImageUpload');
+	// if (postingImageUpload) {
+	// 	postingImageUpload.addEventListener('change', window.handleImageUpload);
+	// }
 
-	// 重新整理社團按鈕
-	const refreshCommunitiesBtn = document.getElementById('refreshCommunitiesBtn');
-	if (refreshCommunitiesBtn) {
-		refreshCommunitiesBtn.addEventListener('click', window.refreshCommunities);
-	}
+	// 重新整理社團按鈕 - 現在由 ajax_navigation.js 統一管理
+	// const refreshCommunitiesBtn = document.getElementById('refreshCommunitiesBtn');
+	// if (refreshCommunitiesBtn) {
+	// 	refreshCommunitiesBtn.addEventListener('click', window.refreshCommunities);
+	// }
 
-	// 模板圖片上傳
-	const templateImageUpload = document.getElementById('templateImageUpload');
-	const imageUploadArea = document.getElementById('imageUploadArea');
-	if (templateImageUpload && imageUploadArea) {
-		templateImageUpload.addEventListener('change', window.handleTemplateImageUpload);
-		
-		// 拖拽上傳
-		imageUploadArea.addEventListener('dragover', window.handleDragOver);
-		imageUploadArea.addEventListener('dragleave', window.handleDragLeave);
-		imageUploadArea.addEventListener('drop', window.handleDrop);
-	}
+	// 模板圖片上傳 - 現在由 ajax_navigation.js 統一管理
+	// const templateImageUpload = document.getElementById('templateImageUpload');
+	// const imageUploadArea = document.getElementById('imageUploadArea');
+	// if (templateImageUpload && imageUploadArea) {
+	// 	templateImageUpload.addEventListener('change', window.handleTemplateImageUpload);
+	// 	
+	// 	// 拖拽上傳
+	// 	imageUploadArea.addEventListener('dragover', window.handleDragOver);
+	// 	imageUploadArea.addEventListener('dragleave', window.handleDragLeave);
+	// 	imageUploadArea.addEventListener('drop', window.handleDrop);
+	// }
 
-	// 儲存模板按鈕
-	const saveTemplateBtn = document.getElementById('saveTemplateBtn');
-	if (saveTemplateBtn) {
-		saveTemplateBtn.addEventListener('click', handleSaveTemplate);
-	}
+	// 儲存模板按鈕 - 現在由 ajax_navigation.js 統一管理
+	// const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+	// if (saveTemplateBtn) {
+	// 	saveTemplateBtn.addEventListener('click', handleSaveTemplate);
+	// }
 
-	// 預覽模板按鈕
-	const previewTemplateBtn = document.getElementById('previewTemplateBtn');
-	if (previewTemplateBtn) {
-		previewTemplateBtn.addEventListener('click', handlePreviewTemplate);
-	}
+	// 預覽模板按鈕 - 現在由 ajax_navigation.js 統一管理
+	// const previewTemplateBtn = document.getElementById('previewTemplateBtn');
+	// if (previewTemplateBtn) {
+	// 	previewTemplateBtn.addEventListener('click', handlePreviewTemplate);
+	// }
 
-	// 清空模板按鈕
-	const clearTemplateBtn = document.getElementById('clearTemplateBtn');
-	if (clearTemplateBtn) {
-		clearTemplateBtn.addEventListener('click', handleClearTemplate);
-	}
+	// 清空模板按鈕 - 現在由 ajax_navigation.js 統一管理
+	// const clearTemplateBtn = document.getElementById('clearTemplateBtn');
+	// if (clearTemplateBtn) {
+	// 	clearTemplateBtn.addEventListener('click', handleClearTemplate);
+	// }
 
-	// 標籤篩選器
-	const hashtagFilter = document.getElementById('hashtagFilter');
-	if (hashtagFilter) {
-		console.log('標籤篩選器元素找到，綁定事件監聽器');
-		hashtagFilter.addEventListener('change', window.handleHashtagFilter);
-	} else {
-		console.error('找不到標籤篩選器元素');
-	}
+	// 標籤篩選器 - 現在由 ajax_navigation.js 統一管理
+	// const hashtagFilter = document.getElementById('hashtagFilter');
+	// if (hashtagFilter) {
+	// 	console.log('標籤篩選器元素找到，綁定事件監聽器');
+	// 	hashtagFilter.addEventListener('change', window.handleHashtagFilter);
+	// } else {
+	// 	console.log('標籤篩選器元素不存在，跳過綁定');
+	// }
 
-	// 文案模板選擇器
-	const copyTemplateSelect = document.getElementById('templateSelect');
-	if (copyTemplateSelect) {
-		console.log('文案模板選擇器元素找到，綁定事件監聽器');
-		copyTemplateSelect.addEventListener('change', window.handleCopyTemplateChange);
-	} else {
-		console.error('找不到文案模板選擇器元素');
-	}
+	// 文案模板選擇器 - 現在由 ajax_navigation.js 統一管理
+	// const copyTemplateSelect = document.getElementById('templateSelect');
+	// if (copyTemplateSelect) {
+	// 	console.log('文案模板選擇器元素找到，綁定事件監聽器');
+	// 	copyTemplateSelect.addEventListener('change', window.handleCopyTemplateChange);
+	// 	if (copyTemplateSelect) {
+	// 		console.log('文案模板選擇器元素找到，綁定事件監聽器');
+	// 		copyTemplateSelect.addEventListener('change', window.handleCopyTemplateChange);
+	// 	} else {
+	// 		console.log('文案模板選擇器元素不存在，跳過綁定');
+	// 	}
+	// }
 
-	// 發文平台選擇器
-	const postingPlatformSelect = document.getElementById('platformSelect');
-	if (postingPlatformSelect) {
-		console.log('發文平台選擇器元素找到，綁定事件監聽器');
-		postingPlatformSelect.addEventListener('change', window.handlePostingPlatformChange);
-	} else {
-		console.error('找不到發文平台選擇器元素');
-	}
+	// 發文平台選擇器 - 現在由 ajax_navigation.js 統一管理
+	// const postingPlatformSelect = document.getElementById('platformSelect');
+	// if (postingPlatformBtn) {
+	// 	console.log('發文平台選擇器元素找到，綁定事件監聽器');
+	// 	postingPlatformSelect.addEventListener('change', window.handlePostingPlatformChange);
+	// } else {
+	// 	console.log('發文平台選擇器元素不存在，跳過綁定');
+	// }
 	
-	// 初始化平台和模板選項
+	// 初始化平台和模板選項（只在相關元素存在時執行）
 	setTimeout(async () => {
-		console.log('開始初始化平台和模板選項...');
-		await window.updatePostingPlatforms();
-		await window.updateCopyTemplateOptions();
-		console.log('平台和模板選項初始化完成');
+		console.log('檢查是否需要初始化平台和模板選項...');
+		const platformSelect = document.getElementById('platformSelect');
+		const templateSelect = document.getElementById('templateSelect');
+		
+		if (platformSelect && templateSelect) {
+			console.log('開始初始化平台和模板選項...');
+			await window.updatePostingPlatforms();
+			await window.updateCopyTemplateOptions();
+			console.log('平台和模板選項初始化完成');
+		} else {
+			console.log('平台或模板選擇器不存在，跳過初始化');
+		}
 	}, 500);
 	
 	// 初始化第一步驟驗證
@@ -149,26 +161,48 @@ function initCrawlerTools() {
 	// 為表單輸入框添加事件監聽器，檢查內容變化
 	window.bindFormInputListeners();
 
-	// 初始化頁面數據
+	// 初始化頁面數據（只在相關元素存在時執行）
 	(async () => {
-		await window.loadAccountsStatus();
-		await window.loadCommunities();
-		await window.loadCopyTemplates();
-		await window.loadPostTemplates();
-		await window.updatePostingPlatforms(); // 這會自動檢查Facebook登入狀態並載入社團
-		await window.updateCopyTemplateOptions(); // 更新文案模板選項
+		console.log('檢查是否需要初始化頁面數據...');
+		const platformSelect = document.getElementById('platformSelect');
+		const templateSelect = document.getElementById('templateSelect');
+		
+		if (platformSelect && templateSelect) {
+			console.log('開始初始化頁面數據...');
+			await window.loadAccountsStatus();
+			await window.loadCommunities();
+			await window.loadCopyTemplates();
+			await window.loadPostTemplates();
+			await window.updatePostingPlatforms(); // 這會自動檢查Facebook登入狀態並載入社團
+			await window.updateCopyTemplateOptions(); // 更新文案模板選項
+			console.log('頁面數據初始化完成');
+		} else {
+			console.log('平台或模板選擇器不存在，跳過頁面數據初始化');
+		}
 	})();
 	
-	// 檢查並隱藏已登入的平台選項
+	// 檢查並隱藏已登入的平台選項（只在相關元素存在時執行）
 	setTimeout(async () => {
-		console.log('延遲1秒後開始檢查已登入的平台...');
-		await window.checkAndHideLoggedInPlatforms();
+		console.log('延遲1秒後檢查是否需要檢查已登入的平台...');
+		const platformSelect = document.getElementById('platformSelect');
+		if (platformSelect) {
+			console.log('開始檢查已登入的平台...');
+			await window.checkAndHideLoggedInPlatforms();
+		} else {
+			console.log('平台選擇器不存在，跳過檢查已登入平台');
+		}
 	}, 1000); // 延遲1秒執行，確保其他數據已載入
 	
 	// 再次檢查（以防第一次失敗）
 	setTimeout(async () => {
-		console.log('延遲3秒後再次檢查已登入的平台...');
-		await window.checkAndHideLoggedInPlatforms();
+		console.log('延遲3秒後再次檢查是否需要檢查已登入的平台...');
+		const platformSelect = document.getElementById('platformSelect');
+		if (platformSelect) {
+			console.log('再次檢查已登入的平台...');
+			await window.checkAndHideLoggedInPlatforms();
+		} else {
+			console.log('平台選擇器不存在，跳過再次檢查已登入平台');
+		}
 	}, 3000);
 	
 	// 綁定事件監聽器

@@ -65,17 +65,19 @@
 				
 				<!-- Facebook 社團選擇（僅在選擇 Facebook 時顯示） -->
 				<div class="form-row" id="facebookCommunitiesRow" style="display: none;">
-					<label><i class="fas fa-users"></i> 選擇 Facebook 社團（可多選）</label>
+					<div class="communities-label-row">
+						<label><i class="fas fa-users"></i> 選擇 Facebook 社團（可多選）</label>
+						<button type="button" class="btn btn-outline-primary btn-sm" id="getCommunitiesBtn">
+							<i class="fas fa-sync-alt"></i> 獲取社團列表
+						</button>
+					</div>
 					<div class="communities-selection-container">
 						<div class="communities-header">
-							<button type="button" class="btn btn-outline-primary btn-sm" id="getCommunitiesBtn" onclick="getFacebookCommunities()">
-								<i class="fas fa-sync-alt"></i> 獲取社團列表
-							</button>
 							<div class="selection-controls">
-								<button type="button" class="btn btn-outline-success btn-sm" id="selectAllCommunitiesBtn" onclick="selectAllCommunities()">
+								<button type="button" class="btn btn-outline-success btn-sm" id="selectAllCommunitiesBtn">
 									<i class="fas fa-check-square"></i> 全選
 								</button>
-								<button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllCommunitiesBtn" onclick="deselectAllCommunities()">
+								<button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllCommunitiesBtn">
 									<i class="fas fa-square"></i> 取消全選
 								</button>
 							</div>
@@ -143,15 +145,15 @@
 						<label><i class="fas fa-calendar-week"></i> 執行日期</label>
 						<div class="days-selection">
 							<div class="btn-container">
-								<button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDaysBtn" onclick="selectAllDays()">
-									<i class="fas fa-calendar"></i> 每天
-								</button>
-								<button type="button" class="btn btn-outline-secondary btn-sm" id="selectWeekdaysBtn" onclick="selectWeekdays()">
-									<i class="fas fa-briefcase"></i> 工作日
-								</button>
-								<button type="button" class="btn btn-outline-secondary btn-sm" id="clearDaysBtn" onclick="clearDays()">
-									<i class="fas fa-times"></i> 清空
-								</button>
+															<button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDaysBtn">
+								<i class="fas fa-calendar"></i> 每天
+							</button>
+							<button type="button" class="btn btn-outline-secondary btn-sm" id="selectWeekdaysBtn">
+								<i class="fas fa-briefcase"></i> 工作日
+							</button>
+							<button type="button" class="btn btn-outline-secondary btn-sm" id="clearDaysBtn">
+								<i class="fas fa-times"></i> 清空
+							</button>
 							</div>
 							<div class="days-checkboxes">
 								<label class="day-checkbox">
@@ -193,15 +195,15 @@
 							<div class="posting-times-list" id="postingTimesList">
 								<div class="posting-time-item">
 									<input type="time" name="posting_times[]" value="09:00" class="form-input time-input">
-									<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
-										<i class="fas fa-minus"></i>
-									</button>
+																	<button type="button" class="btn btn-sm btn-danger remove-time-btn">
+									<i class="fas fa-minus"></i>
+								</button>
 								</div>
 							</div>
 							<div class="add-time-controls">
-								<button type="button" class="btn btn-sm btn-success" id="addTimeBtn" onclick="addPostingTime()">
-									<i class="fas fa-plus"></i> 新增時間
-								</button>
+															<button type="button" class="btn btn-sm btn-success" id="addTimeBtn">
+								<i class="fas fa-plus"></i> 新增時間
+							</button>
 								<small class="form-help">每天至少需要設定一個發文時間</small>
 							</div>
 						</div>

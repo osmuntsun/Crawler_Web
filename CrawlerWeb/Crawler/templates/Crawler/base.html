@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}爬蟲工具 - 智能自動化平台{% endblock %}</title>
+	<link rel="stylesheet" href="{% static 'Crawler/css/base.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/tool_refresh.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/template_styles.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/account.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/account_management.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/copy.css' %}">
+	<link rel="stylesheet" href="{% static 'Crawler/css/post.css' %}">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	{% block extra_css %}{% endblock %}
+</head>
+<body>
+	<!-- 導航欄 -->
+	<nav class="navbar">
+		<div class="nav-container">
+			<div class="nav-brand">
+				<i class="fas fa-robot"></i>
+				<span>爬蟲工具</span>
+			</div>
+			<div class="nav-menu">
+				<a href="/" class="nav-link"><i class="fas fa-home"></i> 首頁</a>
+				{% if is_authenticated %}
+					<a href="{% url 'Accounts:profile' %}" class="nav-link"><i class="fas fa-user"></i> {{ user.username }}</a>
+					{% if user.is_superuser %}
+					<a href="/admin/" class="nav-link"><i class="fas fa-cog"></i> 管理</a>
+					{% endif %}
+					<a href="{% url 'Accounts:logout' %}" class="nav-link"><i class="fas fa-sign-out-alt"></i> 登出</a>
+				{% else %}
+					<a href="{% url 'Accounts:login' %}" class="nav-link"><i class="fas fa-sign-in-alt"></i> 登入</a>
+				{% endif %}
+			</div>
+		</div>
+	</nav>
+
+	<!-- 主要內容區域 -->
+	<div class="main-container">
+		<!-- 側邊欄 -->
+		<aside class="sidebar">
+			<div class="sidebar-header">
+				<h3><i class="fas fa-tools"></i> 功能選單</h3>
+			</div>
+			<nav class="sidebar-nav">
+				<button class="sidebar-item active" data-tab="account">
+					<i class="fas fa-user-cog"></i>
+					<span>帳號設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="account-management">
+					<i class="fas fa-users"></i>
+					<span>帳號管理</span>
+				</button>
+				<button class="sidebar-item" data-tab="copy">
+					<i class="fas fa-edit"></i>
+					<span>文案設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="post">
+					<i class="fas fa-share-alt"></i>
+					<span>發文設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="schedule">
+					<i class="fas fa-calendar-alt"></i>
+					<span>排程設定</span>
+				</button>
+				<button class="sidebar-item" data-tab="auto-feed">
+					<i class="fas fa-heart"></i>
+					<span>自動養號</span>
+				</button>
+				<button class="sidebar-item" data-tab="group-sale">
+					<i class="fas fa-shopping-cart"></i>
+					<span>社團拍賣商品</span>
+				</button>
+			</nav>
+		</aside>
+
+		<!-- 內容區域 -->
+		<main class="content">
+			{% block content %}
+			<!-- 預設顯示帳號設定頁面內容 -->
+			<div class="loading-placeholder">
+				<div class="loading-content">
+					<i class="fas fa-spinner fa-spin"></i>
+					<p>載入中...</p>
+				</div>
+			</div>
+			{% endblock %}
+		</main>
+	</div>
+
+	<!-- 通知區域 -->
+	<div id="notifications" class="notifications"></div>
+
+	<!-- 模板預覽 Modal -->
+	<div id="templatePreviewModal" class="template-preview-modal" style="display: none;">
+		<div class="template-preview-overlay">
+			<div class="template-preview-content">
+				<div class="template-preview-header">
+					<h3><i class="fas fa-eye"></i> 發文預覽</h3>
+					<button type="button" class="close-preview-btn" onclick="closePreviewModal()">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				
+				<div class="template-preview-body">
+					<div class="preview-title" id="modalPreviewTitle"></div>
+					
+					<div class="preview-content" id="modalPreviewContent"></div>
+					
+					<div class="preview-images" id="modalPreviewImages" style="display: none;">
+						<div class="preview-images-title">
+							<i class="fas fa-images"></i> 圖片預覽
+						</div>
+						<div class="preview-images-grid" id="modalPreviewImagesGrid"></div>
+					</div>
+					
+					<div class="preview-hashtags" id="modalPreviewHashtags" style="display: none;"></div>
+				</div>
+				
+				<div class="template-preview-footer">
+					<button type="button" class="btn btn-secondary" onclick="closePreviewModal()">
+						關閉
+					</button>
+					<button type="button" class="btn btn-primary" onclick="usePreviewContent()">
+						<i class="fas fa-check"></i> 使用此內容
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>window.CRAWLER_CAN_USE_TOOL = {{ can_use_tool|yesno:'true,false' }};</script>
+	
+	<!-- 載入分離的JavaScript模組 -->
+	<script src="{% static 'Crawler/js/main.js' %}"></script>
+	<script src="{% static 'Crawler/js/auth.js' %}"></script>
+	<script src="{% static 'Crawler/js/communities.js' %}"></script>
+	<script src="{% static 'Crawler/js/templates.js' %}"></script>
+	<script src="{% static 'Crawler/js/posting.js' %}"></script>
+	<script src="{% static 'Crawler/js/utils.js' %}"></script>
+	<script src="{% static 'Crawler/js/init.js' %}"></script>
+	<script src="{% static 'Crawler/js/ajax_navigation.js' %}"></script>
+	
+	{% block extra_js %}{% endblock %}
+</body>
+</html>

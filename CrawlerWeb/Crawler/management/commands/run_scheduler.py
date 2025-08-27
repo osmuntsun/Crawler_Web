@@ -206,7 +206,7 @@ class Command(BaseCommand):
                 return 0
             
             # 設置驅動程式
-            driver = facebook_view._setup_driver()
+            driver = facebook_view._setup_driver(headless=True)
             
             try:
                 # 登入 Facebook
@@ -348,6 +348,10 @@ class Command(BaseCommand):
                     EC.presence_of_element_located((
                         By.XPATH, 
                         '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]'
+                    )),
+                    EC.presence_of_element_located((
+                        By.XPATH, 
+                        '/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div[1]/form/div/div[2]/div/div/div[2]/div[1]/div/div/div/div[1]/div[2]/div/div/div/div/span'
                     )),
                     EC.presence_of_element_located((
                         By.XPATH, 

@@ -1,0 +1,94 @@
+<!-- 帳號管理 -->
+<div class="content-header">
+	<h2><i class="fas fa-users"></i> 帳號管理</h2>
+	<p>管理您的社群軟體帳號和Cookie設定</p>
+</div>
+<div class="card {% if not can_use_tool %}disabled{% endif %}">
+	<div class="card-body">
+		{% if not can_use_tool %}
+		<div class="disabled-overlay">
+			<div class="disabled-message">
+				<i class="fas fa-lock"></i>
+				<span>請完成啟用後使用此功能</span>
+			</div>
+		</div>
+		{% endif %}
+		
+		<!-- 社群軟體帳號狀態 -->
+		<div class="section-header">
+			<h3><i class="fas fa-list"></i> 社群軟體帳號狀態</h3>
+			<p>顯示您已登入的社群平台狀態</p>
+		</div>
+		<div id="accountsStatus" class="accounts-status-grid">
+			<!-- 帳號狀態將由 JavaScript 動態生成 -->
+		</div>
+
+		<!-- 社群軟體帳號列表 -->
+		<div class="section-header">
+			<h3><i class="fas fa-list"></i> 社群軟體帳號列表</h3>
+		</div>
+		<div class="table-container">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th><i class="fas fa-globe"></i> 平台</th>
+						<th><i class="fas fa-link"></i> 網址</th>
+						<th><i class="fas fa-cookie-bite"></i> Cookie數量</th>
+						<th><i class="fas fa-clock"></i> 最後更新</th>
+						<th><i class="fas fa-toggle-on"></i> 狀態</th>
+						<th><i class="fas fa-cog"></i> 操作</th>
+					</tr>
+				</thead>
+				<tbody id="accountsTableBody">
+					<tr class="no-data">
+						<td colspan="6">
+							<div class="empty-state">
+								<i class="fas fa-inbox"></i>
+								<p>尚未新增任何社群軟體帳號</p>
+								<small>點擊上方表單新增您的第一個帳號</small>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<!-- 社團列表 -->
+		<div class="section-header">
+			<div style="display: flex; justify-content: space-between; align-items: center;">
+				<div>
+					<h3><i class="fab fa-facebook"></i> FB我的社團</h3>
+					<p>顯示您已加入的 Facebook 社團</p>
+				</div>
+				<button type="button" class="btn btn-info btn-sm" id="refreshCommunitiesBtn">
+					<i class="fas fa-sync-alt"></i> 重新整理
+				</button>
+			</div>
+		</div>
+		<div class="table-container">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th><i class="fas fa-users"></i> 社團名稱</th>
+						<th><i class="fas fa-globe"></i> 平台</th>
+						<th><i class="fas fa-link"></i> 連結</th>
+						<th><i class="fas fa-users"></i> 成員數</th>
+						<th><i class="fas fa-clock"></i> 加入時間</th>
+						<th><i class="fas fa-toggle-on"></i> 狀態</th>
+					</tr>
+				</thead>
+				<tbody id="communitiesTableBody">
+					<tr class="no-data">
+						<td colspan="6">
+							<div class="empty-state">
+								<i class="fas fa-users"></i>
+								<p>尚未加入任何社團</p>
+								<small>登入 Facebook 後將自動獲取您的社團列表</small>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>

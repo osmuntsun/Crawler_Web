@@ -1287,103 +1287,61 @@ body {
 	margin: 0;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	transition: transform 0.3s ease;
+	z-index: 1; /* 讓圖片顯示在 preview-image-order 的後面 */
 }
 
-.copy-preview img:hover {
-	transform: scale(1.02);
-}
+/* 移除圖片懸停效果 */
 
-/* 文案預覽中的圖片網格 */
-.copy-preview .preview-images-grid {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 12px;
-	margin: 0;
-	padding: 0;
-}
+/* 移除所有文案預覽圖片的CSS樣式，讓圖片自然顯示 */
 
-.copy-preview .preview-image-item {
-	position: relative;
-	width: 200px;
-	height: 200px;
-	border-radius: 0;
-	overflow: visible;
-	box-shadow: none;
-	transition: none;
-	margin: 0;
-	border: none;
-	background: none;
-}
-
-.copy-preview .preview-image-item:hover {
-	transform: none;
-	box-shadow: none;
-	border-color: transparent;
-}
-
-.copy-preview .preview-image-item img {
-	width: 100%;
-	height: 100%;
-	object-fit: contain;
-	margin: 0;
-	border-radius: 0;
-	transition: none;
-}
-
-.copy-preview .preview-image-item:hover img {
-	transform: none;
-}
-
-/* 圖片順序標籤樣式簡化 */
+/* 圖片順序標籤樣式 - 與文案設計中已儲存模板一致 */
 .copy-preview .preview-image-order {
 	position: absolute;
-	top: 8px;
-	left: 8px;
-	background: rgba(0, 0, 0, 0.7);
+	bottom: 4px; /* 改為底部 */
+	right: 4px;  /* 改為右側 */
+	background: rgba(102, 126, 234, 0.9);
 	color: white;
-	width: 24px;
-	height: 24px;
+	width: 20px;
+	height: 20px;
 	border-radius: 50%;
-	display: flex;
+	display: none; /* 隱藏排序標籤，不顯示排序編號 */
 	align-items: center;
 	justify-content: center;
-	font-size: 0.75em;
+	font-size: 0.7em;
 	font-weight: bold;
-	border: none;
-	transition: none;
-	z-index: 10;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	z-index: 10; /* 確保順序標籤在圖片上方 */
 }
 
-.copy-preview .preview-image-item:hover .preview-image-order {
-	transform: none;
-	box-shadow: none;
-}
+/* 移除順序標籤懸停效果 */
 
-/* 模板預覽的佈局調整 */
+/* 模板預覽的佈局調整 - 擴大文案預覽區域 */
 .copy-preview .template-preview {
 	display: flex;
-	gap: 12px;
+	gap: 16px; /* 增加間距 */
 	align-items: flex-start;
 	margin: 0;
 	padding: 0;
 }
 
 .copy-preview .preview-content {
-	flex: 7; /* 文字佔 7 份 */
+	flex: 8; /* 文字佔 8 份（從 7 增加到 8） */
 	min-width: 0; /* 允許內容收縮 */
 	margin: 0;
 	padding: 0;
 	line-height: 1.6;
 }
 
-.copy-preview .preview-images-grid {
-	flex: 3; /* 圖片佔 3 份 */
-	min-width: 0; /* 允許內容收縮 */
-	justify-content: flex-end; /* 圖片靠右對齊 */
+/* 移除舊的圖片網格樣式，使用新的容器樣式 */
+/* .copy-preview .preview-images-grid {
+	flex: 2;
+	min-width: 0;
+	justify-content: flex-end;
 	margin: 0;
 	padding: 0;
 	align-self: flex-start;
-}
+	max-width: 400px;
+} */
 
 /* 移除所有可能的空白 */
 .copy-preview .content-text {
@@ -1492,6 +1450,8 @@ body {
 	.community-checkbox-item label {
 		font-size: 0.85em;
 	}
+	
+	/* 移除中等屏幕下的圖片網格調整 */
 }
 
 @media (max-width: 480px) {
@@ -1504,6 +1464,8 @@ body {
 		max-height: 150px;
 		padding: 8px;
 	}
+	
+	/* 移除小屏幕下的圖片網格調整 */
 }
 
 .community-checkbox-item {
@@ -2713,6 +2675,14 @@ body {
 		padding: 0;
 	}
 	
+	.copy-preview .preview-images-container {
+		flex: none;
+		width: 100%;
+		max-width: none;
+		margin: 0;
+		padding: 0;
+	}
+	
 	.copy-preview .preview-images-grid {
 		flex: none;
 		width: 100%;
@@ -2761,6 +2731,21 @@ body {
 @media (max-width: 480px) {
 	.copy-preview .template-preview {
 		gap: 8px;
+	}
+	
+	.copy-preview .preview-images-container {
+		width: 100%;
+		max-width: none;
+	}
+	
+	.copy-preview .preview-images-header {
+		flex-direction: column;
+		gap: 4px;
+		align-items: flex-start;
+	}
+	
+	.copy-preview .scroll-hint {
+		font-size: 0.75em;
 	}
 	
 	.copy-preview .preview-image-item {
@@ -2813,4 +2798,65 @@ body {
 	margin: 0;
 	padding: 0;
 }
+
+/* 圖片預覽容器樣式 */
+.copy-preview .preview-images-container {
+	flex: 2; /* 圖片佔 2 份（從 3 減少到 2） */
+	min-width: 0; /* 允許內容收縮 */
+	margin: 0;
+	padding: 0;
+	align-self: flex-start;
+	max-width: 30%; /* 限制圖片區域最大寬度 */
+}
+
+/* 圖片預覽標題樣式 */
+.copy-preview .preview-images-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+	padding: 0 4px;
+	font-size: 0.9em;
+	color: #64748b;
+}
+
+.copy-preview .images-count {
+	font-weight: 500;
+	color: #475569;
+}
+
+.copy-preview .scroll-hint {
+	font-size: 0.8em;
+	color: #94a3b8;
+	font-style: italic;
+	animation: pulse 2s infinite;
+}
+
+/* 滾動提示的脈衝動畫 */
+@keyframes pulse {
+	0%, 100% { opacity: 0.6; }
+	50% { opacity: 1; }
+}
+
+/* 自定義滾動條樣式 */
+.copy-preview .preview-images-grid::-webkit-scrollbar {
+	height: 8px; /* 橫向滾動條高度 */
+}
+
+.copy-preview .preview-images-grid::-webkit-scrollbar-track {
+	background: #f7fafc;
+	border-radius: 4px;
+}
+
+.copy-preview .preview-images-grid::-webkit-scrollbar-thumb {
+	background: #cbd5e0;
+	border-radius: 4px;
+	transition: background 0.3s ease;
+}
+
+.copy-preview .preview-images-grid::-webkit-scrollbar-thumb:hover {
+	background: #a0aec0;
+}
+
+
 

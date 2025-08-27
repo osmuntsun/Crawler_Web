@@ -1,0 +1,87 @@
+<!-- 文案設定 -->
+<div class="content-header">
+	<h2><i class="fas fa-edit"></i> 文案設定</h2>
+	<p>建立和管理您的發文文案模板</p>
+</div>
+<div class="card {% if not can_use_tool %}disabled{% endif %}">
+	<div class="card-body">
+		{% if not can_use_tool %}
+		<div class="disabled-overlay">
+			<div class="disabled-message">
+				<i class="fas fa-lock"></i>
+				<span>請完成啟用後使用此功能</span>
+			</div>
+		</div>
+		{% endif %}
+		
+		<form class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+			{% csrf_token %}
+			<div class="form-row">
+				<label><i class="fas fa-heading"></i> 文案標題</label>
+				<input type="text" name="copy_title" placeholder="輸入文案標題，例如：商品推廣文案、活動宣傳文案等">
+			</div>
+			<div class="form-row">
+				<label><i class="fas fa-file-alt"></i> 文案模板</label>
+				<textarea name="copy_template" rows="8" placeholder="輸入您的文案模板"></textarea>
+			</div>
+			
+			<div class="form-row">
+				<label><i class="fas fa-images"></i> 上傳圖片（可多選）</label>
+				<div class="image-upload-container">
+					<input type="file" name="template_images" multiple accept="image/*" id="templateImageUpload" class="image-upload-input">
+					<div class="image-upload-area" id="imageUploadArea">
+						<i class="fas fa-cloud-upload-alt"></i>
+						<p>點擊或拖拽圖片到此處上傳</p>
+						<small>支援 JPG、PNG、GIF 格式</small>
+					</div>
+				</div>
+			</div>
+			
+			<div class="form-row" id="imageSortingRow" style="display: none;">
+				<label><i class="fas fa-sort"></i> 圖片排序</label>
+				<div class="image-sorting-container" id="imageSortingContainer">
+					<!-- 圖片排序區域將由 JavaScript 動態生成 -->
+				</div>
+				<small class="form-help">拖拽圖片調整順序，第一張圖片將作為主要圖片</small>
+			</div>
+			
+			<div class="form-row">
+				<label><i class="fas fa-tags"></i> 標籤</label>
+				<input type="text" name="hashtags" placeholder="輸入標籤，用逗號分隔">
+			</div>
+			
+			<div class="form-actions">
+				<button type="button" class="btn btn-primary" id="saveTemplateBtn">
+					<i class="fas fa-save"></i> 儲存模板
+				</button>
+				<button type="button" class="btn btn-info" id="previewTemplateBtn">
+					<i class="fas fa-eye"></i> 預覽
+				</button>
+				<button type="button" class="btn btn-warning" id="clearTemplateBtn" style="display: none;">
+					<i class="fas fa-trash"></i> 清空模板
+				</button>
+			</div>
+		</form>
+		
+		<!-- 已儲存的模板列表 -->
+		<div class="saved-templates-section">
+			<div class="section-header">
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<div>
+						<h3><i class="fas fa-bookmark"></i> 已儲存的模板</h3>
+						<p>管理您之前儲存的文案模板</p>
+					</div>
+					<div class="template-filters">
+						<select id="hashtagFilter" class="form-select">
+							<option value="all">所有標籤</option>
+							<!-- 標籤選項將由 JavaScript 動態生成 -->
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="templates-list" id="templatesList">
+				<!-- 模板列表將由 JavaScript 動態生成 -->
+			</div>
+		</div>
+	</div>
+</div>

@@ -6,6 +6,15 @@ urlpatterns = [
 	path('', views.tool, name='crawler_tool'),
 	path('use/', views.tool_authenticated, name='crawler_tool_use'),
 
+	# 功能頁面 URL
+	path('account/', views.account, name='account'),
+	path('account-management/', views.account_management, name='account_management'),
+	path('copy/', views.copy, name='copy'),
+	path('post/', views.post, name='post'),
+	path('schedule/', views.schedule, name='schedule'),
+	path('auto-feed/', views.auto_feed, name='auto_feed'),
+	path('group-sale/', views.group_sale, name='group_sale'),
+
 	path('api/facebook/', views.FacebookAutomationView.as_view(), name='facebook_automation_api'),
 	path('api/accounts/status/', views.AccountsStatusView.as_view(), name='accounts_status'),
 	path('api/accounts/delete/', views.AccountDeleteView.as_view(), name='account_delete'),

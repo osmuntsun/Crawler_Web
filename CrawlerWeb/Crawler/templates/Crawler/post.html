@@ -1,0 +1,260 @@
+<!-- 發文設定 -->
+<div class="content-header">
+	<h2><i class="fas fa-share-alt"></i> 發文設定</h2>
+	<p>設定發文平台、內容和自動化功能</p>
+</div>
+<div class="card {% if not can_use_tool %}disabled{% endif %}">
+	<div class="card-body">
+		{% if not can_use_tool %}
+		<div class="disabled-overlay">
+			<div class="disabled-message">
+				<i class="fas fa-lock"></i>
+				<span>請完成啟用後使用此功能</span>
+			</div>
+		</div>
+		{% endif %}
+		
+		<!-- 步驟指示器 -->
+		<div class="posting-steps">
+			<div class="step-item active" data-step="1">
+				<div class="step-number">1</div>
+				<div class="step-label">選擇文案</div>
+			</div>
+			<div class="step-item" data-step="2">
+				<div class="step-number">2</div>
+				<div class="step-label">排程設定</div>
+			</div>
+			<div class="step-item" data-step="3">
+				<div class="step-number">3</div>
+				<div class="step-label">確認發布</div>
+			</div>
+		</div>
+		
+		<!-- 步驟1：選擇文案 -->
+		<div class="posting-step-content" id="step1-content">
+			<div class="section-header">
+				<h3><i class="fas fa-edit"></i> 選擇文案內容</h3>
+				<p>選擇社群平台、文案模板和發文選項</p>
+			</div>
+			
+			<form id="postingForm" class="form-grid">
+				{% csrf_token %}
+				<div class="form-row">
+					<label><i class="fas fa-globe"></i> 選擇社群平台</label>
+					<select name="posting_platform" class="form-select" required id="platformSelect">
+						<option value="">選擇要發文的社群平台</option>
+						<!-- 平台選項將由 JavaScript 動態生成 -->
+					</select>
+					<small class="form-help">只顯示已登入的社群平台</small>
+				</div>
+				
+				<div class="form-row">
+					<label><i class="fas fa-file-alt"></i> 選擇文案模板</label>
+					<select name="copy_template" class="form-select" required id="templateSelect">
+						<option value="">選擇要使用的文案模板</option>
+						<!-- 文案選項將由 JavaScript 動態生成 -->
+					</select>
+				</div>
+				
+				<div class="form-row">
+					<label><i class="fas fa-eye"></i> 文案預覽</label>
+					<div id="copyPreview" class="copy-preview">
+						<p class="text-muted">請先選擇文案模板</p>
+					</div>
+				</div>
+				
+				<!-- Facebook 社團選擇（僅在選擇 Facebook 時顯示） -->
+				<div class="form-row" id="facebookCommunitiesRow" style="display: none;">
+					<label><i class="fas fa-users"></i> 選擇 Facebook 社團（可多選）</label>
+					<div class="communities-selection-container">
+						<div class="communities-header">
+							<button type="button" class="btn btn-outline-primary btn-sm" id="getCommunitiesBtn" onclick="getFacebookCommunities()">
+								<i class="fas fa-sync-alt"></i> 獲取社團列表
+							</button>
+							<div class="selection-controls">
+								<button type="button" class="btn btn-outline-success btn-sm" id="selectAllCommunitiesBtn" onclick="selectAllCommunities()">
+									<i class="fas fa-check-square"></i> 全選
+								</button>
+								<button type="button" class="btn btn-outline-secondary btn-sm" id="deselectAllCommunitiesBtn" onclick="deselectAllCommunities()">
+									<i class="fas fa-square"></i> 取消全選
+								</button>
+							</div>
+						</div>
+						<div class="communities-list" id="communitiesList">
+							<div class="communities-loading">
+								<i class="fas fa-spinner fa-spin"></i> 正在載入社團列表...
+							</div>
+						</div>
+						<small class="form-help">選擇要發布內容的 Facebook 社團</small>
+					</div>
+				</div>
+				
+				<div class="form-actions">
+					<button type="button" class="btn btn-primary" id="nextStepBtn">
+						<i class="fas fa-arrow-right"></i> 下一步
+					</button>
+				</div>
+			</form>
+		</div>
+		
+		<!-- 步驟2：排程設定 -->
+		<div class="posting-step-content" id="step2-content" style="display: none;">
+			<div class="section-header">
+				<h3><i class="fas fa-calendar-alt"></i> 排程設定</h3>
+				<p>設定自動發文的時間、頻率和執行日期</p>
+			</div>
+			
+			<!-- 發文方式選擇 -->
+			<div class="posting-method-selection">
+				<div class="method-option">
+					<input type="radio" name="posting_method" id="immediate_posting" value="immediate" checked>
+					<label for="immediate_posting" class="method-label">
+						<i class="fas fa-bolt"></i>
+						<span>立即發文</span>
+						<small>立即發布到選定的社群</small>
+					</label>
+				</div>
+				<div class="method-option">
+					<input type="radio" name="posting_method" id="scheduled_posting" value="scheduled">
+					<label for="scheduled_posting" class="method-label">
+						<i class="fas fa-calendar-alt"></i>
+						<span>排程發文</span>
+						<small>設定時間自動發布</small>
+					</label>
+				</div>
+			</div>
+			
+			<!-- 立即發文的下一步按鈕 -->
+			<div id="immediatePostingActions" class="immediate-posting-actions" style="display: none;">
+				<div class="form-actions">
+					<button type="button" class="btn btn-secondary" id="prevStepBtnImmediate">
+						<i class="fas fa-arrow-left"></i> 上一步
+					</button>
+					<button type="button" class="btn btn-primary" id="nextStepBtnImmediate">
+						<i class="fas fa-arrow-right"></i> 下一步
+					</button>
+				</div>
+			</div>
+			
+			<!-- 排程設定選項（預設隱藏） -->
+			<div id="schedulingOptions" class="scheduling-options" style="display: none;">
+				<div class="form-grid">
+					<div class="form-row">
+						<label><i class="fas fa-calendar-week"></i> 執行日期</label>
+						<div class="days-selection">
+							<div class="btn-container">
+								<button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllDaysBtn" onclick="selectAllDays()">
+									<i class="fas fa-calendar"></i> 每天
+								</button>
+								<button type="button" class="btn btn-outline-secondary btn-sm" id="selectWeekdaysBtn" onclick="selectWeekdays()">
+									<i class="fas fa-briefcase"></i> 工作日
+								</button>
+								<button type="button" class="btn btn-outline-secondary btn-sm" id="clearDaysBtn" onclick="clearDays()">
+									<i class="fas fa-times"></i> 清空
+								</button>
+							</div>
+							<div class="days-checkboxes">
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="monday" checked>
+									<span>週一</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="tuesday" checked>
+									<span>週二</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="wednesday" checked>
+									<span>週三</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="thursday" checked>
+									<span>週四</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="friday" checked>
+									<span>週五</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="saturday">
+									<span>週六</span>
+								</label>
+								<label class="day-checkbox">
+									<input type="checkbox" name="days" value="sunday">
+									<span>週日</span>
+								</label>
+							</div>
+						</div>
+						<small class="form-help">選擇要執行自動發文的日期</small>
+					</div>
+					
+					<div class="form-row">
+						<label><i class="fas fa-clock"></i> 發文時間(一天)</label>
+						<div class="posting-times-container">
+							<div class="posting-times-list" id="postingTimesList">
+								<div class="posting-time-item">
+									<input type="time" name="posting_times[]" value="09:00" class="form-input time-input">
+									<button type="button" class="btn btn-sm btn-danger remove-time-btn" onclick="removePostingTime(this)">
+										<i class="fas fa-minus"></i>
+									</button>
+								</div>
+							</div>
+							<div class="add-time-controls">
+								<button type="button" class="btn btn-sm btn-success" id="addTimeBtn" onclick="addPostingTime()">
+									<i class="fas fa-plus"></i> 新增時間
+								</button>
+								<small class="form-help">每天至少需要設定一個發文時間</small>
+							</div>
+						</div>
+					</div>
+					
+					<div class="form-actions">
+						<button type="button" class="btn btn-secondary" id="prevStepBtn">
+							<i class="fas fa-arrow-left"></i> 上一步
+						</button>
+						<button type="button" class="btn btn-primary" id="nextStepBtn2">
+							<i class="fas fa-arrow-right"></i> 下一步
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- 步驟3：確認發布 -->
+		<div class="posting-step-content" id="step3-content" style="display: none;">
+			<div class="section-header">
+				<h3><i class="fas fa-check-circle"></i> 確認發布</h3>
+				<p>確認發文設定和排程信息</p>
+			</div>
+			
+			<div class="confirmation-summary">
+				<div class="summary-item">
+					<label><i class="fas fa-globe"></i> 發布平台：</label>
+					<span id="confirmPlatform">-</span>
+				</div>
+				<div class="summary-item">
+					<label><i class="fas fa-file-alt"></i> 文案內容：</label>
+					<span id="confirmContent">-</span>
+				</div>
+				<div class="summary-item">
+					<label><i class="fas fa-calendar"></i> 排程設定：</label>
+					<span id="confirmSchedule">-</span>
+				</div>
+				<div class="summary-item">
+					<label><i class="fas fa-images"></i> 圖片數量：</label>
+					<span id="confirmImages">-</span>
+				</div>
+			</div>
+			
+			<div class="form-actions">
+				<button type="button" class="btn btn-secondary" id="prevStepBtn2">
+					<i class="fas fa-arrow-left"></i> 上一步
+				</button>
+				<button type="button" class="btn btn-success" id="confirmPostingBtn">
+					<i class="fas fa-paper-plane"></i> 確認發布
+				</button>
+			</div>
+		</div>
+		
+		<div id="postingStatus" class="status-message" style="display: none;"></div>
+	</div>
+</div>

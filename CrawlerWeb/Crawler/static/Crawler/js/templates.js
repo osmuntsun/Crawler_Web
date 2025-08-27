@@ -754,6 +754,17 @@ function createNewTemplateFromCopy(title, content, hashtags, images) {
 			
 			// 清空表單
 			clearTemplateForm();
+			
+			// 滾動到"已儲存的模板"標題位置
+			setTimeout(() => {
+				const savedTemplatesSection = document.querySelector('.saved-templates-section');
+				if (savedTemplatesSection) {
+					savedTemplatesSection.scrollIntoView({ 
+						behavior: 'smooth', 
+						block: 'start' 
+					});
+				}
+			}, 500); // 等待模板列表重新載入完成
 		} else {
 			window.showNotification('複製失敗：' + (result.error || '未知錯誤'), 'error');
 		}
@@ -986,6 +997,7 @@ function updateImageUploadAreaDisplay() {
 // 導出全局函數
 window.loadCopyTemplates = loadCopyTemplates;
 window.loadPostTemplates = loadPostTemplates;
+window.loadTemplates = loadPostTemplates; // 為了向後兼容，添加別名
 window.updateHashtagFilterOptions = updateHashtagFilterOptions;
 window.filterTemplatesByHashtag = filterTemplatesByHashtag;
 window.handleHashtagFilter = handleHashtagFilter;

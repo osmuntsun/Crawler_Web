@@ -98,8 +98,13 @@ async function handleAccountLogin(e) {
 
 // 載入帳號狀態
 async function loadAccountsStatus() {
+	console.log('loadAccountsStatus 函數被調用');
 	const accountsStatusDiv = document.getElementById('accountsStatus');
-	if (!accountsStatusDiv) return;
+	if (!accountsStatusDiv) {
+		console.log('找不到 accountsStatus 元素');
+		return;
+	}
+	console.log('找到 accountsStatus 元素:', accountsStatusDiv);
 
 	try {
 		console.log('開始載入帳號狀態...');
@@ -145,8 +150,11 @@ async function loadAccountsStatus() {
 		// 同時更新帳號列表表格
 		await updateAccountsTable(accounts);
 		
-		// 更新平台選項
-		await checkAndHideLoggedInPlatforms();
+		// 只有在帳號設定頁面才更新平台選項
+		const platformSelect = document.querySelector('select[name="login_platform"]');
+		if (platformSelect) {
+			await checkAndHideLoggedInPlatforms();
+		}
 	} catch (error) {
 		console.error('載入帳號狀態失敗:', error);
 		console.error('錯誤詳情:', error.message);
@@ -156,12 +164,15 @@ async function loadAccountsStatus() {
 
 // 更新帳號列表表格
 async function updateAccountsTable(accounts) {
-	console.log('更新帳號列表表格，帳號數量:', accounts.length);
-	const accountsTableBody = document.querySelector('#tab-account-management .data-table tbody');
+	console.log('updateAccountsTable 函數被調用，帳號數量:', accounts.length);
+	console.log('帳號數據:', accounts);
+	const accountsTableBody = document.getElementById('accountsTableBody');
 	if (!accountsTableBody) {
-		console.log('找不到帳號表格主體元素');
+		console.log('找不到帳號表格主體元素 #accountsTableBody');
+		console.log('當前頁面所有元素:', document.querySelectorAll('*[id]'));
 		return;
 	}
+	console.log('找到帳號表格主體元素:', accountsTableBody);
 
 	// 檢查用戶權限
 	let isSuperUser = false;

@@ -1,0 +1,104 @@
+{% load static %}
+
+<!-- 帳號設定頁面內容 -->
+<div class="tab-content active" id="tab-account">
+	<div class="content-header">
+		<h2><i class="fas fa-user-cog"></i> 帳號設定</h2>
+		<p>管理您的社群媒體帳號資訊</p>
+	</div>
+	
+	{% if not can_use_tool %}
+	<!-- 訪客/免費用戶模式提示 -->
+	<div class="guest-notice">
+		<div class="notice-card">
+			<div class="notice-icon">
+				<i class="fas fa-crown"></i>
+			</div>
+			<h2>升級為付費用戶以使用爬蟲功能</h2>
+			<p>
+				{% if not is_authenticated %}
+				您目前以訪客身份瀏覽。要使用完整的爬蟲功能，請先登入您的帳號。
+				{% elif not is_premium %}
+				您目前為免費用戶。爬蟲功能僅限付費用戶使用，請升級您的帳號以享受完整功能。
+				{% else %}
+				您的付費狀態已過期。請續費以繼續使用爬蟲功能。
+				{% endif %}
+			</p>
+			<div class="notice-actions">
+				{% if not is_authenticated %}
+				<a href="{% url 'Accounts:login' %}" class="btn btn-primary">
+					<i class="fas fa-sign-in-alt"></i> 立即登入
+				</a>
+				{% else %}
+				<a href="{% url 'Accounts:profile' %}" class="btn btn-primary">
+					<i class="fas fa-crown"></i> 升級帳號
+				</a>
+				{% if user.is_superuser %}
+				<a href="/admin/" class="btn btn-secondary">
+					<i class="fas fa-cog"></i> 管理後台
+				</a>
+				{% endif %}
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	{% endif %}
+	
+	<div class="card {% if not can_use_tool %}disabled{% endif %}">
+		<div class="card-body">
+			{% if not can_use_tool %}
+			<div class="disabled-overlay">
+				<div class="disabled-message">
+					<i class="fas fa-lock"></i>
+					<span>請完成啟用後使用此功能</span>
+				</div>
+			</div>
+			{% endif %}
+			
+
+
+			<form id="accountLoginForm" class="form-grid" {% if not can_use_tool %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
+				{% csrf_token %}
+				<div class="form-row">
+					<label><i class="fas fa-globe"></i> 選擇登入的平台</label>
+					<select name="login_platform" class="form-select" required>
+						<option value="">選擇要登入的社群平台</option>
+						<option value="facebook">Facebook</option>
+						<option value="instagram">Instagram</option>
+						<option value="twitter">Twitter</option>
+						<option value="linkedin">LinkedIn</option>
+						<option value="youtube">YouTube</option>
+						<option value="discord">Discord</option>
+						<option value="telegram">Telegram</option>
+						<option value="line">Line</option>
+						<option value="wechat">WeChat</option>
+						<option value="other">其他</option>
+					</select>
+					<small class="form-help">選擇您要登入的社群平台類型（已登入的平台將自動隱藏）</small>
+				</div>
+				
+				<div class="form-row">
+					<label><i class="fas fa-envelope"></i> 電子郵件/帳號</label>
+					<input type="text" name="email" placeholder="輸入電子郵件或帳號名稱" required>
+				</div>
+				
+				<div class="form-row">
+					<label><i class="fas fa-lock"></i> 密碼</label>
+					<input type="password" name="password" placeholder="輸入您的密碼" required>
+				</div>
+				
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary" id="accountLoginBtn">
+						<i class="fas fa-sign-in-alt"></i> 登入並獲取 Cookie
+					</button>
+					<small class="form-help" style="margin-top: 8px; display: block;">
+						<i class="fas fa-info-circle"></i> 
+						Facebook 登入將自動獲取並保存您的社團列表
+					</small>
+				</div>
+			</form>
+			
+			<div id="accountLoginStatus" class="status-message" style="display: none;"></div>
+		</div>
+	</div>
+</div>

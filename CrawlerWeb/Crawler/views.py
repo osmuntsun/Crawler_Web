@@ -52,7 +52,7 @@ def tool(request):
 		# 添加調試信息
 		# 調試訊息已移除
 		
-		return render(request, 'Crawler/tool.html', context)
+		return render(request, 'Crawler/base.html', context)
 	except Exception as e:
 		raise Http404(f"爬蟲工具頁面不存在: {str(e)}")
 
@@ -2019,6 +2019,175 @@ class PostTemplateUpdateView(View):
 			return JsonResponse({'error': '無效的JSON數據'}, status=400)
 		except Exception as e:
 			return JsonResponse({'error': f'更新模板失敗: {str(e)}'}, status=500)
+
+
+# 功能頁面視圖函數
+def account(request):
+	"""
+	帳號設定頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/account.html', context)
+	except Exception as e:
+		raise Http404(f"帳號設定頁面不存在: {str(e)}")
+
+
+def account_management(request):
+	"""
+	帳號管理頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/account_management.html', context)
+	except Exception as e:
+		raise Http404(f"帳號管理頁面不存在: {str(e)}")
+
+
+def copy(request):
+	"""
+	文案設定頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/copy.html', context)
+	except Exception as e:
+		raise Http404(f"文案設定頁面不存在: {str(e)}")
+
+
+def post(request):
+	"""
+	發文設定頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/post.html', context)
+	except Exception as e:
+		raise Http404(f"發文設定頁面不存在: {str(e)}")
+
+
+def schedule(request):
+	"""
+	排程設定頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/schedule.html', context)
+	except Exception as e:
+		raise Http404(f"排程設定頁面不存在: {str(e)}")
+
+
+def auto_feed(request):
+	"""
+	自動養號頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/auto_feed.html', context)
+	except Exception as e:
+		raise Http404(f"自動養號頁面不存在: {str(e)}")
+
+
+def group_sale(request):
+	"""
+	社團拍賣商品頁面
+	"""
+	try:
+		can_use_tool = False
+		is_premium = False
+		
+		if request.user.is_authenticated:
+			is_premium = request.user.is_premium_active
+			can_use_tool = is_premium
+		
+		context = {
+			'is_authenticated': request.user.is_authenticated,
+			'user': request.user,
+			'can_use_tool': can_use_tool,
+			'is_premium': is_premium,
+		}
+		
+		return render(request, 'Crawler/group_sale.html', context)
+	except Exception as e:
+		raise Http404(f"社團拍賣商品頁面不存在: {str(e)}")
 
 
 
